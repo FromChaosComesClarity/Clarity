@@ -1,4 +1,4 @@
-# Cafe Neurotico on macOS — handoff
+# Clarity on macOS — handoff
 
 **Linux stays the primary platform.** It is the main gaming machine, it is what ships, and it
 is not being replaced or wound down. macOS is a *second host in the same codebase* — an
@@ -25,7 +25,7 @@ deliberately left). This file is the do-this-next companion to it.
 
 ## Day 0 — get the Mac ready
 
-Nothing here is Cafe Neurotico specific; it's the toolchain.
+Nothing here is Clarity specific; it's the toolchain.
 
 ```bash
 # 1. Xcode Command Line Tools — needed to rebuild better-sqlite3 against Electron
@@ -49,8 +49,8 @@ library.
 ## Day 1 — clone and see it fail honestly
 
 ```bash
-git clone https://github.com/FromChaosComesClarity/CafeNeurotico.git
-cd CafeNeurotico
+git clone https://github.com/FromChaosComesClarity/Clarity.git
+cd Clarity
 git checkout mac
 npm install
 ```
@@ -71,7 +71,7 @@ npm start
 **It will throw**, and the error is the point:
 
 ```
-Cafe Neurotico has no platform backend for "darwin". Supported: linux.
+Clarity has no platform backend for "darwin". Supported: linux.
 ```
 
 That's `packages/core/platform/index.js` doing its job. Writing the backend it's asking for is
@@ -97,16 +97,16 @@ doubles as the specification.
 |---|---|
 | `id` | `'darwin'` |
 | `binDirName` | `'darwin-arm64'` |
-| `portableBaseDir({isPackaged, execPath, devDir})` | **Not portable on macOS** — an `.app` in `/Applications` cannot hold user data. Return `~/Library/Application Support/CafeNeurotico`, ignoring `devDir` when packaged. |
+| `portableBaseDir({isPackaged, execPath, devDir})` | **Not portable on macOS** — an `.app` in `/Applications` cannot hold user data. Return `~/Library/Application Support/Clarity`, ignoring `devDir` when packaged. |
 | `selfExecutable()` | `process.execPath` (there is no `APPIMAGE`) |
 | `selfSpawnArgs(faceArgs, repoRoot)` | packaged → `faceArgs`; dev → `[repoRoot, ...faceArgs]` |
-| `grinderDbCandidates(baseDir)` / `findGrinderDb` / `grinderDbCreatePath` | `~/Library/Application Support/grinder/grinder.db` (Electron's `userData` for `app.setName('grinder')`) |
+| `installerDbCandidates(baseDir)` / `findInstallerDb` / `installerDbCreatePath` | `~/Library/Application Support/installer/library.db` (Electron's `userData` for `app.setName('installer')`) |
 
 **Store identifiers — small, and load-bearing.**
 
 | Member | macOS |
 |---|---|
-| `nativeOsKey` | `'osx'` — ⚠ **this was wrong as originally written.** `'osx'` is what lands in `games.platform` and what gogdl's own `--platform` flag wants — but GOG's *public catalog API* (`api.gog.com/products?expand=downloads`) calls the same OS `"mac"` in its installer `os` field, not `"osx"`. Comparing that field directly against `nativeOsKey` (as `syncOwnedLibrary` originally did) means **every Mac-native game in the library silently looks Windows-only** — happened to all 298 of Jose's owned GOG games until caught in Phase D. Fixed in `grinder-engine.js` with a small `GOG_CATALOG_OS_ALIAS = { mac: 'osx' }` translation before matching, not in `darwin.js` — `nativeOsKey` itself is correct. |
+| `nativeOsKey` | `'osx'` — ⚠ **this was wrong as originally written.** `'osx'` is what lands in `games.platform` and what gogdl's own `--platform` flag wants — but GOG's *public catalog API* (`api.gog.com/products?expand=downloads`) calls the same OS `"mac"` in its installer `os` field, not `"osx"`. Comparing that field directly against `nativeOsKey` (as `syncOwnedLibrary` originally did) means **every Mac-native game in the library silently looks Windows-only** — happened to all 298 of Jose's owned GOG games until caught in Phase D. Fixed in `installer-engine.js` with a small `GOG_CATALOG_OS_ALIAS = { mac: 'osx' }` translation before matching, not in `darwin.js` — `nativeOsKey` itself is correct. |
 | `gogdlPlatform` | `'osx'` |
 | `legendaryPlatform` | `'Mac'` |
 
@@ -196,8 +196,8 @@ node -e "const h=require('./packages/core/platform/index.js');
 ### Phase B — it launches — ✅ DONE
 `darwin.js` is written (paths, store IDs, system inventory, desktop/autostart via a
 `~/Library/LaunchAgents` plist, `runtime.*` stubbed through Phase E) and passes the contract
-check below with no missing members or type mismatches. `npm start`, `npm run start:crema`, and
-`npx electron . grinder` all launch clean — verified by screenshot, not just an empty terminal
+check below with no missing members or type mismatches. `npm start`, `npm run start:couch`, and
+`npx electron . installer` all launch clean — verified by screenshot, not just an empty terminal
 (the fresh-install onboarding wizard rendering correctly in each face is what "the library
 renders" actually looked like on a brand-new profile).
 
@@ -217,8 +217,8 @@ now is) — if you ever hit the ABI error anyway, `npx electron-builder install-
 
 ```bash
 npm start                 # Manager
-npm run start:crema       # CREMA
-npx electron . grinder    # GRINDER GUI
+npm run start:couch       # Couch
+npx electron . installer    # Installer GUI
 ```
 
 **Read the terminal, not the window** — an Electron main-process error dialog keeps the process
@@ -228,17 +228,17 @@ alive, so "it stayed open" proves nothing. That mistake cost two bugs in Phase A
 ```bash
 npm run dist:mac          # dmg + zip, arm64, unsigned
 ```
-`build.mac.icon` points at `apps/manager/assets/icons/CNGM.icns`. **`sips` cannot rasterize
+`build.mac.icon` points at `apps/manager/assets/icons/Clarity.icns`. **`sips` cannot rasterize
 SVG** (`Error: Can't write format: public.svg-image`) and no other converter (`rsvg-convert`,
 `imagemagick`, `inkscape`, `cairosvg`) was installed — the icon was rendered by loading the SVG
 into a hidden, offscreen `BrowserWindow` at 1024px via Electron itself and downscaling with
 `nativeImage.resize()` for the other 9 sizes, then `iconutil -c icns`. No new dependency needed.
 
 Verified by actually launching the packaged `.app` (not just checking the build log) — the menu
-bar correctly reads "Cafe Neurotico", not "Electron", confirming the icon and identity are both
+bar correctly reads "Clarity", not "Electron", confirming the icon and identity are both
 wired. Because it's built locally, the `.app` never gets a quarantine bit and **Gatekeeper
 doesn't appear at all**. That friction only exists for someone who *downloads* the dmg — for
-them, `xattr -dr com.apple.quarantine /Applications/Cafe\ Neurotico.app`.
+them, `xattr -dr com.apple.quarantine /Applications/Clarity.app`.
 
 ### Phase B.6 — gogdl, and close the tarball gap — ✅ DONE
 ```bash
@@ -246,7 +246,7 @@ git clone https://github.com/FromChaosComesClarity/gogdl.git gogdl_fork && cd go
 git submodule update --init --recursive     # xdelta3 — needed for the gogdl_xdelta3 C extension
 python3 -m venv .venv && source .venv/bin/activate
 pip install . pyinstaller
-python3 -m PyInstaller --onefile --name gogdl grinder_entry.py --clean --noconfirm
+python3 -m PyInstaller --onefile --name gogdl installer_entry.py --clean --noconfirm
 ```
 The fork wasn't already cloned on the Mac (contrary to what `fetch-binaries.mjs`'s error message
 implies) — that clone command above is the real one. `binaries-mac-v2` is published with the
@@ -279,7 +279,7 @@ genuinely Mac-native), installed a real title (`gogdl --platform osx download`),
 (bundle removed from disk, DB row reset to `installed:0, install_path:null`).
 
 **The two "two things to settle" this file originally flagged turned out to be red herrings.**
-Neither `activePlat = platform || 'windows'` (now at grinder-engine.js:430, not line 582 — line
+Neither `activePlat = platform || 'windows'` (now at installer-engine.js:430, not line 582 — line
 numbers drifted after Phase A) nor "stop trusting the singular `platform` column" needed to
 change. The singular column is fine to trust at launch time *once it's computed correctly* — the
 real bug was purely in how it got computed (the catalog `os`-field mismatch above). Leaving the
@@ -288,7 +288,7 @@ re-sync — see `apps/manager/main.js`'s "Linux-native vs Windows" toggle, which
 persists a user's choice) turned out to be a deliberate, correct design, not an oversight.
 
 One more real bug, found while reading the surrounding code rather than by a failure: GOG's
-`goggame-<appId>.info` file (used by `gogPlayTaskList` in `grinder-engine.js` for the
+`goggame-<appId>.info` file (used by `gogPlayTaskList` in `installer-engine.js` for the
 DLC/alternate-executable task picker) is looked up at `install_path`'s root — correct for
 Windows/Linux, wrong on macOS where `install_path` **is** the `.app` bundle and GOG nests that
 file in `Contents/Resources/` instead. Fixed by branching on whether `install_path` ends in
@@ -315,12 +315,12 @@ clears the 26.5+ threshold this file used to warn about) before any code was wri
   CX_ROOT, the GPTK/D3DMetal library paths, WINEDLLPATH etc. itself — calling the engine binary
   underneath (`wineloader`) directly skips all of that.
 - `CX_BOTTLE_PATH` (an env var) relocates where a *named* bottle is looked up/created, which is
-  what let grinder-engine.js's existing per-game prefix scheme (`configDir/prefixes/<safe-name>`,
+  what let installer-engine.js's existing per-game prefix scheme (`configDir/prefixes/<safe-name>`,
   unchanged from Linux) work with zero changes: the directory becomes the bottle's parent, its
   own name becomes the bottle name.
 - Bottles do **not** self-initialize the way umu/Proton prefixes do — `wine --bottle` against a
   name with no bottle yet is a fatal error, and `cxbottle --create` refuses to create one at a
-  path that already exists (even empty, which is exactly what grinder-engine.js's own
+  path that already exists (even empty, which is exactly what installer-engine.js's own
   `fs.mkdirSync(prefix, {recursive:true})` leaves behind before `host.runtime` is ever consulted).
   `darwin.js`'s `ensureBottle()` treats "no `system.reg`" as "not a real bottle yet" and is safe
   to wipe-and-recreate from — verified against exactly that pre-created-empty-directory shape.
@@ -329,7 +329,7 @@ clears the 26.5+ threshold this file used to warn about) before any code was wri
 
 Because bottle creation (~15-20s, one-time per game) has to happen before a launch can be spawned
 at all, `buildLaunch`/`buildRedistLaunch`/`regeditCommand` are `async` on darwin — and
-grinder-engine.js's three call sites (plus one in `apps/grinder/main.js`) now `await` them, a
+installer-engine.js's three call sites (plus one in `apps/installer/main.js`) now `await` them, a
 harmless no-op for Linux's plain-sync versions. Verified end-to-end with real spawns, not just
 unit-style calls: a fresh, never-touched prefix directory → `buildLaunch` → bottle created →
 `cmd.exe` actually ran inside it and printed real output; a second launch against the same prefix
@@ -349,7 +349,7 @@ umu's output (`startupSteps()` returns `[]` — the bottle-creation delay is rea
    dev build can look like a new app and lose its grant on **every rebuild**.
    Mitigations: install games as plain directory trees on the SSD rather than into
    `/Applications`, and ad-hoc sign with a stable identifier:
-   `codesign -s - --identifier com.cafeneurotico.suite <app>`.
+   `codesign -s - --identifier io.github.fromchaoscomesclarity.clarity <app>`.
    **Test this on day one of Phase B** — fifteen minutes, and it shapes the whole install layout.
 2. **The minimal PATH.** A Finder-launched `.app` has no Homebrew in `PATH`. Anything found via
    `which()` — dosbox, wine, 7z — will be invisible unless `which` searches
@@ -375,17 +375,17 @@ umu's output (`startupSteps()` returns `[]` — the bottle-creation delay is rea
 | File | |
 |---|---|
 | `packages/core/platform/darwin.js` | Phase B's platform backend, plus the Phase D fixes to `findNativeInstallResult`. |
-| `packages/core/grinder-engine.js` | The `GOG_CATALOG_OS_ALIAS` fix in `syncOwnedLibrary` (~line 1794) and the `.app`-aware path in `gogPlayTaskList` (~line 605) — both Phase D. |
+| `packages/core/installer-engine.js` | The `GOG_CATALOG_OS_ALIAS` fix in `syncOwnedLibrary` (~line 1794) and the `.app`-aware path in `gogPlayTaskList` (~line 605) — both Phase D. |
 | `scripts/fetch-binaries.mjs` | `SOURCES.darwin` bumped to `binaries-mac-v2`, `missing`/`provides` dropped — Phase B.6. |
-| `package.json` → `build.mac.icon` | Points at `apps/manager/assets/icons/CNGM.icns` — Phase B.5. |
-| `apps/manager/main.js`, `apps/grinder/main.js`/`preload.js`/`renderer.js`, `apps/manager/preload.js`/`renderer.js`, both `index.html`s | Native traffic lights on macOS (`titleBarStyle:'hidden'`) instead of the custom win-btn row — not part of the original phase plan, added on request. Gated on `process.platform`/`window.api.platform`; Linux/other hosts unaffected. |
+| `package.json` → `build.mac.icon` | Points at `apps/manager/assets/icons/Clarity.icns` — Phase B.5. |
+| `apps/manager/main.js`, `apps/installer/main.js`/`preload.js`/`renderer.js`, `apps/manager/preload.js`/`renderer.js`, both `index.html`s | Native traffic lights on macOS (`titleBarStyle:'hidden'`) instead of the custom win-btn row — not part of the original phase plan, added on request. Gated on `process.platform`/`window.api.platform`; Linux/other hosts unaffected. |
 
 **Still to touch:**
 
 | File | When |
 |---|---|
 | `packages/core/custom-installers.js` | Phase D follow-up — Mac recipes, tagged `hosts: ['darwin']`, from macsourceports.com (192 notarized Universal 2 ports) |
-| `apps/grinder/renderer.js` | Whenever — the External Tools panel hardcodes the Linux tool names; `check-tools` already returns a `runtimeTools` array for it to move onto |
+| `apps/installer/renderer.js` | Whenever — the External Tools panel hardcodes the Linux tool names; `check-tools` already returns a `runtimeTools` array for it to move onto |
 | `apps/manager/main.js` `epic-login` | Epic/legendary auth genuinely isn't verified yet — see Phase D's status above |
 
 **Don't touch:** the three `apps/*/main.js` — for macOS-*specific* business logic. That line got

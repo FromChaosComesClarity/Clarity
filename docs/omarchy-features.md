@@ -1,4 +1,4 @@
-# Cafe Neurotico on Omarchy
+# Clarity on Omarchy
 
 **A running list of everything the suite does specifically for [Omarchy](https://omarchy.org/).**
 This file is the source for anything shown to Omarchy users — a forum post, a release note, a
@@ -33,7 +33,7 @@ Two questions are kept deliberately separate:
 > ⚠️ `ID_LIKE=arch` is what makes the existing pacman hints elsewhere in the app fire correctly.
 > `isArchLike()` exists so nothing depends on `ID` alone if a future release drops `ID_LIKE`.
 
-### 2. Cafe Neurotico wears your Omarchy theme
+### 2. Clarity wears your Omarchy theme
 
 **The app applies your actual Omarchy theme — not the closest-looking one of its own 93.**
 
@@ -63,23 +63,23 @@ Light themes (catppuccin-latte, flexoki-light) work without inverting anything �
 mean the same thing, and only the size of the step between layers changes.
 
 **How it gets applied.** On a fresh install on Omarchy it is simply the default — the app comes up
-already matching the desktop. For anyone who has run Cafe Neurotico before there is a one-click
+already matching the desktop. For anyone who has run Clarity before there is a one-click
 **Match My Omarchy Theme** button in the Omarchy card, and the theme also sits in the picker under
 **Your Desktop**.
 
 > ⚠️ The button is not a convenience, it is the only route for an existing user. `applyTheme()`
-> writes `cngm_theme` on *every* call, including when it falls back to the built-in default — so
+> writes `clarity_theme` on *every* call, including when it falls back to the built-in default — so
 > "this user has never chosen a theme" stops being true after the very first launch in the app's
 > history, and the fresh-install default can never fire for them. Overriding a theme somebody
 > deliberately picked would be worse than asking, so adopting it is one button rather than a
 > silent takeover.
 
-**CREMA follows too.** The couch face mirrors the Manager's theme by name when its theme source is
+**Couch follows too.** The couch face mirrors the Manager's theme by name when its theme source is
 `MANAGER`, resolving it against its *own* theme table — so the palette is registered in both faces
 and the IPC lives in `packages/core/shared-ipc.js` rather than the Manager's `main.js`.
 
-> ⚠️ This is a correctness fix, not tidiness. A theme the Manager knows and CREMA does not
-> resolves to `null` in `mapManagerThemeToCrema()`, and the couch face silently drops back to its
+> ⚠️ This is a correctness fix, not tidiness. A theme the Manager knows and Couch does not
+> resolves to `null` in `mapManagerThemeToCouch()`, and the couch face silently drops back to its
 > own default — so a user matching their desktop on one face would stop matching it on the other.
 
 ### 3. It tells you what a fresh Omarchy is missing for gaming
@@ -121,13 +121,13 @@ or not at all.
   library is the largest part of most collections here and the suite reads it directly from disk,
   so this is surfaced prominently rather than as one item in a list.
 - **32-bit graphics drivers** (`gpu-lib32`) — Proton needs the lib32 Vulkan stack.
-- **Xbox controller support** — CREMA is gamepad-first, so this is worth having for couch play.
+- **Xbox controller support** — Couch is gamepad-first, so this is worth having for couch play.
 
 > ⚠️ **Heroic and Lutris are deliberately never mentioned.** The suite signs in to GOG and Epic
 > itself and runs Windows games through Proton directly. A second launcher is not a missing piece,
 > and offering to install one would undercut the thing this app exists to do.
 
-RetroArch is carried in the module but hidden in Cafe Neurotico — emulation is EmuLatte's pillar,
+RetroArch is carried in the module but hidden in Clarity — emulation is EmuLatte's pillar,
 and the flag exists so the EmuLatte port shows it while this app does not.
 
 ### 6. GOG downloads work on Arch at all
@@ -146,7 +146,7 @@ OSError: Could not find a suitable TLS CA certificate bundle, invalid path:
 ```
 
 What the user saw was "the install failed" on **every GOG title**, with no mention of TLS anywhere —
-and every obvious suspect (the account, the token, the network, the store, GRINDER itself) checking
+and every obvious suspect (the account, the token, the network, the store, Installer itself) checking
 out fine.
 
 The host's real CA bundle is now located at startup and exported as `REQUESTS_CA_BUNDLE` and
@@ -188,7 +188,7 @@ reached 100% (211.73 MiB) where it had previously failed instantly.
   list narrows, and below 680px the split view drops its list and gives the width to the game.
   Driven by the window's own size, not the screen's — on a tiled desktop those are different
   numbers, which is why this is not a CSS media query.
-- **GRINDER and sign-in windows float** instead of tiling. They are transient tools opened over
+- **Installer and sign-in windows float** instead of tiling. They are transient tools opened over
   the library, and tiling one halves what you were looking at.
 - **Games open floating too.** Tiled, a game gets shoved into whatever slot the layout has free
   and resized to fit it — a moment before it goes fullscreen anyway, so the first thing you see
@@ -219,10 +219,9 @@ command that writes a `sysctl.d` drop-in so the change survives a reboot.
 
 ### 9. It gets out of the way while you play
 
-- **The screen will not lock mid-game.** A gamepad-only CREMA session, a long cutscene or a turn
+- **The screen will not lock mid-game.** A gamepad-only Couch session, a long cutscene or a turn
   spent reading a map produces no keyboard or mouse input at all, so the desktop's idea of idle
-  and the player's are completely different — and the lock screen wins that argument. Cafe
-  Neurotico holds an idle inhibitor for exactly as long as a game is running.
+  and the player's are completely different — and the lock screen wins that argument. Clarity holds an idle inhibitor for exactly as long as a game is running.
 
   > ⚠️ An inhibitor, deliberately, rather than flipping your idle setting: an inhibitor dies with
   > the process holding it, whereas a toggle left flipped by a crash would leave your lock screen
@@ -247,7 +246,7 @@ command that writes a `sysctl.d` drop-in so the change survives a reboot.
 - **Optional desktop tools cannot crash the app.** A minimal Wayland-only box has no `wmctrl`,
   `gio` or `xdg-open`, and a missing one used to be fatal — `spawn` reports ENOENT asynchronously,
   so the `try/catch` that looked like a guard never saw it. Fixed in 1.9.1 (`spawnOptional`), and
-  **confirmed on a real Omarchy laptop that genuinely has no `wmctrl`**: CREMA, the face that would
+  **confirmed on a real Omarchy laptop that genuinely has no `wmctrl`**: Couch, the face that would
   have died, starts clean.
 - **Monitors are read through `hyprctl -j`**, matching on connector name rather than index so
   unplugging a monitor does not shift the meaning of a stored choice.
@@ -266,7 +265,7 @@ drivers). The workaround that works there is **`PROTON_USE_WINED3D=1`**, which r
 OpenGL instead; set it under the game's own environment variables. It launched a title that had
 been failing instantly.
 
-Cafe Neurotico now recognises this signature and says so — and offers to fix it: the dialog has a
+Clarity now recognises this signature and says so — and offers to fix it: the dialog has a
 **Use OpenGL for this game** button that sets the variable on that game for you, rather than
 naming a variable and leaving you to find the right box.
 

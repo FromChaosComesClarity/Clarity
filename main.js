@@ -1,27 +1,27 @@
 'use strict';
 /*
- * Cafe Neurotico — unified suite entry point.
+ * Clarity — unified suite entry point.
  *
  * One Electron process, three faces, dispatched by argv:
- *   (default)              → Manager  (CNGM)      windowed library hub
- *   grinder <subcommand>   → GRINDER  engine/GUI   [wired in Phase 1]
- *   --crema | --fullscreen → CREMA    fullscreen   [wired in Phase 3]
+ *   (default)              → Manager  (Clarity)      windowed library hub
+ *   installer <subcommand>   → Installer  engine/GUI   [wired in Phase 1]
+ *   --couch | --fullscreen → Couch    fullscreen   [wired in Phase 3]
  *
  * Each face owns its own app identity (app.setName) so the one that runs in a
  * given process resolves the correct userData / single-instance lock. The
- * GRINDER face keeps 'grinder' so its CLI (launch/install/uninstall-headless/
- * setup) and data dir behave exactly as the old standalone GRINDER.AppImage.
+ * Installer face uses 'clarity-installer' so its CLI (launch/install/uninstall-headless/
+ * setup) and data dir stay separate from the Manager's.
  */
 
 const args        = process.argv.slice(1);
 const positional   = args.filter(a => a !== '.' && !a.startsWith('-'));
-const wantsGrinder = positional[0] === 'grinder';
-const wantsCrema   = args.includes('--crema') || args.includes('--fullscreen');
+const wantsInstaller = positional[0] === 'installer';
+const wantsCouch   = args.includes('--couch') || args.includes('--fullscreen');
 
-if (wantsGrinder) {
-    require('./apps/grinder/main.js');
-} else if (wantsCrema) {
-    require('./apps/crema/main.js');
+if (wantsInstaller) {
+    require('./apps/installer/main.js');
+} else if (wantsCouch) {
+    require('./apps/couch/main.js');
 } else {
     require('./apps/manager/main.js');
 }

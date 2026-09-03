@@ -21,8 +21,8 @@
     "wake_method": "WAKE UP METHOD",
     "batch_scrape": "BATCH SCRAPE",
     "history": "GAMING HISTORY",
-    "about": "ABOUT CREMA",
-    "quit": "QUIT CREMA",
+    "about": "ABOUT Couch",
+    "quit": "QUIT Couch",
     "language": "LANGUAGE"
   },
   "section": {
@@ -125,7 +125,7 @@
   },
   "empty": {
     "library_title": "LIBRARY EMPTY",
-    "library_body": "Use the desktop app Cafe Neurotico Game Manager to import games, sync storefronts, and manage your collection.",
+    "library_body": "Use the desktop app Clarity Game Manager to import games, sync storefronts, and manage your collection.",
     "no_games": "NO GAMES FOUND IN THIS CATEGORY.",
     "no_desc": "No description available.",
     "no_media": "NO MEDIA FOUND",
@@ -133,8 +133,8 @@
     "no_media_hint2": "Use the SCRAPING ENGINE to download artwork.",
     "no_media_hint3": "If the automatic scan fails, select REFINE SEARCH.",
     "jb_title": "LIBRARY EMPTY",
-    "jb_body": "To build your Jukebox collection, go to the folder where the CREMA app is located and add your audio files to the folder:",
-    "jb_folder": "CREMA_CUSTOM_MUSIC",
+    "jb_body": "To build your Jukebox collection, go to the folder where the Couch app is located and add your audio files to the folder:",
+    "jb_folder": "CUSTOM_MUSIC",
     "jb_hint": "Close and reopen the Jukebox to scan for tracks.",
     "jb_no_tracks": "NO TRACKS FOUND"
   },
@@ -142,8 +142,8 @@
     "install": "INSTALL",
     "installed": "INSTALLED",
     "not_installed": "NOT INSTALLED",
-    "grinding": "GRINDING...",
-    "brewing": "BREWING...",
+    "grinding": "WORKING IT...",
+    "brewing": "WARMING UP...",
     "searching": "Searching...",
     "scanning": "Scanning...",
     "na": "N/A",
@@ -172,7 +172,7 @@
     "no_custom_covers": "❌ NO CUSTOM COVERS FOUND"
   },
   "confirm": {
-    "quit_title": "EXIT CREMA?",
+    "quit_title": "EXIT Couch?",
     "yes_quit": "YES, QUIT",
     "confirm_action": "CONFIRM ACTION",
     "proceed_scrape": "PROCEED: SCRAPE {mode}"
@@ -217,8 +217,8 @@
     "no_desc": "No description available."
   },
   "about": {
-    "title": "ABOUT CREMA",
-    "content": "<span style='color: var(--accent); font-size: 26px; font-weight: bold; letter-spacing: 2px;'>CAFE NEUROTICO: CREMA</span><br><span style='color: var(--text_main); font-size: 16px;'>Version 1.0.0</span><br><br><span style='color: var(--text_sec); font-size: 18px; line-height: 1.6; display: inline-block; max-width: 750px; text-align: center;'><i style='color: var(--text_dim);'>\"Crema is the reddish-brown, frothy foam layer that sits on top of a freshly brewed espresso. It consists of water, coffee oils, and pressurized CO2 bubbles created during high-pressure extraction. It signifies freshness and proper pressure.\"</i><br><br><strong>The Manager, GRINDER and CREMA</strong> are three faces of one app, sharing one library.<br><br><strong>The Manager</strong> is the desktop face: detail-focused, neurotic about your library, handling all the heavy lifting with automatic and manual importing. <strong>GRINDER</strong> works quietly underneath, installing and launching your GOG and Epic games.<br><br><strong>CREMA</strong> is the sweet foam on top. It is the fullscreen companion: laidback, easygoing, and focused purely on fun. A true connoisseur of good gaming and good music. Grab a controller and enjoy.<br><br>Proudly designed in Brazil 🇧🇷 by J.R.A.<br>joserobertoazevedo@hey.com</span>"
+    "title": "ABOUT Couch",
+    "content": "<span style='color: var(--accent); font-size: 26px; font-weight: bold; letter-spacing: 2px;'>CLARITY: Couch</span><br><span style='color: var(--text_main); font-size: 16px;'>Version 1.0.0</span><br><br><span style='color: var(--text_sec); font-size: 18px; line-height: 1.6; display: inline-block; max-width: 750px; text-align: center;'><i style='color: var(--text_dim);'>\"Lights down, controller in hand, everything you own already sorted. Nothing left to do but play. Stay positive and love your life.\"</i><br><br><strong>The Manager, Installer and Couch</strong> are three faces of one app, sharing one library.<br><br><strong>The Manager</strong> is the desktop face: detail-focused, devoted to your library, handling all the heavy lifting with automatic and manual importing. <strong>Installer</strong> works quietly underneath, installing and launching your GOG and Epic games.<br><br><strong>Couch</strong> is where you kick back. It is the fullscreen companion: laidback, easygoing, and focused purely on fun. A true connoisseur of good gaming and good music. Grab a controller and enjoy.<br><br>Proudly designed in Brazil 🇧🇷 by J.R.A.<br>joserobertoazevedo@hey.com</span>"
   },
   "keybindings": {
     "gp_select": "Select / Launch",
@@ -242,9 +242,9 @@
     "kb_search": "Global Search"
   },
   "sleep": {
-    "press_return": "Press [{method}] to return to CREMA",
+    "press_return": "Press [{method}] to return to Couch",
     "hold_return": "Hold [{method}] for 2 Seconds",
-    "then_return": "to return to CREMA"
+    "then_return": "to return to Couch"
   },
   "jb_fs": {
     "controls": "Controls",

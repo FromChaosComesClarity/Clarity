@@ -1,12 +1,12 @@
 'use strict';
 /*
- * @cafeneurotico/core — the Linux platform backend.
+ * @clarity/core — the Linux platform backend.
  *
- * Everything in here was lifted out of grinder-engine.js unchanged. The comments came with
+ * Everything in here was lifted out of installer-engine.js unchanged. The comments came with
  * it on purpose: nearly every one of them records a bug that took real debugging to find,
  * and they read as arbitrary without that history.
  *
- * Phase A moves only what grinder-engine.js needs. Paths, desktop integration and store
+ * Phase A moves only what installer-engine.js needs. Paths, desktop integration and store
  * inventory follow in A3–A5, alongside their call sites.
  */
 
@@ -17,7 +17,7 @@ const { execSync, spawnSync, spawn } = require('child_process');
 const https = require('https');
 
 // ── Injected context ─────────────────────────────────────────────────────────
-// Mirrors grinder-engine's own init() idiom. `getDb` is a getter rather than a handle
+// Mirrors installer-engine's own init() idiom. `getDb` is a getter rather than a handle
 // because the engine re-attaches its database after init (see setDb).
 let HOME       = os.homedir();
 let configDir  = '';
@@ -107,24 +107,23 @@ function selfSpawnArgs(faceArgs, repoRoot) {
     return process.env.APPIMAGE ? [...faceArgs] : [repoRoot, ...faceArgs];
 }
 
-// grinder.db, in the order it should be looked for. This list was duplicated at fourteen
+// library.db, in the order it should be looked for. This list was duplicated at fourteen
 // call sites across two faces before it lived here.
-function grinderDbCandidates(baseDir) {
+function installerDbCandidates(baseDir) {
     return [
-        path.join(HOME, '.config', 'grinder', 'grinder.db'),
-        path.join(HOME, '.config', 'GRINDER', 'grinder.db'),
-        path.join(baseDir, 'GRINDERConfig', 'grinder.db'),
+        path.join(HOME, '.config', 'clarity-installer', 'library.db'),
+        path.join(baseDir, 'InstallerConfig', 'library.db'),
     ];
 }
-function findGrinderDb(baseDir) {
-    return grinderDbCandidates(baseDir).find(p => fs.existsSync(p)) || null;
+function findInstallerDb(baseDir) {
+    return installerDbCandidates(baseDir).find(p => fs.existsSync(p)) || null;
 }
 
-// Where a grinder.db should be CREATED when none exists yet (headless first-run sign-in).
-function grinderDbCreatePath(baseDir, isPackaged) {
+// Where a library.db should be CREATED when none exists yet (headless first-run sign-in).
+function installerDbCreatePath(baseDir, isPackaged) {
     return isPackaged
-        ? path.join(HOME, '.config', 'grinder', 'grinder.db')
-        : path.join(baseDir, 'GRINDERConfig', 'grinder.db');
+        ? path.join(HOME, '.config', 'clarity-installer', 'library.db')
+        : path.join(baseDir, 'InstallerConfig', 'library.db');
 }
 
 // ── System inventory ─────────────────────────────────────────────────────────
@@ -292,7 +291,7 @@ const desktop = {
 
 // ── Steam ────────────────────────────────────────────────────────────────────
 // Every place Steam might keep a library on this host, including extra drives declared in
-// libraryfolders.vdf. The Manager and CREMA each carried a byte-identical copy of this.
+// libraryfolders.vdf. The Manager and Couch each carried a byte-identical copy of this.
 function steamLibraryPaths() {
     const roots = [
         path.join(HOME, '.local', 'share', 'Steam'),
@@ -787,12 +786,12 @@ function setupBytes() {
 function unavailableError() {
     const err = new Error(
         'No Proton build found. Windows games need Proton (GE-Proton is recommended) — ' +
-        'install one from the Control Panel, or point Cafe Neurotico at an existing build.');
+        'install one from the Control Panel, or point Clarity at an existing build.');
     err.code = 'NO_PROTON';
     return err;
 }
 
-// Locate BattlEye or EAC runtime: GRINDER's own copy first, then common Steam locations
+// Locate BattlEye or EAC runtime: Installer's own copy first, then common Steam locations
 function findAntiCheatRuntime(name) {
     const steamName = name === 'battleye_runtime' ? 'Battleye AntiCheat' : 'EasyAntiCheat';
     return [
@@ -844,7 +843,7 @@ function assertAvailable(runtimePath) {
 // merges it over its own base (system → per-game custom vars → compat flags).
 function buildLaunch({ game, gameId, launchExe, isBat, userArgs, allArgs, runtimePath, prefix }) {
     const umu = findUmu();
-    const gameid = game.app_id || `grinder-${gameId}`;
+    const gameid = game.app_id || `installer-${gameId}`;
 
     // Epic titles are launched with the user's own arguments only — legendary owns the rest.
     if (game.store === 'epic' && umu && runtimePath) {
@@ -963,7 +962,7 @@ function removeRuntime(dirPath) {
 
 function ghJson(url) {
     return new Promise((resolve, reject) => {
-        https.get(url, { headers: { 'User-Agent': 'CafeNeurotico' } }, res => {
+        https.get(url, { headers: { 'User-Agent': 'Clarity' } }, res => {
             if (res.statusCode !== 200) { res.resume(); reject(new Error(`GitHub returned ${res.statusCode}`)); return; }
             let data = ''; res.on('data', d => data += d);
             res.on('end', () => { try { resolve(JSON.parse(data)); } catch { reject(new Error('Invalid JSON from GitHub')); } });
@@ -1028,7 +1027,7 @@ async function installRelease({ release, onProgress } = {}) {
     const dl = await new Promise(resolve => {
         function get(url, redirects = 0) {
             if (redirects > 5) { resolve({ ok: false, error: 'Too many redirects.' }); return; }
-            _dlReq = https.get(url, { headers: { 'User-Agent': 'CafeNeurotico' } }, res => {
+            _dlReq = https.get(url, { headers: { 'User-Agent': 'Clarity' } }, res => {
                 if (res.statusCode === 301 || res.statusCode === 302) { res.resume(); get(res.headers.location, redirects + 1); return; }
                 if (res.statusCode !== 200) { res.resume(); resolve({ ok: false, error: `Download failed (HTTP ${res.statusCode}).` }); return; }
                 const total = parseInt(res.headers['content-length'] || '0', 10);
@@ -1131,7 +1130,7 @@ module.exports = {
     id: 'linux',
     init,
     binDirName, portableBaseDir, selfExecutable, selfSpawnArgs,
-    grinderDbCandidates, findGrinderDb, grinderDbCreatePath,
+    installerDbCandidates, findInstallerDb, installerDbCreatePath,
     which, dirSizeBytesCommand, dirSizeHumanCommand, legendaryConfigDir,
     steamLibraryPaths, steamLaunchCommand, extraStore, desktop,
     nativeOsKey, gogdlPlatform, legendaryPlatform,

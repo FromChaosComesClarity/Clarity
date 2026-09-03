@@ -24,14 +24,14 @@ where `<slug>` is the project's absolute path with every `/`, `_` and `.` turned
 this project on every Linux host so far — Nobara before, Omarchy now — that is:
 
 ```
--home-jose-Documents-DEVELOPMENT-CLAUDE-CafeNeurotico
+-home-jose-Documents-DEVELOPMENT-CLAUDE-Clarity
 ```
 
 The `projects` map in `~/.claude.json` is keyed by absolute path too, and every line of a session
 transcript records the `cwd` it ran in. Copy the folder across untranslated and the memories are
 on disk but invisible. ClaudeMemKeeper rewrites all three on restore.
 
-**The lucky part:** if you clone to `/home/jose/Documents/DEVELOPMENT/CLAUDE/CafeNeurotico` on the
+**The lucky part:** if you clone to `/home/jose/Documents/DEVELOPMENT/CLAUDE/Clarity` on the
 new machine — same username, same path — the slug is **identical** and no translation is needed
 at all. Only a different username or a different directory makes the remapping matter. The Mac
 needs it (`/Users/jose/…`); this machine does not, because it is the same path as before.
@@ -66,7 +66,7 @@ Final state of that machine, for reference — it no longer exists:
 1. **Get the app there.** Copy `ClaudeMemKeeper.AppImage` across (~115 MB), or clone
    `ClaudeMemKeeper` and `npm install && npm run build`. Put the AppImage in its own folder —
    ⚠️ **on Linux it keeps its settings in `CMK_DATA/` *beside the AppImage*, not in `~/.config`**,
-   so binary and config travel together. `chmod +x` it. (Needs `fuse2`, same as Cafe Neurotico.)
+   so binary and config travel together. `chmod +x` it. (Needs `fuse2`, same as Clarity.)
 2. **Settings → Import settings…** and pick `claudememkeeper-settings.json`. This is the only
    step that cannot bootstrap itself — a fresh machine has no Drive credentials, including this
    app's own.
@@ -100,16 +100,16 @@ Final state of that machine, for reference — it no longer exists:
 ## Then
 
 ```bash
-cd ~/Documents/DEVELOPMENT/CLAUDE/CafeNeurotico
+cd ~/Documents/DEVELOPMENT/CLAUDE/Clarity
 claude
 ```
 
 and open with:
 
-> "Resume the Cafe Neurotico project. Read your memory files for context."
+> "Resume the Clarity project. Read your memory files for context."
 
-If the memories did not land, the giveaway is Claude having no idea what CREMA or GRINDER are.
-Check that `~/.claude/projects/-home-jose-Documents-DEVELOPMENT-CLAUDE-CafeNeurotico/memory/`
+If the memories did not land, the giveaway is Claude having no idea what Couch or Installer are.
+Check that `~/.claude/projects/-home-jose-Documents-DEVELOPMENT-CLAUDE-Clarity/memory/`
 exists and holds ~38 `.md` files with `MEMORY.md` among them.
 
 ---

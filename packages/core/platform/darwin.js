@@ -1,6 +1,6 @@
 'use strict';
 /*
- * @cafeneurotico/core — the macOS platform backend.
+ * @clarity/core — the macOS platform backend.
  *
  * Sibling to linux.js, same shape, picked up by platform/index.js the moment this file
  * exists. Phase B: paths, store identifiers, system inventory and desktop integration are
@@ -36,7 +36,7 @@ const binDirName = 'darwin-arm64';
 // dev build cannot reliably write beside itself either — see Trap 1 in the handoff). Every
 // build, packaged or dev, keeps its data in the same per-user Library location.
 function portableBaseDir() {
-    return path.join(HOME, 'Library', 'Application Support', 'CafeNeurotico');
+    return path.join(HOME, 'Library', 'Application Support', 'Clarity');
 }
 
 // There is no APPIMAGE equivalent. `process.execPath` is the real binary either way — inside
@@ -49,23 +49,22 @@ function selfSpawnArgs(faceArgs, repoRoot) {
     return process.defaultApp ? [repoRoot, ...faceArgs] : [...faceArgs];
 }
 
-// grinder.db, in the order it should be looked for. Kept as a list (not a single path) so a
-// pre-merge standalone GRINDER.app install is still found, same as Linux's ~/.config split.
-function grinderDbCandidates(baseDir) {
+// library.db, in the order it should be looked for: the packaged app's own userData first,
+// then the dev-tree config. Same two-entry split as Linux.
+function installerDbCandidates(baseDir) {
     return [
-        path.join(HOME, 'Library', 'Application Support', 'grinder', 'grinder.db'),
-        path.join(HOME, 'Library', 'Application Support', 'GRINDER', 'grinder.db'),
-        path.join(baseDir, 'GRINDERConfig', 'grinder.db'),
+        path.join(HOME, 'Library', 'Application Support', 'clarity-installer', 'library.db'),
+        path.join(baseDir, 'InstallerConfig', 'library.db'),
     ];
 }
-function findGrinderDb(baseDir) {
-    return grinderDbCandidates(baseDir).find(p => fs.existsSync(p)) || null;
+function findInstallerDb(baseDir) {
+    return installerDbCandidates(baseDir).find(p => fs.existsSync(p)) || null;
 }
 
-function grinderDbCreatePath(baseDir, isPackaged) {
+function installerDbCreatePath(baseDir, isPackaged) {
     return isPackaged
-        ? path.join(HOME, 'Library', 'Application Support', 'grinder', 'grinder.db')
-        : path.join(baseDir, 'GRINDERConfig', 'grinder.db');
+        ? path.join(HOME, 'Library', 'Application Support', 'clarity-installer', 'library.db')
+        : path.join(baseDir, 'InstallerConfig', 'library.db');
 }
 
 // ── System inventory ─────────────────────────────────────────────────────────
@@ -99,15 +98,15 @@ function dirSizeHumanCommand(target) {
 // adopted macOS's config conventions on its own; `legendary status` on this host reports its
 // real config directory as ~/.config/legendary, same as Linux. runLegendary() never passes
 // --config-folder, so this has to match what legendary actually uses, not what a well-behaved
-// macOS app would use. (grinder.db is a different case: that's Electron's own userData for
-// our own app.setName('grinder') process, which does resolve correctly per-host on its own.)
+// macOS app would use. (library.db is a different case: that's Electron's own userData for
+// our own app.setName('installer') process, which does resolve correctly per-host on its own.)
 function legendaryConfigDir() { return path.join(HOME, '.config', 'legendary'); }
 
 // ── Desktop integration ──────────────────────────────────────────────────────
 // canInstallMenuEntries is false — the .app bundle IS the menu entry, there is no separate
 // launcher-file mechanism to install one into. The "install to menu" UI path is gated on
 // this flag already. What's below still backs the per-game "add shortcut" path (desktop only
-// on this host) and the CREMA autostart toggle, both of which are called unconditionally.
+// on this host) and the Couch autostart toggle, both of which are called unconditionally.
 
 function appsDir() { return null; } // no menu concept on this host; canInstallMenuEntries gates the caller
 
@@ -146,7 +145,7 @@ function refreshMenu() {}
 function markTrusted() {}
 
 // Login Items via a LaunchAgent plist — the macOS equivalent of XDG autostart.
-function autostartPath(id) { return path.join(HOME, 'Library', 'LaunchAgents', `com.cafeneurotico.${id}.plist`); }
+function autostartPath(id) { return path.join(HOME, 'Library', 'LaunchAgents', `com.clarity.${id}.plist`); }
 function getAutostart(id)  { try { return fs.existsSync(autostartPath(id)); } catch { return false; } }
 function setAutostart(id, enabled, entry) {
     const file = autostartPath(id);
@@ -158,7 +157,7 @@ function setAutostart(id, enabled, entry) {
         const plist = `<?xml version="1.0" encoding="UTF-8"?>\n` +
             `<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">\n` +
             `<plist version="1.0"><dict>\n` +
-            `  <key>Label</key><string>com.cafeneurotico.${id}</string>\n` +
+            `  <key>Label</key><string>com.clarity.${id}</string>\n` +
             `  <key>ProgramArguments</key><array>\n${args}\n  </array>\n` +
             `  <key>RunAtLoad</key><true/>\n` +
             `</dict></plist>\n`;
@@ -324,14 +323,14 @@ const dosbox = { find: findDosbox, installHint: dosboxInstallHint, translateArgs
 //     own; calling the engine binary underneath directly (wineloader) skips all of
 //     that and prints cxcompatdb errors, so this file never does that.
 //   - `CX_BOTTLE_PATH` (an env var) relocates where a *named* bottle is looked
-//     up/created, which is what lets grinder-engine.js's existing per-game
+//     up/created, which is what lets installer-engine.js's existing per-game
 //     directory scheme (configDir/prefixes/<safe-name>, unchanged from Linux) work
 //     unmodified: the directory becomes the bottle's parent, its own name becomes
 //     the bottle name.
 //   - Bottles do NOT self-initialize the way umu/Proton prefixes do. `wine --bottle`
 //     against a name with no bottle yet is a fatal error, and `cxbottle --create`
 //     refuses to create one at a path that already exists — even as an empty
-//     directory, which is exactly what grinder-engine.js's own
+//     directory, which is exactly what installer-engine.js's own
 //     `fs.mkdirSync(prefix, {recursive:true})` leaves behind before any of this
 //     runs. ensureBottle() below treats "no system.reg" as "not a real bottle yet"
 //     and is safe to wipe-and-recreate from, which is what makes this idempotent
@@ -344,7 +343,7 @@ const dosbox = { find: findDosbox, installHint: dosboxInstallHint, translateArgs
 // of one-time cost Linux pays building a fresh Proton prefix. Because
 // `wine --bottle` refuses to run against a not-yet-real bottle, that creation has
 // to happen before a launch can be spawned at all, which is why buildLaunch,
-// buildRedistLaunch and regeditCommand are async here (grinder-engine.js awaits
+// buildRedistLaunch and regeditCommand are async here (installer-engine.js awaits
 // all three; harmless no-op for Linux, whose versions are plain sync).
 // ═════════════════════════════════════════════════════════════════════════════
 
@@ -403,7 +402,7 @@ const BOTTLE_ARTIFACTS = new Set([
 ]);
 
 // cxbottle refuses to --create over a path that already exists — even an empty
-// directory, which is exactly what grinder-engine.js's own unconditional
+// directory, which is exactly what installer-engine.js's own unconditional
 // `fs.mkdirSync(prefix, {recursive:true})` leaves behind before host.runtime is ever
 // consulted. So something has to clear the way. What must NOT happen is clearing it
 // blindly: prefixPathForGame honours a user-set `game.prefix_path`, and the settings
@@ -464,7 +463,7 @@ function ensureBottle(prefix, runtimePath) {
 function unavailableError() {
     const err = new Error(
         'CrossOver was not found. Windows games on macOS need CrossOver (from codeweavers.com) — ' +
-        'Cafe Neurotico drives it directly once it is installed, but cannot install it for you.');
+        'Clarity drives it directly once it is installed, but cannot install it for you.');
     err.code = 'NO_RUNTIME';
     return err;
 }
@@ -483,7 +482,7 @@ const management = {
     latestRelease: async () => ({ ok: false, error: 'CrossOver is commercial software — install it yourself from codeweavers.com.' }),
     install:       async () => ({ ok: false, error: 'CrossOver is commercial software — install it yourself from codeweavers.com.' }),
     cancel: () => false,
-    remove: () => ({ ok: false, error: 'Not applicable — Cafe Neurotico does not manage your CrossOver install.' }),
+    remove: () => ({ ok: false, error: 'Not applicable — Clarity does not manage your CrossOver install.' }),
 };
 
 function runnerTools() {
@@ -492,11 +491,11 @@ function runnerTools() {
         key: 'crossover', label: 'CrossOver',
         path: cx ? cx.wine : null,
         installable: false, optional: false,
-        hint: cx ? '' : 'not found — install CrossOver from codeweavers.com, then relaunch Cafe Neurotico',
+        hint: cx ? '' : 'not found — install CrossOver from codeweavers.com, then relaunch Clarity',
     }];
 }
 async function installRunner() {
-    return { ok: false, error: 'CrossOver is commercial software Cafe Neurotico cannot install for you — get it from codeweavers.com.' };
+    return { ok: false, error: 'CrossOver is commercial software Clarity cannot install for you — get it from codeweavers.com.' };
 }
 
 // Only one "build" is ever possible on this host — there is no per-user store of
@@ -513,7 +512,7 @@ function scanRuntimes() {
 
 function resolveRuntime() { return findCrossOver()?.wine || ''; }
 
-// Note both of these ARE reached for native macOS games too: grinder-engine.js calls
+// Note both of these ARE reached for native macOS games too: installer-engine.js calls
 // inUse()/compatEnv() well before its native-build gate (game.platform ===
 // host.nativeOsKey), not after. That's harmless — compatEnv adds nothing, and the
 // shipped-wrapper-DLL scan those answers feed finds no Windows DLLs beside a .app
@@ -525,14 +524,14 @@ function canRun(runtimePath) { return !!(runtimePath || findWineCached()); }
 // Nothing CrossOver-specific to add here: esync/fsync are Linux kernel futex
 // extensions with no macOS equivalent, and DXVK/NVAPI don't apply to a Metal-backed
 // D3D translation. Still has to return a real (mutable) object — the shared
-// shipped-wrapper-DLL and per-game-fix logic in grinder-engine.js writes
+// shipped-wrapper-DLL and per-game-fix logic in installer-engine.js writes
 // WINEDLLOVERRIDES into whatever this returns, on every platform.
 function compatEnv() { return {}; }
 
 function assertAvailable(runtimePath) { if (!runtimePath && !findWineCached()) throw unavailableError(); }
 
 // Some callers resolve runtimePath through host.runtime.resolve() (always the found
-// CrossOver, or ''); others — apps/grinder/main.js's "run an .exe in this prefix"
+// CrossOver, or ''); others — apps/installer/main.js's "run an .exe in this prefix"
 // flow, in particular — read game.proton_path / the default_proton_path setting
 // directly instead, both Linux-only concepts that are simply always empty on this
 // host. Falling back to findWineCached() here (same as Linux's buildRedistLaunch
@@ -608,7 +607,7 @@ const runtime = {
     toWindowsPath, diagnose, unavailableError,
     // Not wired up — CrossOver 26 advertises its own BattlEye/EAC support built
     // into the engine itself, unverified here against a real anti-cheat title, and
-    // GRINDER's own separate runtime copy (Linux's findAntiCheatRuntime) has no
+    // Installer's own separate runtime copy (Linux's findAntiCheatRuntime) has no
     // reason to exist on a host where the compatibility layer claims to handle it.
     findAntiCheatRuntime: () => null,
     // No structured progress signal from CrossOver's output the way umu prints
@@ -625,7 +624,7 @@ module.exports = {
     id: 'darwin',
     init,
     binDirName, portableBaseDir, selfExecutable, selfSpawnArgs,
-    grinderDbCandidates, findGrinderDb, grinderDbCreatePath,
+    installerDbCandidates, findInstallerDb, installerDbCreatePath,
     which, dirSizeBytesCommand, dirSizeHumanCommand, legendaryConfigDir,
     steamLibraryPaths, steamLaunchCommand, extraStore, desktop,
     nativeOsKey, gogdlPlatform, legendaryPlatform,

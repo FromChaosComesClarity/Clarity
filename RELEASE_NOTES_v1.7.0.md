@@ -1,4 +1,4 @@
-Cafe Neurotico 1.7.0
+Clarity 1.7.0
 
 Games that get fixed by name, a category for OpenBOR, and a say in which monitor a game opens on.
 
@@ -10,7 +10,7 @@ Games that get fixed by name, a category for OpenBOR, and a say in which monitor
 
 The list also covers *Resident Evil 2* with Classic REbirth, GOG's Windows builds of *Quake*, *Fallout: New California*, *Realms of Arkania 1 & 2*, *Albion* and *Colony Ship* — each with the actual fault named. It is expected to grow.
 
-**OpenBOR is its own category.** It was filed under Others, which is where things go when there is nowhere better, and that was never the right answer: one engine, one rigid layout, its own way of packaging a game — the same argument that earned PICO-8 a place of its own. It now has a filter in the gallery and a category in CREMA, with its own icon, and existing games move across on their own. They no longer appear under Others as well, so nothing is counted twice.
+**OpenBOR is its own category.** It was filed under Others, which is where things go when there is nowhere better, and that was never the right answer: one engine, one rigid layout, its own way of packaging a game — the same argument that earned PICO-8 a place of its own. It now has a filter in the gallery and a category in Couch, with its own icon, and existing games move across on their own. They no longer appear under Others as well, so nothing is counted twice.
 
 **Which screen games open on.** On a multi-monitor machine, games land on whichever screen the desktop calls primary and most of them offer no way to change it. Control Panel → *Which Screen Games Open On* lists your monitors by name and size — a connector called DP-4 tells nobody anything — and every game opens on the one you pick.
 
@@ -22,8 +22,8 @@ This is KDE only, and the card is hidden entirely on other desktops and on singl
 
 ## Install
 
-1. Download `CafeNeurotico.AppImage` below
-2. `chmod +x CafeNeurotico.AppImage`
+1. Download `Clarity.AppImage` below
+2. `chmod +x Clarity.AppImage`
 3. Run it
 
 Upgrading from any 1.x? Just replace the AppImage. Your `GameManagerConfig` folder — your entire library, artwork, playlists and settings — is untouched.

@@ -1,9 +1,9 @@
 {
-  "name": "cafeneurotico",
+  "name": "clarity",
   "version": "1.12.0",
-  "description": "Cafe Neurotico — unified suite (Manager + GRINDER + CREMA in one AppImage)",
+  "description": "Clarity — unified suite (Manager + Installer + Couch in one AppImage)",
   "main": "main.js",
-  "desktopName": "cafeneurotico.desktop",
+  "desktopName": "clarity.desktop",
   "private": true,
   "workspaces": [
     "packages/*",
@@ -13,7 +13,7 @@
     "fetch-bin": "node scripts/fetch-binaries.mjs",
     "postinstall": "node scripts/fetch-binaries.mjs && electron-builder install-app-deps",
     "start": "electron .",
-    "start:crema": "electron . --crema",
+    "start:couch": "electron . --couch",
     "pack": "electron-builder --dir",
     "predist": "node scripts/fetch-binaries.mjs",
     "dist": "electron-builder --linux AppImage",
@@ -35,18 +35,18 @@
     "electron-builder": "^26.8.1"
   },
   "build": {
-    "appId": "com.cafeneurotico.suite",
-    "productName": "Cafe Neurotico",
+    "appId": "io.github.fromchaoscomesclarity.clarity",
+    "productName": "Clarity Game Manager",
     "linux": {
       "target": "AppImage",
-      "icon": "apps/manager/assets/icons/CNGM.svg",
+      "icon": "apps/manager/assets/icons/Clarity.svg",
       "category": "Game",
-      "executableName": "cafeneurotico",
+      "executableName": "clarity",
       "syncDesktopName": true,
       "desktop": {
         "entry": {
-          "Name": "Cafe Neurotico",
-          "StartupWMClass": "cafeneurotico"
+          "Name": "Clarity",
+          "StartupWMClass": "clarity"
         }
       },
       "extraResources": [
@@ -60,18 +60,18 @@
       ]
     },
     "appImage": {
-      "artifactName": "CafeNeurotico.AppImage"
+      "artifactName": "Clarity.AppImage"
     },
     "files": [
       "main.js",
       "packages/**/*",
       "!**/assets/bin/**",
       "apps/manager/**/*",
-      "apps/grinder/**/*",
-      "apps/crema/**/*",
-      "!apps/crema/assets/wallpapers/**",
+      "apps/installer/**/*",
+      "apps/couch/**/*",
+      "!apps/couch/assets/wallpapers/**",
       "!**/GameManagerConfig/**",
-      "!**/GRINDERConfig/**"
+      "!**/InstallerConfig/**"
     ],
     "mac": {
       "target": [
@@ -89,8 +89,8 @@
         }
       ],
       "category": "public.app-category.games",
-      "icon": "apps/manager/assets/icons/CNGM.icns",
-      "artifactName": "CafeNeurotico-${arch}.${ext}",
+      "icon": "apps/manager/assets/icons/Clarity.icns",
+      "artifactName": "Clarity-${arch}.${ext}",
       "identity": null,
       "extraResources": [
         {
@@ -103,7 +103,7 @@
       ]
     },
     "dmg": {
-      "artifactName": "CafeNeurotico.dmg"
+      "artifactName": "Clarity.dmg"
     }
   }
 }

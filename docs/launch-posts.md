@@ -9,7 +9,7 @@ rather than a bare GitHub link — link-only posts get far less reach.
 
 ## r/linux_gaming — the open letter (USE THIS ONE)
 
-**Title:** Cafe Neurotico — a Linux game manager that puts GOG, Epic, Steam, emulators and source ports on one shelf, plus a gamepad TV mode
+**Title:** Clarity — a Linux game manager that puts GOG, Epic, Steam, emulators and source ports on one shelf, plus a gamepad TV mode
 
 **Body:**
 
@@ -20,7 +20,7 @@ comfortable showing it. It's a very personal project, built little by little to 
 problems and add the features I wanted. But if it's good for me it may be good for someone
 else too, so here it goes.
 
-**First, the thing you should know going in:** Cafe Neurotico is built with heavy AI assistance
+**First, the thing you should know going in:** Clarity is built with heavy AI assistance
 (Claude). The design is mine — every feature, every screen, every decision about how the thing
 should behave. I spec it, I direct it, I debug it, and I test every build on my own machine
 before it ships. But the code itself is written by AI, and you should know that before you
@@ -31,8 +31,8 @@ Now, what it actually is.
 **One AppImage, three faces, one database:**
 
 - **The Manager** — your library on the desktop
-- **GRINDER** — the GOG/Epic download and install engine, running in-process
-- **CREMA** — fullscreen, gamepad-driven, made for a TV
+- **Installer** — the GOG/Epic download and install engine, running in-process
+- **Couch** — fullscreen, gamepad-driven, made for a TV
 
 Favourite a game on the couch and it's favourited on the desktop. Same library, same saves,
 same everything.
@@ -57,7 +57,7 @@ same everything.
 - No account, no telemetry, no cloud. Everything lives in a folder next to the AppImage.
 
 **"Why not Heroic or Lutris?"** Fair question, and honestly — use them, they're great. Heroic in
-particular is excellent, and Cafe Neurotico ships the same underlying downloaders it does, gogdl
+particular is excellent, and Clarity ships the same underlying downloaders it does, gogdl
 and legendary, which I owe its authors a great deal for. I built this because I wanted one place
 for *everything*: the store games and the emulators and the source ports and the weird CD-ROM
 stuff from 1997, plus a gamepad mode for the TV — and I kept bouncing between three applications
@@ -75,7 +75,7 @@ mess like mine, this might suit you.
 **About me:** I'm 47, married, two children, and a full-time job that has nothing to do with
 software development. I'm also a musician and producer. This is what I do in the evenings.
 
-Downloads and source: https://github.com/FromChaosComesClarity/CafeNeurotico
+Downloads and source: https://github.com/FromChaosComesClarity/Clarity
 
 Happy to answer anything. Bug reports very welcome — I'm one person and I only have my own
 hardware to test on.
@@ -87,17 +87,17 @@ JRA
 
 ## r/linux_gaming — shorter alternative (earlier draft)
 
-**Title:** Cafe Neurotico — one app for your GOG, Epic, Steam and emulator library, with a gamepad-first TV mode
+**Title:** Clarity — one app for your GOG, Epic, Steam and emulator library, with a gamepad-first TV mode
 
 **Body:**
 
 I've been building this for about a year and it's finally at the point where I'm comfortable showing it.
 
-Cafe Neurotico is a Linux game library manager. One AppImage, three faces:
+Clarity is a Linux game library manager. One AppImage, three faces:
 
 - **The Manager** — windowed library hub for the desktop
-- **GRINDER** — the GOG/Epic download and install engine, in-process
-- **CREMA** — fullscreen, gamepad-driven, meant for a TV
+- **Installer** — the GOG/Epic download and install engine, in-process
+- **Couch** — fullscreen, gamepad-driven, meant for a TV
 
 All three share one database, so favouriting a game on the couch favourites it on the desktop.
 
@@ -110,7 +110,7 @@ What it does that I couldn't get elsewhere in one place:
 - 93 themes, including twenty retro-OS palettes each with its era typeface.
 - Everything lives in a folder next to the AppImage. No account, no telemetry, no cloud.
 
-It's GPL-3.0. Downloads and source: https://github.com/FromChaosComesClarity/CafeNeurotico
+It's GPL-3.0. Downloads and source: https://github.com/FromChaosComesClarity/Clarity
 
 Happy to answer anything. Bug reports very welcome — I'm one person and I only have my own hardware to test on.
 
@@ -124,7 +124,7 @@ Happy to answer anything. Bug reports very welcome — I'm one person and I only
 
 ## Show HN
 
-**Title:** Show HN: Cafe Neurotico – A Linux game library manager with a gamepad TV mode
+**Title:** Show HN: Clarity – A Linux game library manager with a gamepad TV mode
 
 **Body:**
 
@@ -136,7 +136,7 @@ The parts I found most interesting to build:
 - **GOG's second manifest.** GOG ships `goggame-<id>.info` (how to launch) and `goggame-<id>.script` (what the Galaxy installer does afterwards — registry keys, config files). Downloaders read the first and ignore the second, so some games install perfectly and then fail in ways that look nothing like a packaging bug.
 - **Everything is local.** Artwork and metadata are scraped once and stored on disk. No account, no telemetry.
 
-GPL-3.0: https://github.com/FromChaosComesClarity/CafeNeurotico
+GPL-3.0: https://github.com/FromChaosComesClarity/Clarity
 
 ---
 
@@ -146,13 +146,13 @@ Short and factual — they get a lot of these.
 
 > Hi Liam,
 >
-> I've released Cafe Neurotico, a GPL-3.0 Linux game library manager. It's a single AppImage
+> I've released Clarity, a GPL-3.0 Linux game library manager. It's a single AppImage
 > with three interfaces over one database: a desktop library manager, a built-in GOG/Epic
 > install engine, and a fullscreen gamepad mode for playing on a TV. It handles Steam, GOG,
 > Epic, Flatpak, itch.io, PICO-8 and emulators, scrapes artwork and metadata locally, finds
 > Proton regardless of what the folder is called, and does save-game backup/restore.
 >
-> Repo and downloads: https://github.com/FromChaosComesClarity/CafeNeurotico
+> Repo and downloads: https://github.com/FromChaosComesClarity/Clarity
 > Screenshots are in the README.
 >
 > Thanks for everything you do for Linux gaming.
@@ -162,12 +162,12 @@ Short and factual — they get a lot of these.
 
 ## Mastodon / Bluesky
 
-> Cafe Neurotico 1.7.0 is out — a Linux game library manager that puts GOG, Epic, Steam,
+> Clarity 1.7.0 is out — a Linux game library manager that puts GOG, Epic, Steam,
 > itch.io and emulators on one shelf, and adds a gamepad-first fullscreen mode for the TV.
 >
 > Local artwork, no account, no telemetry. One AppImage. GPL-3.0.
 >
-> https://github.com/FromChaosComesClarity/CafeNeurotico
+> https://github.com/FromChaosComesClarity/Clarity
 >
 > #Linux #LinuxGaming #FOSS #OpenSource
 
@@ -178,7 +178,7 @@ Short and factual — they get a lot of these.
 - [ ] **Fix the README first** — the post sends everyone there. Badge says 1.6.0, the ASCII block
       says 1.3, `package.json` says 1.7.0.
 - [ ] **Get more screenshots.** `docs/screenshots/` has two. Want six to eight: Manager library,
-      CREMA on the TV, a gamepage, the dashboard, two or three contrasting themes.
+      Couch on the TV, a gamepage, the dashboard, two or three contrasting themes.
 - [ ] Read each community's self-promotion rules; some want a flair or a specific day.
 - [ ] Post images natively, not as links.
 - [ ] Be around for the first few hours to answer replies — that's most of what drives reach.

@@ -2,7 +2,7 @@
 
 **Shipped 2026-08-31 in 1.11.0** (app side) and in the plugin repo at `795b28b` (desktop side).
 
-Phase 2 made Cafe Neurotico feel at home *inside its own window* on Omarchy. Phase 3 is about
+Phase 2 made Clarity feel at home *inside its own window* on Omarchy. Phase 3 is about
 the other direction: the desktop reaching into the app. A bar widget that says what is
 installed and what is playing, and a launcher overlay that starts any game without the app
 window being open at all.
@@ -15,18 +15,18 @@ built, installed and unpublished, gated on testing.
 
 ## The contract between them: one file
 
-`~/.config/cafeneurotico/desktop.json`, written by `packages/core/desktop-descriptor.js` on
+`~/.config/clarity/desktop.json`, written by `packages/core/desktop-descriptor.js` on
 **every Manager start**:
 
 ```json
 {
-  "app": "CafeNeurotico",
+  "app": "Clarity",
   "version": "1.11.0",
-  "exec": "/home/you/Games/CNGM/CafeNeurotico.AppImage",
-  "faces": { "manager": [], "crema": ["--crema"], "grinder": ["grinder"] },
-  "baseDir": "/home/you/Games/CNGM",
-  "libraryDb": "/home/you/Games/CNGM/GameManagerConfig/games.db",
-  "grinderDb": "/home/you/.config/grinder/grinder.db",
+  "exec": "/home/you/Games/Clarity/Clarity.AppImage",
+  "faces": { "manager": [], "couch": ["--couch"], "installer": ["installer"] },
+  "baseDir": "/home/you/Games/Clarity",
+  "libraryDb": "/home/you/Games/Clarity/GameManagerConfig/games.db",
+  "installerDb": "/home/you/.config/installer/library.db",
   "updatedAt": 1788145501,
   "actions": [ { "id": "control-panel", "name": "Control Panel" }, … ]
 }
@@ -36,10 +36,10 @@ built, installed and unpublished, gated on testing.
 which binary to run, where its databases are, and what its command palette can do. The two
 alternatives were both wrong:
 
-- **Deriving the paths** — a second consumer computing its own `grinder.db` path is exactly
+- **Deriving the paths** — a second consumer computing its own `library.db` path is exactly
   how the library got orphaned in the two-database split fixed in 1.8.0.
 - **Hardcoding them in the plugin** — works on precisely one machine. The first draft of the
-  bar widget defaulted to `/home/jose/Games/CNGM/…`, and would have shipped that way.
+  bar widget defaulted to `/home/jose/Games/Clarity/…`, and would have shipped that way.
 
 So the app publishes, and everything else reads.
 
@@ -95,19 +95,19 @@ drops rules other tools set this session and only ours come back.
 
 ## The plugin
 
-`~/Documents/DEVELOPMENT/CLAUDE/omarchy-cafeneurotico` —
-`github.com/FromChaosComesClarity/omarchy-cafeneurotico` (private until publishing is
+`~/Documents/DEVELOPMENT/CLAUDE/omarchy-clarity` —
+`github.com/FromChaosComesClarity/omarchy-clarity` (private until publishing is
 unblocked). One plugin, two kinds, `keepLoaded: true`.
 
-- **Bar widget** (`CafeNeurotico.qml`) — installed count, or a controller glyph and the title
-  while a game runs. Left click opens the Manager, middle click CREMA.
+- **Bar widget** (`Clarity.qml`) — installed count, or a controller glyph and the title
+  while a game runs. Left click opens the Manager, middle click Couch.
 - **Launcher overlay** (`Launcher.qml`) — a fuzzy list of games *and* the app's palette
   actions, with a preview pane: cover art, genre · year · store, hours played, a sentence.
   Bound to `SUPER + CTRL + G`.
 - **`scripts/cn-watch`** — the bar's backend, a loop emitting one JSON object per line.
 - **`scripts/cn-index`** — the overlay's backend, one shot, ~335 KB of JSON for 877 games.
 
-**What is playing comes from the compositor, not the app.** Cafe Neurotico launches a game and
+**What is playing comes from the compositor, not the app.** Clarity launches a game and
 gets out of the way, so it is usually *not* running while you play — asking it would give the
 wrong answer for the exact case the widget exists to show. `hyprctl -j clients` matched against
 the same `GAME_CLASS_RE` the app uses.
@@ -149,13 +149,13 @@ scored the same, and an empty query is ordered by recency.
 ## How it reaches a user
 
 The plugin is ~9 KB of QML and two scripts. It has no library, no launcher and no games of its
-own, so **it requires Cafe Neurotico ≥ 1.11.0** — the first release that writes the descriptor.
-Installed without the app it degrades honestly: the bar shows a bare coffee cup with no count,
+own, so **it requires Clarity ≥ 1.11.0** — the first release that writes the descriptor.
+Installed without the app it degrades honestly: the bar shows a bare icon with no count,
 and the launcher says the app has not been run on this machine yet.
 
 ```
-omarchy plugin add https://github.com/FromChaosComesClarity/omarchy-cafeneurotico
-omarchy plugin enable io.github.fromchaoscomesclarity.cafeneurotico
+omarchy plugin add https://github.com/FromChaosComesClarity/omarchy-clarity
+omarchy plugin enable io.github.fromchaoscomesclarity.clarity
 ```
 
 Nothing to configure: the settings exist only as overrides for an unusual install.

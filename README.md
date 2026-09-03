@@ -1,8 +1,8 @@
 <div align="center">
 
-# Cafe Neurotico
+# Clarity
 
-### *the game center for Omarchy*
+### *the game manager for Omarchy*
 
 ![version](https://img.shields.io/badge/version-1.12.0-2fe0d6?style=flat-square)
 ![status](https://img.shields.io/badge/status-Experimental-ff5fa2?style=flat-square)
@@ -22,18 +22,18 @@ daily on the machine it is built on, and rough in places. There is no date on 2.
 | | | |
 |---|---|---|
 | **The Manager** | the desk | Import, organise, scrape, install, launch. Mouse and keyboard. |
-| **CREMA** | the sofa | Fullscreen, gamepad-first, made for a television across a room. |
-| **GRINDER** | underneath | Installs GOG and Epic games headlessly, with no store client. |
+| **Couch** | the sofa | Fullscreen, gamepad-first, made for a television across a room. |
+| **Installer** | underneath | Installs GOG and Epic games headlessly, with no store client. |
 
 ## Get it
 
-Download `CafeNeurotico.AppImage` from [Releases](https://github.com/FromChaosComesClarity/CafeNeurotico/releases),
+Download `Clarity.AppImage` from [Releases](https://github.com/FromChaosComesClarity/Clarity/releases),
 make it executable, run it.
 
 ```bash
-chmod +x CafeNeurotico.AppImage
-./CafeNeurotico.AppImage              # the Manager
-./CafeNeurotico.AppImage --crema      # the couch face
+chmod +x Clarity.AppImage
+./Clarity.AppImage              # the Manager
+./Clarity.AppImage --couch      # the couch face
 ```
 
 Your library, artwork and settings live in a folder beside the AppImage. Portable, backed up by
@@ -41,7 +41,7 @@ copying it, gone when you delete it.
 
 ## On Omarchy
 
-There is a [companion plugin](https://github.com/FromChaosComesClarity/omarchy-cafeneurotico):
+There is a [companion plugin](https://github.com/FromChaosComesClarity/omarchy-clarity):
 a bar widget showing what is installed and what is playing, and a launcher overlay — type a few
 letters, press Enter, play. The app reads your actual Omarchy theme, opens games fullscreen on
 the screen you chose, and stays out of the way otherwise.
@@ -50,7 +50,7 @@ the screen you chose, and stays out of the way otherwise.
 
 ```bash
 npm install
-npm run dist        # → dist/CafeNeurotico.AppImage
+npm run dist        # → dist/Clarity.AppImage
 ```
 
 Needs Node 22. `npm run dist:mac` builds the macOS pair, and only runs on a Mac.
@@ -59,11 +59,11 @@ Needs Node 22. `npm run dist:mac` builds the macOS pair, and only runs on a Mac.
 
 The manual ships **inside the app**, under Menu → Manual. Deeper notes on the port catalogue,
 per-game fixes and the macOS build live in [`docs/`](docs/) and on the
-[website](https://fromchaoscomesclarity.github.io/CafeNeuroticoWebSite/).
+[website](https://fromchaoscomesclarity.github.io/ClarityWebSite/).
 
 ## Support it
 
-- **Ko-fi:** <https://ko-fi.com/cafeneurotico>
+- **Ko-fi:** <https://ko-fi.com/clarity>
 - **PIX (Brazil):** `b734a9e2-e479-42f9-abd6-c88d1b8b880e`
 
 Starring the repo and reporting what breaks counts too.

@@ -1,4 +1,4 @@
-Cafe Neurotico 1.1.1
+Clarity 1.1.1
 
 A maintenance release: two playlist lists that quietly hid their contents, and a new default look.
 
@@ -16,16 +16,16 @@ Everything else from 1.1 is unchanged — same database, same 92 themes, same th
 
 ## Install
 
-1. Download `CafeNeurotico.AppImage` below
-2. `chmod +x CafeNeurotico.AppImage`
+1. Download `Clarity.AppImage` below
+2. `chmod +x Clarity.AppImage`
 3. Run it
 
 Upgrading from 1.1.0 or 1.0.0? Just replace the AppImage. Your `GameManagerConfig` folder — your entire library — is untouched.
 
 ```sh
-./CafeNeurotico.AppImage            # The Manager — the desktop library hub
-./CafeNeurotico.AppImage --crema    # CREMA — fullscreen, gamepad-first
-./CafeNeurotico.AppImage grinder    # GRINDER — the GOG/Epic engine
+./Clarity.AppImage            # The Manager — the desktop library hub
+./Clarity.AppImage --couch    # Couch — fullscreen, gamepad-first
+./Clarity.AppImage installer    # Installer — the GOG/Epic engine
 ```
 
 ## Notes
@@ -33,11 +33,11 @@ Upgrading from 1.1.0 or 1.0.0? Just replace the AppImage. Your `GameManagerConfi
 - Linux only. The suite ships as a single AppImage; there are no Windows or macOS builds.
 - The About dialog now reads 1.1.1.
 
-## Tip the barista
+## Spread the good vibes
 
-If Cafe Neurotico organized your gaming life, consider buying me a coffee — it keeps the pot warm. *"more caffeine is `more good`."*
+If Clarity got your gaming life together, consider sending a little support my way — it keeps the good vibes flowing. *"stay positive and love your life."*
 
-- **Ko-fi (Intl):** https://ko-fi.com/cafeneurotico
+- **Ko-fi (Intl):** https://ko-fi.com/clarity
 - **PIX (Brazil):** `b734a9e2-e479-42f9-abd6-c88d1b8b880e`
 
 Built by J.R.A. · GPL-3.0-or-later

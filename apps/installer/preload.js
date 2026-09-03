@@ -28,7 +28,7 @@ contextBridge.exposeInMainWorld('api', {
     setSetting:    (k, v) => ipcRenderer.invoke('set-setting', k, v),
     getInstallLog: ()     => ipcRenderer.invoke('get-install-log'),
     saveInstallLog:(log)  => ipcRenderer.invoke('save-install-log', log),
-    getCngmTheme:  ()     => ipcRenderer.invoke('get-cngm-theme'),
+    getClarityTheme:  ()     => ipcRenderer.invoke('get-clarity-theme'),
     getUiFont:     ()     => ipcRenderer.invoke('get-ui-font'),
 
     // Disk size (installed game)
@@ -98,8 +98,8 @@ contextBridge.exposeInMainWorld('api', {
     onCliStorage:         (cb) => ipcRenderer.on('cli-storage', () => cb()),
 
     // Destructive actions
-    resetGrinder:         () => ipcRenderer.invoke('reset-grinder'),
-    deleteAllGrinderData: () => ipcRenderer.invoke('delete-all-grinder-data'),
+    resetInstaller:         () => ipcRenderer.invoke('reset-installer'),
+    deleteAllInstallerData: () => ipcRenderer.invoke('delete-all-installer-data'),
 
     // Play tasks + run-exe
     getPlayTasks:   (id)  => ipcRenderer.invoke('get-play-tasks', id),

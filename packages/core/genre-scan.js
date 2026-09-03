@@ -1,6 +1,6 @@
 'use strict';
 /*
- * @cafeneurotico/core — fill every game's genres from the best source available.
+ * @clarity/core — fill every game's genres from the best source available.
  *
  * Three passes, cheapest-and-best first, each one only handling what the previous
  * could not:

@@ -1,6 +1,6 @@
 'use strict';
 /*
- * @cafeneurotico/core — "which screen games open on", for Hyprland.
+ * @clarity/core — "which screen games open on", for Hyprland.
  *
  * The same feature as kwin-display.js and deliberately the same interface, so the
  * Control Panel card that already exists starts working here without a line of UI

@@ -1,6 +1,6 @@
 'use strict';
 /*
- * @cafeneurotico/core — IsThereAnyDeal (ITAD) API v2 wrapper for the Wishlist
+ * @clarity/core — IsThereAnyDeal (ITAD) API v2 wrapper for the Wishlist
  * deals feature (Phase 2). 100% network and 100% OPT-IN: nothing here runs
  * unless the user has saved an ITAD API key (settings key `itad_api_key`).
  *

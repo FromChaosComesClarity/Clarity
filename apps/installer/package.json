@@ -1,0 +1,7 @@
+{
+  "name": "@clarity/installer",
+  "version": "0.1.0",
+  "description": "Installer face — GOG/Epic install engine + advanced launch configurator",
+  "private": true,
+  "main": "main.js"
+}

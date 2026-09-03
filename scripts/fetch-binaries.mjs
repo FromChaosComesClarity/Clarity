@@ -39,7 +39,7 @@ const REQUIRED = ['ffmpeg', 'ffprobe', 'yt-dlp', 'gogdl', 'legendary', 'comet'];
 // they live: point this at the upstream build and a clean checkout would quietly lose all of
 // it. Rebuild from the fork and publish a new binaries-vN before bumping. On macOS, PyInstaller
 // cannot cross-compile, so that half has to be built on a Mac:
-//   python3 -m PyInstaller --onefile --name gogdl grinder_entry.py --clean --noconfirm
+//   python3 -m PyInstaller --onefile --name gogdl installer_entry.py --clean --noconfirm
 // (see docs/mac-port-handoff.md, Phase B.6). Shipping upstream's darwin build instead is NOT a
 // stopgap: 1.3.0 picked up our CDN rotation but still verifies the chunk checksum outside the
 // retry loop, still blocks on the telemetry queue, and still recurses without a limit in
@@ -50,11 +50,11 @@ const REQUIRED = ['ffmpeg', 'ffprobe', 'yt-dlp', 'gogdl', 'legendary', 'comet'];
 // yt-dlp_macos — rename them when building that tarball rather than branching here.
 const SOURCES = {
     linux: {
-        url:    'https://github.com/FromChaosComesClarity/CafeNeurotico/releases/download/binaries-v2/cafeneurotico-binaries-v2.tar.gz',
+        url:    'https://github.com/FromChaosComesClarity/Clarity/releases/download/binaries-v2/clarity-binaries-v2.tar.gz',
         sha256: '876eecaeda3228ee24288c1fae0b87b8f2ed9b1775b1ce48c2d5ad47cc93b3bf',
     },
     darwin: {
-        url:    'https://github.com/FromChaosComesClarity/CafeNeurotico/releases/download/binaries-mac-v2/cafeneurotico-binaries-mac-v2.tar.gz',
+        url:    'https://github.com/FromChaosComesClarity/Clarity/releases/download/binaries-mac-v2/clarity-binaries-mac-v2.tar.gz',
         sha256: '892a251259ba6474cfee8860c26068430bbb27b24aba28d82e6447b5e06559c3',
     },
 };
@@ -91,7 +91,7 @@ function main() {
 
     console.log(`• fetching helper binaries for ${host.id} …`);
     mkdirSync(BIN_DIR, { recursive: true });
-    const tmp = join(tmpdir(), `cafeneurotico-binaries-${host.id}.tar.gz`);
+    const tmp = join(tmpdir(), `clarity-binaries-${host.id}.tar.gz`);
 
     try {
         execFileSync('curl', ['-fL', '--retry', '3', '-o', tmp, source.url], { stdio: 'inherit' });

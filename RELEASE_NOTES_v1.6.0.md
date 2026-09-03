@@ -1,4 +1,4 @@
-Cafe Neurotico 1.6.0
+Clarity 1.6.0
 
 Fan games, source ports and mods now install like anything else — and the game data comes out of the library you already have.
 
@@ -40,8 +40,8 @@ Both now hand the game its own DLL with Wine's behind it as a fallback, which ma
 
 ## Install
 
-1. Download `CafeNeurotico.AppImage` below
-2. `chmod +x CafeNeurotico.AppImage`
+1. Download `Clarity.AppImage` below
+2. `chmod +x Clarity.AppImage`
 3. Run it
 
 Upgrading from any 1.x? Just replace the AppImage. Your `GameManagerConfig` folder — your entire library, artwork, playlists and settings — is untouched.

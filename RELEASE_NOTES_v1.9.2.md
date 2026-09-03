@@ -1,4 +1,4 @@
-Cafe Neurotico 1.9.2
+Clarity 1.9.2
 
 GOG installs were broken on every Linux distribution except Fedora's family — in every release so far. That is fixed, along with a library that lied about what was installed. Omarchy gets first-class support.
 
@@ -28,7 +28,7 @@ The suite now recognises [Omarchy](https://omarchy.org/) and settles into it.
 
 - **It wears your Omarchy theme** — your actual palette, read from the theme you have set, not a lookalike chosen from the app's own 93. Change your theme and the app follows, without a restart.
 - **It tells you what is missing.** Omarchy ships as a developer desktop, so a fresh install has almost none of the gaming stack. The app checks what it needs, explains what each thing is for, and installs it — through a terminal you can watch, never a hidden password prompt. Where Omarchy has its own installer, that one is used: its Steam installer also sets up the graphics drivers chosen for your card.
-- **Windows that behave.** GRINDER, sign-in windows and games open floating instead of being tiled into whatever slot is free a moment before they go fullscreen.
+- **Windows that behave.** Installer, sign-in windows and games open floating instead of being tiled into whatever slot is free a moment before they go fullscreen.
 - **The screen will not lock mid-game**, and the power profile switches for the session and is put back afterwards.
 - **Compact window chrome** — the title bar goes and its buttons move into the side rail, since a tiling compositor already owns the window controls.
 - **A system-tuning report**: the kernel settings a gaming distribution changes, what each costs when it is wrong, and the command to fix it. It reports; it does not touch them.
@@ -45,10 +45,10 @@ The suite now recognises [Omarchy](https://omarchy.org/) and settles into it.
 ## Install
 
 **Linux:**
-1. Download `CafeNeurotico.AppImage` below
-2. `chmod +x CafeNeurotico.AppImage`
+1. Download `Clarity.AppImage` below
+2. `chmod +x Clarity.AppImage`
 3. Run it
 
-**macOS:** this release is Linux-only. The [1.9.0 `.dmg`](https://github.com/FromChaosComesClarity/CafeNeurotico/releases/tag/v1.9.0) remains the current macOS build, with Windows-game support through CrossOver. See the [macOS guide](docs/macos-guide.md).
+**macOS:** this release is Linux-only. The [1.9.0 `.dmg`](https://github.com/FromChaosComesClarity/Clarity/releases/tag/v1.9.0) remains the current macOS build, with Windows-game support through CrossOver. See the [macOS guide](docs/macos-guide.md).
 
 Upgrading from any 1.x? Just replace the AppImage. Your library, artwork, playlists and settings are untouched — and on first start the app will correct install states that were carried over from another machine.

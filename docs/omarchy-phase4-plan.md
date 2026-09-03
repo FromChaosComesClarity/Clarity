@@ -1,10 +1,10 @@
-# Phase 4 — CREMA gets simpler, and the project gets a face
+# Phase 4 — Couch gets simpler, and the project gets a face
 
-**Opened 2026-08-31**, from a single instruction: cut management out of CREMA, make its
+**Opened 2026-08-31**, from a single instruction: cut management out of Couch, make its
 installs seamless, redesign the jukebox, give the bar widget a menu, refresh the public face
 (website, README, manual), and publish the plugin when testing says so.
 
-The through-line: **the Manager manages, CREMA plays.** Everything below either enforces that
+The through-line: **the Manager manages, Couch plays.** Everything below either enforces that
 split or shows the result to someone who has never seen the app.
 
 ---
@@ -12,14 +12,14 @@ split or shows the result to someone who has never seen the app.
 ## The gate — LIFTED 2026-08-31
 
 W1 came back the same day. Jose took the recommendations as written and settled the two open
-calls: **Add to Playlist — keep. Uninstall via GRINDER — cut.** W2 is unblocked, and the table
+calls: **Add to Playlist — keep. Uninstall via Installer — cut.** W2 is unblocked, and the table
 below is now the specification for it rather than a proposal.
 
 ---
 
-## W1 — CREMA feature inventory (review, no code)
+## W1 — Couch feature inventory (review, no code)
 
-Every user-reachable feature in CREMA today, with a recommendation. CREMA is 4,886 lines of
+Every user-reachable feature in Couch today, with a recommendation. Couch is 4,886 lines of
 renderer, 1,136 of main, 1,047 of markup.
 
 ### System menu (START) — 20 items in 5 sections
@@ -30,7 +30,7 @@ renderer, 1,136 of main, 1,047 of markup.
 | Audio | Sound Settings | **keep** | Volume and BGM belong where you listen |
 | Appearance | Color Scheme | **keep** | 93 themes; changing one is a couch decision |
 | Appearance | Interface Font | **keep** | Same |
-| Appearance | Home Screen | **keep** | Which face CREMA opens on |
+| Appearance | Home Screen | **keep** | Which face Couch opens on |
 | Appearance | Start Screen | **keep** | Same |
 | Appearance | Browse Mode | **keep** | How you move through the library |
 | Appearance | Gamepage Style | **keep** | Same |
@@ -57,15 +57,15 @@ renderer, 1,136 of main, 1,047 of markup.
 | Add to Playlist | **KEEP** | Jose's call. Assigning a game from the couch is a taste decision, like the flags above it |
 | Add Launch Command | **cut** | Typing a command line on a gamepad |
 | Rename | **cut** | Editing library data |
-| Scraping | **cut** | The heaviest management feature in CREMA |
+| Scraping | **cut** | The heaviest management feature in Couch |
 | View Achievements | **keep** | Read-only, and it belongs beside the game |
-| Install via GRINDER | **keep, rebuild** | See W3 — this is the seam that needs fixing |
-| Uninstall via GRINDER | **CUT** | Jose's call. Deleting an install is management, and doing it by accident from a gamepad is the failure that matters |
+| Install via Installer | **keep, rebuild** | See W3 — this is the seam that needs fixing |
+| Uninstall via Installer | **CUT** | Jose's call. Deleting an install is management, and doing it by accident from a gamepad is the failure that matters |
 
 ### Known defect to fix while in here
 
-`apps/crema/renderer.js:4726` — the install dialog swallows a null size into "Size info
-unavailable". Deliberately unfixed until now because CREMA exposes no auth-status IPC and must
+`apps/couch/renderer.js:4726` — the install dialog swallows a null size into "Size info
+unavailable". Deliberately unfixed until now because Couch exposes no auth-status IPC and must
 never offer a store login; the honest fix is a "sign in from The Manager" message plus two new
 handlers. **This is the oldest open item in the project.**
 
@@ -87,8 +87,8 @@ CSS comments). Delete by structure, then check brace *and* comment balance, then
 
 The ask: "the installs should be as seamless as possible."
 
-Today CREMA's install path opens a confirm dialog, hands to GRINDER's headless installer, and
-polls `grinder-progress.json`. The failure modes are the interesting part: no auth (the null
+Today Couch's install path opens a confirm dialog, hands to Installer's headless installer, and
+polls `installer-progress.json`. The failure modes are the interesting part: no auth (the null
 above), not enough disk, a store that needs a browser login. On a gamepad, in another room,
 each of those is a dead end.
 
@@ -109,7 +109,7 @@ would have been if it had been written for a TV.
 
 ## W5 — A menu for the bar widget
 
-One click from the bar: the Manager · CREMA · the launcher overlay · Manage Storage, plus what
+One click from the bar: the Manager · Couch · the launcher overlay · Manage Storage, plus what
 is playing when something is. Modelled on the shell's own popup surfaces, themed from the same
 tokens as the launcher.
 
@@ -117,7 +117,7 @@ tokens as the launcher.
 
 Currently **offline on purpose** (Pages disabled, nothing deleted) and three releases behind.
 
-- The cliamp.stream identity, and **drop the coffee-shop theme** for this phase
+- The cliamp.stream identity, and **drop the old themed styling** for this phase
 - The message: the app is changing, and it has found a home in Omarchy
 - A slideshow from `/home/jose/Pictures/CN_Omarchy Screenshots` — **106 shots, 78 MB** — a
   selected handful converted to webp
@@ -136,11 +136,11 @@ mentions left in the repository**, and they need Jose's call on which address re
 730 lines, well structured, and the outline is right. Recommendation: **revise, do not
 rewrite** — a rewrite discards correct prose to re-derive the same outline.
 
-What is stale, measured: **GRINDER appears 18 times** and its GUI no longer exists · "sidebar"
+What is stale, measured: **Installer appears 18 times** and its GUI no longer exists · "sidebar"
 and the layout system are gone · the display picker is described as KDE-only · **Omarchy
 appears zero times** despite being where the app now lives.
 
-⚠️ **This goes last.** CREMA's chapters describe features W2 is about to delete.
+⚠️ **This goes last.** Couch's chapters describe features W2 is about to delete.
 
 ## W10 — First run, without the app
 
@@ -182,12 +182,12 @@ unblocked: flip the repo public, add `preview.png`, submit to Omarchy's plugin m
   finished cross-machine rename handoffs (621 lines) deleted; and `package.json`'s author —
   which ships inside every AppImage — corrected to `J.R.A.`. Only the README's two email
   mentions remain, pending W7.
-- **`github.com/FromChaosComesClarity/omarchy-cafeneurotico`** created **private**, default
+- **`github.com/FromChaosComesClarity/omarchy-clarity`** created **private**, default
   branch `main`, three commits pushed. One command makes it public when testing says so.
 
 ## Order
 
 W1 gates W2. W8 follows W2 and W4. Everything else is independent.
 
-With W1 closed: **W2 → W3 → W4** is the CREMA block and is ready to start. **W5 → W6 → W7**
+With W1 closed: **W2 → W3 → W4** is the Couch block and is ready to start. **W5 → W6 → W7**
 are visible and independent. **W8** last. **W10** belongs with **W9**, whenever Jose says.

@@ -6,10 +6,10 @@ updated as items land. Everything Omarchy-specific must gate itself off on other
 | # | Item | State |
 |---|---|---|
 |✅1| **One-click wined3d.** The NO_VULKAN dialog offers to set `PROTON_USE_WINED3D=1` for the game itself instead of telling the user to add it by hand | done |
-|✅2| **GRINDER floats over CN.** Under Hyprland it tiles, which is wrong for a transient window — it should float and stay on top | done |
-|✅3| **Hold off idle/lock while a game runs.** Omarchy locks on idle; a gamepad-only CREMA session or a long cutscene gets locked out | done |
+|✅2| **Installer floats over CN.** Under Hyprland it tiles, which is wrong for a transient window — it should float and stay on top | done |
+|✅3| **Hold off idle/lock while a game runs.** Omarchy locks on idle; a gamepad-only Couch session or a long cutscene gets locked out | done |
 |✅4| **Power profile while playing.** Switch to performance for the session, restore afterwards | done |
-|✅5| **Compact chrome.** Hide the titlebar entirely on Omarchy, move the Support/CREMA pills into the icon rail. User-toggleable | done |
+|✅5| **Compact chrome.** Hide the titlebar entirely on Omarchy, move the Support/Couch pills into the icon rail. User-toggleable | done |
 |✅6| **Responsive shell.** Degrade the layout as the tile narrows — rail to icons-only, filter row wraps, split pane to single pane | done |
 |✅7| **Streamline the welcome screen.** First run needs one thing: get games on the shelf | done |
 |✅8| **Match Hyprland's geometry.** Read `rounding` from `~/.config/hypr/looknfeel.lua` and mirror it in panel radius | done |
@@ -24,7 +24,7 @@ updated as items land. Everything Omarchy-specific must gate itself off on other
 ## Notes worth keeping
 
 ⚠️ **The titlebar carries more than window controls.** `#titlebar` holds the brand, the amber
-Support pill (`#support-cta`, opens the website) and the CREMA call-to-action (`#crema-cta`).
+Support pill (`#support-cta`, opens the website) and the Couch call-to-action (`#couch-cta`).
 Hiding the bar means those need a home, not deletion — hence the rail.
 
 ⚠️ **macOS already hides the window controls** (`body.platform-darwin .titlebar-controls`), so the
@@ -33,18 +33,18 @@ under a tiling WM anyway.
 
 ## What each one turned into
 
-**1 — one-click wined3d.** `grinder-set-env-var` merges a single variable into the game's own
+**1 — one-click wined3d.** `installer-set-env-var` merges a single variable into the game's own
 `custom_env`, so the dialog that diagnoses the failure can also fix it. ⚠️ Merges rather than
 overwrites; a game may already carry variables that matter.
 
-**2 — GRINDER floats.** ⚠️ **`hyprctl keyword` does not work on Omarchy 4 at all.** Hyprland 0.56
+**2 — Installer floats.** ⚠️ **`hyprctl keyword` does not work on Omarchy 4 at all.** Hyprland 0.56
 with Omarchy's Lua config runs a non-legacy parser and answers *"keyword can't work with
 non-legacy parsers. Use eval."* — **on stdout, with exit status 0**, so a naive success check
 counts the refusal as a success. The runtime API is `hyprctl eval` with Omarchy's Lua helper:
 `o.window({ class = "...", title = "..." }, { float = true })`. The keyword form is kept as a
 fallback for plain Arch + Hyprland, and both are now checked for a literal `ok`.
-⚠️ All three faces ship as one Electron app and share the app id `cafeneurotico`, so rules match
-on **title**, which is the only thing that tells GRINDER from the Manager from CREMA.
+⚠️ All three faces ship as one Electron app and share the app id `clarity`, so rules match
+on **title**, which is the only thing that tells Installer from the Manager from Couch.
 
 **3 — idle inhibit.** `powerSaveBlocker` held for exactly as long as a game runs, via a new
 `onGameSession` hook on the engine's single spawn choke point. ⚠️ An inhibitor rather than

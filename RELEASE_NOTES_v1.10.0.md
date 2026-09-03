@@ -1,4 +1,4 @@
-# Cafe Neurotico 1.10.0 — "At home on Omarchy"
+# Clarity 1.10.0 — "At home on Omarchy"
 
 **Experimental, Linux only.** The 1.9.0 `.dmg` remains the current macOS build.
 
@@ -36,7 +36,7 @@ map now reports itself instead of failing quietly.
 The settings search is gone. A search box over your own settings was the tell that the
 settings had no shape.
 
-## GRINDER has no window
+## Installer has no window
 
 Everything its window did now lives in the Manager:
 
@@ -46,7 +46,7 @@ Everything its window did now lives in the Manager:
 - **Manage Storage** — installed games by size on disk, biggest first, with a total.
 - **Refresh GOG / Epic** now syncs in place instead of opening a second window.
 
-⚠️ `grinder://launch/…` and the `grinder` CLI are unchanged. Headless means no window, not no
+⚠️ `installer://launch/…` and the `installer` CLI are unchanged. Headless means no window, not no
 entry point — every installed game's launch command depends on that scheme.
 
 ## First boot reads the machine before it asks anything
@@ -91,5 +91,5 @@ in which case the fields come pre-filled.
 - **Experimental**, and Linux only. macOS stays on the 1.9.0 `.dmg`.
 - Built on Omarchy 4 and verified by running it: every wave was packaged into the AppImage and
   launched before being committed.
-- If you had a layout, a scale, or a GRINDER window habit, those are the three things that
+- If you had a layout, a scale, or a Installer window habit, those are the three things that
   will feel different.

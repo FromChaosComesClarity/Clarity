@@ -1,4 +1,4 @@
-# Phase 2 — Cafe Neurotico at home on Omarchy
+# Phase 2 — Clarity at home on Omarchy
 
 **Status: proposal. Nothing implemented.** Drafted 2026-08-29 on Omarchy at `experimental`.
 Phase 1 is `docs/omarchy-tasklist.md` (8/8 done) and its user-facing write-up is
@@ -71,39 +71,39 @@ No compatibility shim: a one-time migration maps each removed layout to its near
 - **`renderer.js` at 12,413 lines** should be split. Not cosmetic: it is the single biggest reason
   a change anywhere risks something everywhere.
 
-### 2. GRINDER goes headless
+### 2. Installer goes headless
 
-**This is 90% done already and nobody wrote it down.** `packages/core/grinder-engine.js` is 2,080
+**This is 90% done already and nobody wrote it down.** `packages/core/installer-engine.js` is 2,080
 lines and runs *in-process* inside the Manager. Headless GOG/Epic sign-in already exists — there
-is a comment at `main.js:677` saying "No GRINDER window ever". Launching, installing, DLC, manuals,
+is a comment at `main.js:677` saying "No Installer window ever". Launching, installing, DLC, manuals,
 disk space, redists, the GOG registry injection: all in-process.
 
 **Exactly four GUI spawn points remain**, all in `apps/manager/main.js`:
 
 | Line | Call | What it opens for |
 |---|---|---|
-| 112 | `spawnGrinder(['setup', id])` | per-game Proton/prefix setup |
-| 2860 | `spawnGrinder(args)` | `search <name>` / `sync-*` |
-| 2866 | `spawnGrinder(['storage'])` | Manage Storage |
-| 3642, 3660 | `spawnGrinder(['launch', id])` | fallback only when `grinder.db` is missing |
+| 112 | `spawnInstaller(['setup', id])` | per-game Proton/prefix setup |
+| 2860 | `spawnInstaller(args)` | `search <name>` / `sync-*` |
+| 2866 | `spawnInstaller(['storage'])` | Manage Storage |
+| 3642, 3660 | `spawnInstaller(['launch', id])` | fallback only when `library.db` is missing |
 
-GRINDER's whole GUI is **two screens** (`#view-games`, `#view-settings`). Absorbing four entry
+Installer's whole GUI is **two screens** (`#view-games`, `#view-settings`). Absorbing four entry
 points into the Manager retires an entire face.
 
 **What this buys beyond tidiness:**
-- ⚠️ It kills the **two-`grinder.db` split** recorded in the technical memory — the bug where a
+- ⚠️ It kills the **two-`library.db` split** recorded in the technical memory — the bug where a
   face computing its own db path orphans the entire library. One process, one path, gone.
-- It removes the Hyprland float rule for GRINDER, and with it the title-matching workaround
-  needed because all three faces share the app id `cafeneurotico`.
+- It removes the Hyprland float rule for Installer, and with it the title-matching workaround
+  needed because all three faces share the app id `clarity`.
 - One less window for a tiling WM to place.
 
-✅ **DECIDED 2026-08-29 — headless is total.** Jose: *"Let's make grinder totally headless, let's
-incorporate its features inside CN."* No debugging GUI is kept; the two GRINDER screens go.
+✅ **DECIDED 2026-08-29 — headless is total.** Jose: *"Let's make installer totally headless, let's
+incorporate its features inside CN."* No debugging GUI is kept; the two Installer screens go.
 
-**⚠️ Two things that must not break.** The `grinder://launch/…` scheme is written into
+**⚠️ Two things that must not break.** The `installer://launch/…` scheme is written into
 `LaunchCommand` for every installed game and has already survived two migrations (the
 `heroic://` rename and the Flatpak-wrapper unwrap, `main.js:315–330`). Phase 2 must **keep the
-scheme** and keep the `grinder` CLI subcommands — desktop entries and the Clock's `--game=`
+scheme** and keep the `installer` CLI subcommands — desktop entries and the Clock's `--game=`
 handoff depend on them. Headless means *no window*, not *no entry point*.
 
 ### 3. A dashboard that knows what kind of games you have — ⏸️ DEFERRED
@@ -119,7 +119,7 @@ Today's 24 widgets are library-wide aggregates. Shelves per kind of game would b
 smaller, because they replace most of the 24 with one parametric component.
 
 **The good news: it needs no schema change.** `_registerCustomInstall()` (`main.js:1004`) writes
-every custom install as `cn_<recipeId>` into `GrinderGameId`, and each recipe carries a `kind`:
+every custom install as `cn_<recipeId>` into `InstallerGameId`, and each recipe carries a `kind`:
 `Source port`, `Mod`, `Fan game`, `OpenBOR`, `Custom engine`. So the recipe identity is already
 recoverable by prefix. A **Source Ports** shelf is a join away.
 
@@ -177,7 +177,7 @@ become destinations, which is what you asked for.
 ### A. A command palette (my strongest suggestion)
 
 Omarchy is keyboard-driven. Hyprland users launch everything from a fuzzy menu — `omarchy-menu`,
-walker, `SUPER`-something. Cafe Neurotico is mouse-driven: to play a game you find it in a grid
+walker, `SUPER`-something. Clarity is mouse-driven: to play a game you find it in a grid
 and click it.
 
 **One `Ctrl+K` palette that fuzzy-matches games *and* actions** ("install", "sync GOG", "theme
@@ -231,7 +231,7 @@ A plugin is a **git repo** containing `manifest.json` plus QML entry points, ins
 `omarchy plugin add <git-url>`. Kinds are `bar-widget`, `overlay`, `panel`, `service`, `bar`.
 
 **This is the "feels at home" move, and it costs a small repo rather than a packaging pipeline.**
-A `cafeneurotico` bar-widget showing what is installed/playing, with an overlay that fuzzy-launches
+A `clarity` bar-widget showing what is installed/playing, with an overlay that fuzzy-launches
 the library, would put the app in the same surface as the rest of the user's desktop — and it is
 entirely in your control, no submission process, no gatekeeper.
 
@@ -264,7 +264,7 @@ recommendation is **not** to replace it.
    repo. This is where the 156 MB goes away and where `omarchy update` starts working.
 3. **Treat the AUR as optional and low-priority**, not the goal.
 4. **Build the Omarchy plugin** — the highest "feels at home" return of anything in this document,
-   and the only item that puts Cafe Neurotico into the desktop's own furniture.
+   and the only item that puts Clarity into the desktop's own furniture.
 
 ✅ **DECIDED 2026-08-29 — keep bundling `ffmpeg`/`ffprobe`/`yt-dlp`.** Jose: *"keep bundling
 ffmpeg/yt-dlp."* Trailers never degrade, on any distro, and the universal channel stays genuinely
@@ -326,7 +326,7 @@ Updated after the decisions of 2026-08-29.
 |---|---|---|
 | **2.0** | **Layout cull** — 24 → 8, no preservation, one-time migration | ✅ decided; do first, it shrinks everything after it |
 | **2A** | Settings → left column + 7 pages; kill the search box; kill the three `.tools-section` display resets; Source Ports becomes a page; fix `Store='Others'` | ✅ decided |
-| **2B** | **GRINDER fully headless** — absorb all 4 spawn points, delete both GUI screens, keep the `grinder://` scheme and CLI | ✅ decided, total |
+| **2B** | **Installer fully headless** — absorb all 4 spawn points, delete both GUI screens, keep the `installer://` scheme and CLI | ✅ decided, total |
 | **2C** | ~~Dashboard shelves~~ | ⏸️ deferred by Jose |
 | **2D** | First boot: detect → propose → done | proposed |
 | **2E** | Command palette · Hyprland monitor rule · **Omarchy plugin** · PKGBUILD | proposed; plugin is the standout |
@@ -390,14 +390,14 @@ property Process backend: Process {
 }
 ```
 
-So this is **not** "rewrite Cafe Neurotico in QML". It is a thin QML shell over a backend process
+So this is **not** "rewrite Clarity in QML". It is a thin QML shell over a backend process
 we already know how to write. That materially lowers the risk I flagged earlier.
 
 ### Proposed shape
 
 | Field | Value |
 |---|---|
-| id | `io.github.fromchaoscomesclarity.cafeneurotico` |
+| id | `io.github.fromchaoscomesclarity.clarity` |
 | kinds | `bar-widget` + `overlay` |
 | barWidget | what is installed / what is running |
 | overlay | fuzzy-launch the library — the command palette, on the desktop |
@@ -406,7 +406,7 @@ we already know how to write. That materially lowers the risk I flagged earlier.
 
 Three options, in order of preference:
 
-1. **A state file for the bar widget.** Cafe Neurotico already has a single spawn choke point (the
+1. **A state file for the bar widget.** Clarity already has a single spawn choke point (the
    `onGameSession` hook added for the idle inhibitor in Phase 1). Writing a tiny JSON file there —
    what is running, since when — makes the bar widget nearly free: no process, no polling.
 2. **`python3` + `sqlite3` for the overlay.** Python 3 is present on Omarchy and its `sqlite3` is
@@ -415,12 +415,12 @@ Three options, in order of preference:
 3. **Spawning the AppImage** as a backend — rejected. Booting a full Electron app to populate a bar
    widget is the wrong weight.
 
-⚠️ **The trap: the plugin must not compute its own database path.** The two-`grinder.db` split in
+⚠️ **The trap: the plugin must not compute its own database path.** The two-`library.db` split in
 [[project-technical]] happened precisely because a second consumer derived its own path and
 orphaned the library. A third consumer doing the same would repeat it. The plugin reads the path
 from the same place the app does, or asks the app for it — it never guesses.
 
-⚠️ Launching a game from the overlay should go through the **existing** `grinder://launch/<id>`
+⚠️ Launching a game from the overlay should go through the **existing** `installer://launch/<id>`
 scheme and CLI, not a new entry point. That is the interface 2B is explicitly preserving.
 
 ### Effort

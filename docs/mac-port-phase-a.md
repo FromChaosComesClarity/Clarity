@@ -24,7 +24,7 @@ One repo, one branch, two hosts. After Phase A:
 - Nothing outside `packages/core/platform/linux.js` mentions Proton, umu, wine,
   Flatpak, `assets/bin/linux`, `~/.steam`, `.desktop`, `xdg-open` or `wmctrl`.
 - `packages/core/platform/darwin.js` can be written in Phase B without touching a
-  single line of `grinder-engine.js`, the three `main.js` files, or any renderer.
+  single line of `installer-engine.js`, the three `main.js` files, or any renderer.
 
 ## Non-goals
 
@@ -70,10 +70,10 @@ module.exports = {
   binDirName,                       // 'linux' → assets/bin/<binDirName>
   portableBaseDir(app),             // APPIMAGE dir | execPath dir | __dirname
   managerDataDir(app),              // where GameManagerConfig lives
-  grinderConfigDir(app),
-  grinderDbCandidates(baseDir),     // the 3-path list, currently duplicated 8×
+  installerConfigDir(app),
+  installerDbCandidates(baseDir),     // the 3-path list, currently duplicated 8×
   selfExecutable(),                 // process.env.APPIMAGE || process.execPath
-  selfSpawnArgs(face, subArgs),     // ['grinder', …] packaged vs [repoRoot, 'grinder', …] dev
+  selfSpawnArgs(face, subArgs),     // ['installer', …] packaged vs [repoRoot, 'installer', …] dev
 
   // ── 2. Windows-game runtime ───────────────────────────────────────────
   runtime: {
@@ -133,7 +133,7 @@ module.exports = {
 Create `packages/core/platform/{index.js,linux.js}`. `linux.js` starts empty and grows as
 A2–A6 move code into it. Nothing imports it yet.
 
-### A2 — `grinder-engine.js` (the big one)
+### A2 — `installer-engine.js` (the big one)
 
 2305 lines today; roughly 600 move out. **Copy the bodies verbatim** into `linux.js` — these
 functions carry a lot of hard-won bug fixes and none of them should be re-typed.
@@ -194,23 +194,23 @@ platform-selection work.
 ### A3 — Path resolution in the three `main.js`
 
 - `baseDir` from `process.env.APPIMAGE` → `platform.portableBaseDir(app)`
-  (`manager/main.js:63–69`, `crema/main.js:61–68`, `grinder/main.js:37`).
+  (`manager/main.js:63–69`, `couch/main.js:61–68`, `installer/main.js:37`).
 - `assets/bin/linux` → `assets/bin/${platform.binDirName}`
-  (`manager/main.js:131`, `crema/main.js:72` + `:221`, `grinder/main.js:139`).
-- `selfExecutable()` / `selfSpawnArgs()` for `findGrinderPath` + `spawnGrinder`
-  (`manager/main.js:392–406`, `crema/main.js:170–171`).
-- **The `grinder.db` candidate list is duplicated eight times** — `manager/main.js:77–81`
-  and `:414–418` and `:1358–1364`, `crema/main.js:178–180, 215–217, 272–274, 379–381, 677`.
-  Collapse all of them onto `platform.grinderDbCandidates(baseDir)`. Worth doing on its own
+  (`manager/main.js:131`, `couch/main.js:72` + `:221`, `installer/main.js:139`).
+- `selfExecutable()` / `selfSpawnArgs()` for `findInstallerPath` + `spawnInstaller`
+  (`manager/main.js:392–406`, `couch/main.js:170–171`).
+- **The `library.db` candidate list is duplicated eight times** — `manager/main.js:77–81`
+  and `:414–418` and `:1358–1364`, `couch/main.js:178–180, 215–217, 272–274, 379–381, 677`.
+  Collapse all of them onto `platform.installerDbCandidates(baseDir)`. Worth doing on its own
   merits even if the Mac never happens.
 
 ### A4 — Desktop integration
 
 - `spawn('xdg-open', [cmd])` for `itch://` → `platform.desktop.openUrlScheme`
-  (`manager/main.js:3373`, `crema/main.js:323`).
-- `install-to-menu` + `add-shortcut` + `resolveDesktopDir` + CREMA autostart
+  (`manager/main.js:3373`, `couch/main.js:323`).
+- `install-to-menu` + `add-shortcut` + `resolveDesktopDir` + Couch autostart
   (`manager/main.js:2789–2880`) → `platform.desktop.*`.
-- `execFile('wmctrl', …)` (`crema/main.js:557–563`) → `platform.desktop.focusWindow(win)`;
+- `execFile('wmctrl', …)` (`couch/main.js:557–563`) → `platform.desktop.focusWindow(win)`;
   the `process.platform === 'linux'` guard there disappears into the backend.
 - `kwin-display.js` → `platform.desktop.displayPicker`, `null` on darwin.
   **Low risk:** `get-game-displays` already returns `{ supported: false, … }`
@@ -236,7 +236,7 @@ platform-selection work.
 - Upstream Mac asset names differ (`gogdl_macos_arm64`, `legendary_macOS_arm64`,
   `comet-aarch64-apple-darwin`, `yt-dlp_macos`); normalise to the same six names on extract
   so nothing downstream branches.
-- ⚠ **`du -sB1` is GNU-only.** `grinder/main.js:548` and `:566` will fail silently on macOS.
+- ⚠ **`du -sB1` is GNU-only.** `installer/main.js:548` and `:566` will fail silently on macOS.
   `host.dirSizeCommand()` already exists in the backend (added in A1), so A6 is just the two
   call sites.
 
@@ -275,9 +275,9 @@ prerequisite that can be done from the Linux box.**
 
 ## Acceptance criteria
 
-1. `npm run dist` produces a working AppImage, deployed to `~/Games/CNGM` as usual.
+1. `npm run dist` produces a working AppImage, deployed to `~/Games/Clarity` as usual.
 2. These greps return hits **only** in `platform/linux.js` and `scripts/fetch-binaries.mjs`
-   (the second already passes for `packages/core/grinder-engine.js` as of A2):
+   (the second already passes for `packages/core/installer-engine.js` as of A2):
    ```
    grep -rn "assets/bin/linux" apps packages
    grep -rn "umu-run\|PROTONPATH\|compatibilitytools\|\.steam/" apps packages
@@ -316,7 +316,7 @@ The backend is imported into the engine as **`host`**, not `platform` — `platf
 already a parameter name in `headlessInstall`, `runRedist`, `gogInstallInfo` and
 `gogListDlcs`, and would have been shadowed inside `runRedist`, which needs it.
 
-### ✅ A2 — grinder-engine.js (done)
+### ✅ A2 — installer-engine.js (done)
 
 **32 edits, 122,009 → 105,476 bytes (−13.5%).** Everything moved was copied verbatim.
 The engine keeps its full public surface — `which`, `findUmu`, `findWineCached`,
@@ -343,9 +343,9 @@ Two host-shaped strings outside the backend were also fixed, both user-facing:
 | `customInstallers.selfCheck()` | `[]` |
 | `npm run dist` | AppImage built + deployed |
 | `platform/*.js` present in `app.asar` | yes |
-| Packaged headless run (`grinder launch <bad-id>`) | full module graph loads, reaches the DB lookup, exits clean |
+| Packaged headless run (`installer launch <bad-id>`) | full module graph loads, reaches the DB lookup, exits clean |
 
-Remaining matches for Linux terms in `grinder-engine.js` are three comments: two are the
+Remaining matches for Linux terms in `installer-engine.js` are three comments: two are the
 signpost pointing at the backend, one describes DOSBox's own drive-letter behaviour.
 
 **Not yet done:** the manual six-game smoke test from *Acceptance criteria* item 4. The
@@ -361,9 +361,9 @@ Seven commits on `mac`, off `experimental` at `6220ead`.
 | | Item | Commit |
 |---|---|---|
 | A1 | Backend scaffold (`platform/index.js`, `platform/linux.js`) | `935cb2d` |
-| A2 | grinder-engine.js — runtime, launch, DOSBox, native detection | `935cb2d` |
+| A2 | installer-engine.js — runtime, launch, DOSBox, native detection | `935cb2d` |
 | A9 | Compatibility-runtime management (unified from two drifted copies) | `6b29785` |
-| A3 | Paths: binDirName, portableBaseDir, self-spawn, grinder.db lookup | `b86a516` |
+| A3 | Paths: binDirName, portableBaseDir, self-spawn, library.db lookup | `b86a516` |
 | A5 | Steam library scan + launch command, Flatpak discovery | `b8aa35c` |
 | A4 | Desktop integration: launchers, shortcuts, autostart, URL schemes, focus, display picker | `1218f87` |
 | A6/A7/A8/A10 | fetch-binaries, packaging, recipe hosts, legendary dir | `c4d959e` |
@@ -372,11 +372,11 @@ Seven commits on `mac`, off `experimental` at `6220ead`.
 ### What the spec got wrong
 
 Worth recording, because the pattern repeated: **the work items were drawn up by reading
-`grinder-engine.js` and grepping for a few known strings, and that under-counted every time.**
+`installer-engine.js` and grepping for a few known strings, and that under-counted every time.**
 
-- **A3** was scoped at 4 binDir sites and 8 grinder.db lists. Actually 8 and **16**.
+- **A3** was scoped at 4 binDir sites and 8 library.db lists. Actually 8 and **16**.
 - **A5** listed one `getSteamLibraryPaths`. There were **two** — byte-identical copies in the
-  Manager and CREMA.
+  Manager and Couch.
 - **A8** said 18 recipes. There are **25**: seven are generated from `BUILD_GAMES` rather than
   declared literally, so a grep for `id:` never saw them. The new `selfCheck()` assertion found
   them immediately.
@@ -390,7 +390,7 @@ The lesson for Phase B: **run the greps first, then write the work items.**
 
 ### Bugs found and fixed on the way
 
-- **GRINDER's Proton downloader was installing an ARM64 build on an x86-64 machine.** It took the
+- **Installer's Proton downloader was installing an ARM64 build on an x86-64 machine.** It took the
   first `.tar.gz` in a GE-Proton release; GE now ships an `aarch64` tarball that sorts ahead of the
   x86-64 one. The Manager's copy had an `!/aarch64/` filter and was fine. Unifying them fixed it.
 - **`du -sB1` is GNU-only** and would have failed silently on macOS.
@@ -418,7 +418,7 @@ The lesson for Phase B: **run the greps first, then write the work items.**
 
 ### Deliberately not done
 
-- **`apps/grinder/renderer.js`'s External Tools panel** hardcodes the four tool names and their
+- **`apps/installer/renderer.js`'s External Tools panel** hardcodes the four tool names and their
   descriptions. `check-tools` now also returns a `runtimeTools` array for it to move onto, but
   rewriting the panel means guessing at a macOS tool list that does not exist yet.
 - **A `.icns` for the Mac build.** The project only has SVG icons; electron-builder cannot use
@@ -492,4 +492,4 @@ install-size, DLC listing and redist calls fail with "gogdl not found". Epic wor
 present), and so does everything that is not a GOG download.
 
 **Phase B task 1:** clone the fork on the Mac, `python3 -m PyInstaller --onefile --name gogdl
-grinder_entry.py --clean --noconfirm`, then publish `binaries-mac-v2` with all six.
+installer_entry.py --clean --noconfirm`, then publish `binaries-mac-v2` with all six.

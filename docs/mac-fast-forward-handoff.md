@@ -40,16 +40,16 @@ nothing of its own, so there is nothing to merge and nothing to lose.
 
 ## What arrives with those 48 commits
 
-**Phase 2 tail** — GRINDER lost its window entirely; its setup and storage views moved into the
+**Phase 2 tail** — Installer lost its window entirely; its setup and storage views moved into the
 Manager. The Control Panel became pages. Ctrl+K command palette.
 
-**Phase 3** — the app writes `~/.config/cafeneurotico/desktop.json` on every start, and answers
+**Phase 3** — the app writes `~/.config/clarity/desktop.json` on every start, and answers
 to two new argv flags beside the existing `--game=<id>`:
 
 - `--play=<id>` — plays a game exactly as pressing Play does
 - `--action=<id>` — runs a command-palette action by id
 
-**Phase 4** — CREMA stopped managing the library (six features and their subsystems removed),
+**Phase 4** — Couch stopped managing the library (six features and their subsystems removed),
 its installs explain their failures, the jukebox was rebuilt around a real `AnalyserNode`, and
 the README, the manual and the website were brought up to date.
 
@@ -76,9 +76,9 @@ The Phase 3/4 work reaches for `host.desktop.omarchy` and `host.desktop.displayP
 ### 2. The descriptor
 
 `packages/core/desktop-descriptor.js` runs on every platform. On macOS it will write
-`~/.config/cafeneurotico/desktop.json` with `exec` pointing at
-`…/Cafe Neurotico.app/Contents/MacOS/…`, because `suiteExecutable()` looks for a file matching
-`^CafeNeurotico.*\.AppImage$`, finds none, and falls back to `selfExecutable()`.
+`~/.config/clarity/desktop.json` with `exec` pointing at
+`…/Clarity.app/Contents/MacOS/…`, because `suiteExecutable()` looks for a file matching
+`^Clarity.*\.AppImage$`, finds none, and falls back to `selfExecutable()`.
 
 That is harmless — nothing on macOS reads the file — but worth knowing it exists. If it should
 not be written there at all, that is a one-line platform guard, and a decision rather than a bug.
@@ -89,16 +89,16 @@ not be written there at all, that is a one-line platform guard, and a decision r
 specific in them, but they have **never been run on macOS**. Worth one pass each:
 
 ```bash
-open -a "Cafe Neurotico" --args --action=settings-desktop
+open -a "Clarity" --args --action=settings-desktop
 ```
 
 ⚠️ Whether `open --args` reaches Electron's `second-instance` argv on macOS is exactly the kind
 of thing that differs from Linux. If it does not, the deeplinks work on first launch only, and
 that is a real finding worth writing down.
 
-### 4. CREMA, after the cuts
+### 4. Couch, after the cuts
 
-CREMA lost Hidden Games, trailer download/delete, Add Launch Command, Rename, Scraping and
+Couch lost Hidden Games, trailer download/delete, Add Launch Command, Rename, Scraping and
 Uninstall — plus the subsystems behind them. None of that was platform-specific, but the
 **menus were rebuilt around what remains**, so open both:
 
@@ -159,7 +159,7 @@ Report back with:
 1. **Does it launch**, and does anything in the console mention `omarchy`, `displayPicker` or
    `hypr`?
 2. **Do the deeplinks work** through `open --args`, or only on first launch?
-3. **CREMA's two menus** — do they open, and is the game menu down to the five entries?
+3. **Couch's two menus** — do they open, and is the game menu down to the five entries?
 4. **The jukebox** — bars moving *and* audio playing?
 5. Anything Phase 3/4 assumed about Linux that this host disagrees with.
 

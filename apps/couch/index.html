@@ -2,12 +2,12 @@
 <html>
 <head>
   <meta charset="UTF-8">
-  <title>Cafe Crema</title>
+  <title>Clarity Couch Mode</title>
   <style>
   /* ── JUKEBOX (Phase 4 W4) ───────────────────────────────────────────────────
      After cliamp.stream: monospace, box-drawing rules rather than panels, numbered
      file-name labels, flat surfaces, one accent. ⚠️ Structure and typography only —
-     every colour is a CREMA theme variable, so the user's chosen theme (93 of them,
+     every colour is a Couch theme variable, so the user's chosen theme (93 of them,
      including the live Omarchy one) still drives the look. */
   #jukebox-screen {
     padding: 0;
@@ -341,7 +341,7 @@
     .ggp-btn.ggp-focused { border-color: #fff; transform: scale(1.06); box-shadow: 0 0 14px rgba(255,255,255,0.35); }
     .ggp-btn.ggp-active.ggp-focused { border-color: var(--accent); box-shadow: 0 0 14px var(--accent); }
     /* FREE-to-play pill (mirrors the Manager's) — gamepage bars + gallery cells */
-    .crema-f2p { display:inline-flex; align-items:center; font-size:11px; font-weight:900; letter-spacing:1px; padding:4px 9px; border-radius:5px; background:rgba(12,14,17,0.82); color:#5be27a; border:1px solid rgba(91,226,122,0.55); flex-shrink:0; }
+    .couch-f2p { display:inline-flex; align-items:center; font-size:11px; font-weight:900; letter-spacing:1px; padding:4px 9px; border-radius:5px; background:rgba(12,14,17,0.82); color:#5be27a; border:1px solid rgba(91,226,122,0.55); flex-shrink:0; }
     .gcell-f2p { font-size:9px; font-weight:900; letter-spacing:0.5px; padding:2px 6px; border-radius:4px; background:rgba(12,14,17,0.82); color:#5be27a; border:1px solid rgba(91,226,122,0.55); flex-shrink:0; align-self:center; }
     /* Store/category corner logos on the gamepages (masked, theme-neutral white) */
     #ggp-corner-logo { position:absolute; top:20px; left:24px; width:44px; height:44px; background-color:rgba(255,255,255,0.9); -webkit-mask-size:contain; -webkit-mask-position:center; -webkit-mask-repeat:no-repeat; filter:drop-shadow(0 0 3px rgba(0,0,0,0.95)) drop-shadow(0 3px 10px rgba(0,0,0,0.85)); z-index:5; display:none; }
@@ -356,10 +356,10 @@
     #ggp-scroll { flex: 1; min-height: 0; overflow-y: auto; overflow-x: hidden; }
     #ggp-scroll::-webkit-scrollbar { width: 0; }
     /* Achievements overlay grid — themed scrollbar (this one stays visible: it's a long list) */
-    #crema-ach-grid::-webkit-scrollbar { width: 10px; }
-    #crema-ach-grid::-webkit-scrollbar-track { background: rgba(0,0,0,0.28); border-radius: 5px; margin: 6px 0; }
-    #crema-ach-grid::-webkit-scrollbar-thumb { background: var(--accent); border-radius: 5px; }
-    #crema-ach-grid::-webkit-scrollbar-thumb:hover { background: color-mix(in srgb, var(--accent) 80%, #ffffff); }
+    #couch-ach-grid::-webkit-scrollbar { width: 10px; }
+    #couch-ach-grid::-webkit-scrollbar-track { background: rgba(0,0,0,0.28); border-radius: 5px; margin: 6px 0; }
+    #couch-ach-grid::-webkit-scrollbar-thumb { background: var(--accent); border-radius: 5px; }
+    #couch-ach-grid::-webkit-scrollbar-thumb:hover { background: color-mix(in srgb, var(--accent) 80%, #ffffff); }
     #ggp-content { display: flex; gap: 24px; padding: 22px 40px 30px; align-items: flex-start; }
     /* Left column: screenshots + descriptions */
     #ggp-left { flex: 1; min-width: 0; }
@@ -406,7 +406,7 @@
     #ggp-trailer-game-name { font-size: 24px; font-weight: 900; color: #fff; letter-spacing: 2px; text-shadow: 0 2px 10px rgba(0,0,0,0.8); }
     #ggp-trailer-vid { width: 75%; height: auto; max-height: 80%; border-radius: 10px; box-shadow: 0 0 80px rgba(0,0,0,0.95), 0 20px 60px rgba(0,0,0,0.7); border: 1px solid rgba(255,255,255,0.07); }
 
-    /* === CREMA FLAT GAMEPAGE === */
+    /* === Couch FLAT GAMEPAGE === */
     #cfgp-screen { background:#080808; position:relative; }
     #cfgp-bg { position:absolute; inset:0; overflow:hidden; }
     #cfgp-bg .kb-slide { position:absolute; inset:0; background-size:cover; background-position:center; opacity:0; transition:opacity 1.8s ease; }
@@ -511,7 +511,7 @@
     .grid-cell.selected .grid-cell-icon { background-color: #ffffff; filter: drop-shadow(0 0 10px var(--accent)); transform: scale(1.15); }
     .grid-cell-name { font-size: 20px; font-weight: bold; color: rgba(255,255,255,0.82); text-align: center; text-shadow: 0 1px 6px rgba(0,0,0,0.9); }
     .grid-cell.selected .grid-cell-name { color: #ffffff; text-shadow: 0 0 10px var(--accent), 0 1px 6px rgba(0,0,0,0.9); }
-    /* GPU idle suspend: freeze ALL CSS animations when CREMA is hidden/unfocused (toggled from renderer.js). */
+    /* GPU idle suspend: freeze ALL CSS animations when Couch is hidden/unfocused (toggled from renderer.js). */
     body.gpu-suspended *, body.gpu-suspended *::before, body.gpu-suspended *::after { animation-play-state: paused !important; }
 
   </style>
@@ -523,7 +523,7 @@
     <!-- ═══ FIRST-TIME SETUP SCREEN ═══ -->
     <div id="setup-screen" class="screen hidden">
       <div id="setup-topbar">
-        <div id="setup-brand">CAFE NEUROTICO: CREMA</div>
+        <div id="setup-brand">CLARITY: Couch</div>
         <div id="setup-dots"><div class="setup-dot active"></div><div class="setup-dot"></div></div>
       </div>
       <div id="setup-header">
@@ -539,8 +539,8 @@
     </div>
 
     <div id="splash-screen" class="screen">
-      <div class="splash-top">CAFE NEUROTICO GAME MANAGER:</div>
-      <div class="splash-center"><div class="splash-logo">CREMA</div></div>
+      <div class="splash-top">CLARITY GAME MANAGER:</div>
+      <div class="splash-center"><div class="splash-logo">Couch</div></div>
       <div class="splash-bottom">
         <div class="splash-status" id="splash-text">PRE-HEATING...</div>
         <div class="progress-bar-container"><div class="progress-bar-fill" id="splash-bar"></div></div>
@@ -550,7 +550,7 @@
     <div id="sleep-screen" class="screen hidden">
       <img id="sleep-cover" class="sleep-cover" src="">
       <div id="sleep-title" class="sleep-title" data-i18n="html.sleep_title">GAME RUNNING</div>
-      <div id="sleep-instruction" class="sleep-instruction">Press [START] + [SELECT] to return to CREMA</div>
+      <div id="sleep-instruction" class="sleep-instruction">Press [START] + [SELECT] to return to Couch</div>
       <!-- First Windows launch downloads umu's runtime and builds a Wine prefix — minutes with
            a black screen otherwise, which on a TV is indistinguishable from a crash. -->
       <div id="sleep-progress" style="display:none; width:min(560px,70vw); margin:26px auto 0;">
@@ -589,7 +589,7 @@
     <style>
       #home-screen { padding:0; }
       #home-content { flex:1; min-height:0; overflow-y:auto; scrollbar-width:none; }
-      #home-content::-webkit-scrollbar { display:none; }   /* gamepad UI — hidden like every other CREMA scroller */
+      #home-content::-webkit-scrollbar { display:none; }   /* gamepad UI — hidden like every other Couch scroller */
       .ch-wrap { min-height:100%; box-sizing:border-box; padding:44px 60px 26px; display:flex; flex-direction:column; gap:24px; }
       @keyframes chUp { from { opacity:0; transform:translateY(16px); } to { opacity:1; transform:none; } }
       .ch-top, .ch-hero, .ch-actions, .ch-rowsec { animation:chUp 0.42s cubic-bezier(0.2,0.8,0.2,1) both; }
@@ -709,7 +709,7 @@
     <div id="main-screen" class="screen blur-target hidden">
       <div class="header">
         <h1 class="header-title" id="main-header" data-i18n="html.category_placeholder">CATEGORY</h1>
-        <div class="header-brand">Cafe Neurotico Game Manager: CREMA</div>
+        <div class="header-brand">Clarity Game Manager: Couch</div>
       </div>
       <div class="main-container">
         <div class="list-view" id="game-list"></div>
@@ -745,7 +745,7 @@
          Phase 4 W4. Redesigned after cliamp.stream: monospace throughout, box-drawing
          rules instead of panels, numbered file-name section labels, flat surfaces, and a
          REAL spectrum rather than five CSS keyframe bars.
-         ⚠️ It takes Cliamp's *structure and typography*, not its palette. CREMA ships 93
+         ⚠️ It takes Cliamp's *structure and typography*, not its palette. Couch ships 93
          themes and follows the Omarchy one; hardcoding cyan and magenta would break every
          theme a person actually chose. Every colour below is a theme variable.
          ⚠️ Every jb-* id the renderer drives is kept — this is a new view over working
@@ -754,7 +754,7 @@
       <div class="jb-shell">
 
         <div class="jb-top">
-          <div class="jb-wordmark">CREMA<span class="jb-wordmark-dim">.jukebox</span></div>
+          <div class="jb-wordmark">Couch<span class="jb-wordmark-dim">.jukebox</span></div>
           <div class="jb-rule"></div>
           <div class="jb-status-line" id="jb-status" data-i18n="html.jb_scanning">Scanning Library...</div>
         </div>
@@ -860,7 +860,7 @@
         <img id="ggp-logo-img" src="" alt="">
         <div id="ggp-action-row">
           <div id="ggp-store-badge"></div>
-          <span id="ggp-f2p-pill" class="crema-f2p" style="display:none;">FREE</span>
+          <span id="ggp-f2p-pill" class="couch-f2p" style="display:none;">FREE</span>
           <button id="ggp-btn-fav" class="ggp-btn">+ FAV</button>
           <button id="ggp-btn-want" class="ggp-btn">WANT TO PLAY</button>
           <button id="ggp-btn-playlist" class="ggp-btn">+ PLAYLIST</button>
@@ -911,7 +911,7 @@
       <div class="footer" id="ggp-footer" style="padding-bottom: 28px;">Loading Hardware Inputs...</div>
     </div>
 
-    <!-- ── CREMA FLAT GAMEPAGE ────────────────────────────────────────────── -->
+    <!-- ── Couch FLAT GAMEPAGE ────────────────────────────────────────────── -->
     <div id="cfgp-screen" class="screen hidden">
       <div id="cfgp-bg">
         <video id="cfgp-video" autoplay muted loop playsinline></video>
@@ -925,7 +925,7 @@
       <div id="cfgp-bar">
         <button id="cfgp-btn-back" class="cfgp-btn">← BACK</button>
         <span id="cfgp-store-tag"></span>
-        <span id="cfgp-f2p-pill" class="crema-f2p" style="display:none;">FREE</span>
+        <span id="cfgp-f2p-pill" class="couch-f2p" style="display:none;">FREE</span>
         <div style="flex:1;"></div>
         <button id="cfgp-btn-fav"  class="cfgp-btn">★ FAV</button>
         <button id="cfgp-btn-want" class="cfgp-btn">WANT</button>
@@ -991,33 +991,33 @@
         <!-- Header -->
         <div style="display:flex; align-items:center; gap:24px; padding:28px 32px 22px; border-bottom:2px solid var(--border_solid); flex-shrink:0;">
           <div style="flex:1; min-width:0;">
-            <div id="crema-ach-game-title" style="font-size:12px; font-weight:900; color:var(--text_dim); text-transform:uppercase; letter-spacing:3px; margin-bottom:4px;"></div>
+            <div id="couch-ach-game-title" style="font-size:12px; font-weight:900; color:var(--text_dim); text-transform:uppercase; letter-spacing:3px; margin-bottom:4px;"></div>
             <div style="font-size:22px; font-weight:900; color:var(--accent); text-transform:uppercase; letter-spacing:2px;">Achievements</div>
           </div>
           <!-- Large ring -->
           <div style="position:relative; width:100px; height:100px; flex-shrink:0;">
             <svg viewBox="0 0 36 36" width="100" height="100" style="transform:rotate(-90deg);">
               <circle cx="18" cy="18" r="15.9" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="2.5"/>
-              <circle id="crema-ach-ring-big" cx="18" cy="18" r="15.9" fill="none" stroke="var(--accent)" stroke-width="2.5" stroke-linecap="round" stroke-dasharray="0 100" style="transition:stroke-dasharray 0.6s ease;"/>
+              <circle id="couch-ach-ring-big" cx="18" cy="18" r="15.9" fill="none" stroke="var(--accent)" stroke-width="2.5" stroke-linecap="round" stroke-dasharray="0 100" style="transition:stroke-dasharray 0.6s ease;"/>
             </svg>
             <div style="position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px;">
-              <span id="crema-ach-ring-pct" style="font-size:18px; font-weight:900; color:var(--text_main); line-height:1;"></span>
-              <span id="crema-ach-ring-count" style="font-size:12px; color:var(--text_dim); line-height:1;"></span>
+              <span id="couch-ach-ring-pct" style="font-size:18px; font-weight:900; color:var(--text_main); line-height:1;"></span>
+              <span id="couch-ach-ring-count" style="font-size:12px; color:var(--text_dim); line-height:1;"></span>
             </div>
           </div>
         </div>
         <!-- Filter hint -->
         <div style="display:flex; gap:0; border-bottom:1px solid var(--border_solid); flex-shrink:0;">
-          <button class="crema-ach-tab active" id="crema-ach-tab-all"     data-f="all"      onclick="cAchSetFilter('all',this)">All</button>
-          <button class="crema-ach-tab"        id="crema-ach-tab-unlocked" data-f="unlocked" onclick="cAchSetFilter('unlocked',this)">Unlocked</button>
-          <button class="crema-ach-tab"        id="crema-ach-tab-locked"   data-f="locked"   onclick="cAchSetFilter('locked',this)">Locked</button>
+          <button class="couch-ach-tab active" id="couch-ach-tab-all"     data-f="all"      onclick="cAchSetFilter('all',this)">All</button>
+          <button class="couch-ach-tab"        id="couch-ach-tab-unlocked" data-f="unlocked" onclick="cAchSetFilter('unlocked',this)">Unlocked</button>
+          <button class="couch-ach-tab"        id="couch-ach-tab-locked"   data-f="locked"   onclick="cAchSetFilter('locked',this)">Locked</button>
         </div>
         <!-- Grid -->
-        <div id="crema-ach-grid" style="flex:1; overflow-y:auto; padding:18px 24px 24px; display:grid; grid-template-columns:repeat(2,1fr); gap:12px; align-content:start;"></div>
+        <div id="couch-ach-grid" style="flex:1; overflow-y:auto; padding:18px 24px 24px; display:grid; grid-template-columns:repeat(2,1fr); gap:12px; align-content:start;"></div>
         <!-- Empty -->
-        <div id="crema-ach-empty" style="display:none; flex-direction:column; align-items:center; justify-content:center; gap:16px; padding:60px; color:var(--text_dim); font-size:20px; text-align:center;">
+        <div id="couch-ach-empty" style="display:none; flex-direction:column; align-items:center; justify-content:center; gap:16px; padding:60px; color:var(--text_dim); font-size:20px; text-align:center;">
           <svg viewBox="0 0 24 24" width="60" height="60" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" style="opacity:0.2;"><path d="M8 21h8M12 17v4M5 7H3v4a4 4 0 0 0 4 4h10a4 4 0 0 0 4-4V7h-2"/><path d="M5 3h14v8a7 7 0 0 1-7 7 7 7 0 0 1-7-7V3z"/></svg>
-          No achievements synced yet.<br><span style="font-size:14px; opacity:0.6;">Open GRINDER → edit this game → Sync Now</span>
+          No achievements synced yet.<br><span style="font-size:14px; opacity:0.6;">Open Installer → edit this game → Sync Now</span>
         </div>
         <!-- Controls hint -->
         <div style="padding:12px 24px; border-top:1px solid var(--border_solid); display:flex; justify-content:space-between; font-size:13px; color:var(--text_dim); flex-shrink:0;">
@@ -1027,16 +1027,16 @@
       </div>
     </div>
     <style>
-      .crema-ach-tab { flex:1; padding:12px; background:transparent; border:none; color:var(--text_dim); font-family:var(--ui-font,Raleway),sans-serif; font-weight:900; font-size:14px; letter-spacing:1px; text-transform:uppercase; cursor:pointer; transition:0.15s; }
-      .crema-ach-tab.active { color:var(--accent); border-bottom:2px solid var(--accent); }
-      .crema-ach-card { display:flex; align-items:center; gap:16px; padding:14px 16px; border-radius:10px; border:1px solid var(--border_solid); background:rgba(255,255,255,0.02); }
-      .crema-ach-card.unlocked { background:rgba(100,175,100,0.08); border-color:rgba(100,175,100,0.3); box-shadow:0 0 18px rgba(100,175,100,0.08); }
-      .crema-ach-card img { width:64px; height:64px; border-radius:8px; object-fit:cover; flex-shrink:0; }
-      .crema-ach-card .c-name { font-size:16px; font-weight:900; color:var(--text_sec); line-height:1.3; }
-      .crema-ach-card.unlocked .c-name { color:#90d890; }
-      .crema-ach-card .c-desc { font-size:13px; color:var(--text_dim); margin-top:3px; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
-      .crema-ach-card .c-date { font-size:12px; color:rgba(140,210,140,0.6); margin-top:5px; }
-      .crema-ach-card .c-lock { font-size:18px; opacity:0.3; margin-top:4px; }
+      .couch-ach-tab { flex:1; padding:12px; background:transparent; border:none; color:var(--text_dim); font-family:var(--ui-font,Raleway),sans-serif; font-weight:900; font-size:14px; letter-spacing:1px; text-transform:uppercase; cursor:pointer; transition:0.15s; }
+      .couch-ach-tab.active { color:var(--accent); border-bottom:2px solid var(--accent); }
+      .couch-ach-card { display:flex; align-items:center; gap:16px; padding:14px 16px; border-radius:10px; border:1px solid var(--border_solid); background:rgba(255,255,255,0.02); }
+      .couch-ach-card.unlocked { background:rgba(100,175,100,0.08); border-color:rgba(100,175,100,0.3); box-shadow:0 0 18px rgba(100,175,100,0.08); }
+      .couch-ach-card img { width:64px; height:64px; border-radius:8px; object-fit:cover; flex-shrink:0; }
+      .couch-ach-card .c-name { font-size:16px; font-weight:900; color:var(--text_sec); line-height:1.3; }
+      .couch-ach-card.unlocked .c-name { color:#90d890; }
+      .couch-ach-card .c-desc { font-size:13px; color:var(--text_dim); margin-top:3px; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+      .couch-ach-card .c-date { font-size:12px; color:rgba(140,210,140,0.6); margin-top:5px; }
+      .couch-ach-card .c-lock { font-size:18px; opacity:0.3; margin-top:4px; }
     </style>
 
 
@@ -1075,8 +1075,8 @@
     </div>
 
   </div>
-  <!-- GRINDER Install Confirm -->
-  <div id="grinder-confirm-backdrop" class="overlay-backdrop hidden" style="z-index: 300;">
+  <!-- Installer Install Confirm -->
+  <div id="installer-confirm-backdrop" class="overlay-backdrop hidden" style="z-index: 300;">
     <div class="overlay-modal" style="width:680px;">
       <div class="overlay-title" id="gc-action-title">INSTALL GAME</div>
       <div id="gc-game-title" style="text-align:center; color:var(--accent); font-size:24px; font-weight:900; letter-spacing:1px; margin-bottom:20px; text-transform:uppercase;"></div>
@@ -1091,7 +1091,7 @@
     </div>
   </div>
 
-  <!-- Launch failure (almost always: no Proton installed for a Windows game). CREMA can't
+  <!-- Launch failure (almost always: no Proton installed for a Windows game). Couch can't
        install Proton itself — no keyboard, and store/setup flows belong to the Manager — so
        it explains the problem and says where to fix it. -->
   <div id="launch-fail-backdrop" class="overlay-backdrop hidden" style="z-index: 320;">
@@ -1120,8 +1120,8 @@
     </div>
   </div>
 
-  <!-- GRINDER Headless Progress -->
-  <div id="grinder-progress-backdrop" class="overlay-backdrop hidden" style="z-index: 300;">
+  <!-- Installer Headless Progress -->
+  <div id="installer-progress-backdrop" class="overlay-backdrop hidden" style="z-index: 300;">
     <div class="overlay-modal" style="width:720px;">
       <div class="overlay-title" id="gp-action-title">INSTALLING</div>
       <div id="gp-game-title" style="text-align:center; color:var(--accent); font-size:20px; font-weight:900; letter-spacing:1px; margin-bottom:22px; text-transform:uppercase;"></div>

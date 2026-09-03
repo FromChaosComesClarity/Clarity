@@ -1,7 +1,7 @@
-# Cafe Neurotico — development timeline
+# Clarity — development timeline
 
 **Compiled 2026-08-29** from the five repositories that make up the project, read directly:
-`CafeNeuroticoGameManager`, `CREMA`, `GRINDER`, `EmuLatte`, and `CafeNeurotico` (the monorepo,
+`ClarityGameManager`, `Couch`, `Installer`, `EmuLatte`, and `Clarity` (the monorepo,
 at `main` = `75ad08c` = v1.9.3).
 
 Everything here comes from `git log`, tag metadata, shipped release notes, and the repos' own
@@ -16,23 +16,23 @@ READMEs. Interpretation is marked as such.
 
 | Repo | Commits | Active | Fate |
 |---|---|---|---|
-| **CafeNeuroticoGameManager** (CNGM) | 247 | 2026-05-11 → 2026-06-07 | Folded into the monorepo |
-| **CREMA** | 120 | 2026-05-11 → 2026-06-07 | Folded into the monorepo |
-| **GRINDER** | 74 | 2026-05-18 → 2026-05-26 | Folded into the monorepo |
+| **ClarityGameManager** (Clarity) | 247 | 2026-05-11 → 2026-06-07 | Folded into the monorepo |
+| **Couch** | 120 | 2026-05-11 → 2026-06-07 | Folded into the monorepo |
+| **Installer** | 74 | 2026-05-18 → 2026-05-26 | Folded into the monorepo |
 | **EmuLatte** | 99 | 2026-05-24 → 2026-08-01 | **Still independent** |
-| **CafeNeurotico** (suite) | 205 | 2026-06-08 → 2026-08-26 | Current |
+| **Clarity** (suite) | 205 | 2026-06-08 → 2026-08-26 | Current |
 | **Total** | **745** | **2026-05-11 → 2026-08-26** | ~15 weeks |
 
 **The monorepo is not the beginning.** Its first commit is titled *"unified suite"* because it
 unifies three applications that already had 441 commits between them. The project is a month
-older than `CafeNeurotico/` suggests.
+older than `Clarity/` suggests.
 
 ```
 May 11 ──────────────────────────── Jun 7  Jun 8 ─────────────────────────── Aug 26
-   CNGM     ████████████████████████████████│
-   CREMA    ████████████████████████████████│
-   GRINDER          ███████                 │
-                                            │  CafeNeurotico ████████████████████
+   Clarity     ████████████████████████████████│
+   Couch    ████████████████████████████████│
+   Installer          ███████                 │
+                                            │  Clarity ████████████████████
    EmuLatte           ████  ███████████████████████████████████  (independent)
                       May 24                            Aug 1
 ```
@@ -41,7 +41,7 @@ May 11 ────────────────────────�
 
 ## Era 1 — Two apps, one database (May 11–17)
 
-**CNGM and CREMA are created on the same day**, and their first five commits are identical in
+**Clarity and Couch are created on the same day**, and their first five commits are identical in
 both repos:
 
 ```
@@ -53,32 +53,32 @@ Add .gitignore
 ```
 
 That shared `GameManagerConfig` is the point: the two apps were **never separate products**.
-They were two faces over one SQLite database from the first hour — CNGM the desktop library
-manager, CREMA the fullscreen gamepad face. Both enable WAL mode on the shared DB the next day,
+They were two faces over one SQLite database from the first hour — Clarity the desktop library
+manager, Couch the fullscreen gamepad face. Both enable WAL mode on the shared DB the next day,
 within hours of each other.
 
-What CNGM was, at birth: a game library manager with theme support, Steam trailer fetching,
+What Clarity was, at birth: a game library manager with theme support, Steam trailer fetching,
 IGDB and HowLongToBeat metadata, and store filters. `05-11` alone carries a security sweep —
-*"Fix shell injection, missing CoverArt/Screenshot in update-game"* — and its CREMA twin fixes
+*"Fix shell injection, missing CoverArt/Screenshot in update-game"* — and its Couch twin fixes
 *"shell injection, SQL injection, and missing clear-history handler"*.
 
 Early decisions visible in this week:
 
 - **Themes are a first-class feature, and they sync between apps.** `05-15`: *"Sync all theme
-  changes from CREMA: 11 redesigns, 2 removed, 21 new, 2 new categories."* Then 19 more themes
+  changes from Couch: 11 redesigns, 2 removed, 21 new, 2 new categories."* Then 19 more themes
   the same day, including two new categories (Sci-Fi Universes, Horror Realm).
 - **i18n from week one** (`05-13`, both apps, with a `pt_BR` locale).
 - **Heroic was the original launcher.** `05-16`: *"Add Heroic Launch & Auto-Sync."* This matters
   for what happens next.
 - **GPL v3** added to both on `05-17`.
 
-CREMA's own concerns are console-shaped from the start: gamepad glyph vs keyboard hints that
+Couch's own concerns are console-shaped from the start: gamepad glyph vs keyboard hints that
 auto-switch, an on-screen keyboard, carousel/grid/list start-screen modes, a screensaver, and
 background music (default changed JAZZ → AMBIENT on `05-12`).
 
 ## Era 2 — The engine, and the ecosystem (May 18–26)
 
-**GRINDER is created on May 18** and burns through 74 commits in eight days — 35 of them on
+**Installer is created on May 18** and burns through 74 commits in eight days — 35 of them on
 `05-19` alone. It is the install-and-launch engine for GOG and Epic, and it exists because
 Heroic wasn't enough.
 
@@ -88,7 +88,7 @@ Its build order is a good record of what that problem actually involves:
 |---|---|
 | `05-18` | Scaffold, Proton version scanner, bundled legendary, umu-run installer, Epic login |
 | `05-19` | Epic auth debugging (four commits), then **GOG support** — OAuth2, library import, gogdl install, native Linux launch; the **forked gogdl** appears the same day |
-| `05-20` | Compat toggles; Steam added then **removed** (*"GOG and Epic only"*); theme sync from CNGM; **headless mode for CREMA** |
+| `05-20` | Compat toggles; Steam added then **removed** (*"GOG and Epic only"*); theme sync from Clarity; **headless mode for Couch** |
 | `05-21` | Welcome screen, built-in GE-Proton downloader |
 | `05-23` | Custom exe override, install queue, Download Manager, GOG DLC |
 | `05-24` | GOG achievements with a **Comet sidecar** for live unlocking |
@@ -97,7 +97,7 @@ The launch chain it settled on — *"umu-run → direct Proton → Wine, in orde
 plus reading GOG's own `goggame-*.info` `playTasks` so mods and DLC load without manual setup,
 is the logic that survives into the monorepo unchanged.
 
-**Heroic's demotion is traceable to the day.** `05-19` CNGM: *"GRINDER is default launcher…
+**Heroic's demotion is traceable to the day.** `05-19` Clarity: *"Installer is default launcher…
 prefer_heroic flag."* `05-21`: *"Heroic is now optional secondary."* Three weeks later the
 monorepo purges it entirely.
 
@@ -110,16 +110,16 @@ day. It is a fourth app, not a face: separate library, separate domain, its own 
 On **2026-05-26**, all four repositories receive the same commit:
 
 ```
-Update ecosystem map in README — CNGM as central hub
+Update ecosystem map in README — Clarity as central hub
 ```
 
 Four repos, one day, one message. It is the moment the four programs stop being separate
-projects and become a named ecosystem with a hub. **It is also GRINDER's last commit ever** —
+projects and become a named ecosystem with a hub. **It is also Installer's last commit ever** —
 74 commits in eight days, then frozen until absorbed.
 
 ## Era 3 — The layout museum (May 26 – Jun 7)
 
-CNGM then does something unusual. Over twelve days — including **55 commits on `05-27` and 32 on
+Clarity then does something unusual. Over twelve days — including **55 commits on `05-27` and 32 on
 `05-28`**, the two densest days in the project's whole history — it grows a *collection of
 interfaces*.
 
@@ -149,11 +149,11 @@ layouts**: Midnight Commander, NetHack, irssi, QBASIC, Emacs, GRUB.
 Not all survived. Constellation, Mosaic, Poster Wall, irssi, QBASIC, Emacs, and Navigator were
 each added and then removed within days.
 
-Meanwhile the apps borrow from each other in both directions: CNGM adopts *"EmuLatte-style
+Meanwhile the apps borrow from each other in both directions: Clarity adopts *"EmuLatte-style
 category sidebar"* and a three-panel layout *"mirrors EmuLatte"* (`05-26`), while EmuLatte later
-ports CREMA's interface *"1:1"* into its own Couch Mode.
+ports Couch's interface *"1:1"* into its own Couch Mode.
 
-CNGM and CREMA both stop on **2026-06-07**. The monorepo begins **2026-06-08**. A clean handover,
+Clarity and Couch both stop on **2026-06-07**. The monorepo begins **2026-06-08**. A clean handover,
 with no overlap.
 
 ## Era 4 — The unification (Jun 8–11, 31 commits)
@@ -164,7 +164,7 @@ The merge is executed as a numbered plan, in public, in the commit titles:
 |---|---|
 | **0–1** | Initial unified suite |
 | **2** (slices 1–4) | Engine into `packages/core`: window-free engine, then install/launch/auth, then in-process installs, then *"the byte-identical shared IPC handlers"* |
-| **3** (stages 3a–3d) | Scaffold the CREMA face onto shared core, *"verify each twin first"* |
+| **3** (stages 3a–3d) | Scaffold the Couch face onto shared core, *"verify each twin first"* |
 | **4** (cutover) | Unified menu launcher and window association |
 
 Two decisions outlived the week: **Heroic purged** (`ef8255d`), and the **AppImage put on a
@@ -181,24 +181,24 @@ that surfaced later.)
 
 July is library management: Steam import including free-to-play, Hidden Games, a multi-download
 queue, GOG DLC, **detecting store removals** (Steam uninstalls, GOG/Epic refunds), a **Save
-Manager** for GOG then Epic, and headless store sign-in so GRINDER's window is never shown.
+Manager** for GOG then Epic, and headless store sign-in so Installer's window is never shown.
 
-In parallel, **EmuLatte builds Couch Mode** — `06-28` to `06-29`, 28 commits carrying its name — porting CREMA's
+In parallel, **EmuLatte builds Couch Mode** — `06-28` to `06-29`, 28 commits carrying its name — porting Couch's
 gallery, list, OSK, gamepad glyphs, ~60 themes, screensaver and ambient sound into itself. It
-also gains *"Add to CafeNeurotico"* (`06-20`), pushing a ROM into CNGM's Emulation category, and
+also gains *"Add to Clarity"* (`06-20`), pushing a ROM into Clarity's Emulation category, and
 becomes a full **RetroArch front-end**: config ownership, save-state manager, shader browser,
 control templates, core downloader.
 
 ## Era 6 — 1.0, in lockstep (Jul 20 – Aug 8)
 
-**Cafe Neurotico v1.0.0 and EmuLatte v1.0.0 ship on the same day: 2026-07-20.**
+**Clarity v1.0.0 and EmuLatte v1.0.0 ship on the same day: 2026-07-20.**
 
 The suite's 1.0 commit is *"Add the GPL-3.0 LICENSE file; drop the stale Heroic references from
 the manual"* — 1.0 marked by licensing and honest documentation, not a feature.
 
 The lockstep continues, and is not coincidence — the same features land in both on the same day:
 
-| Date | Cafe Neurotico | EmuLatte |
+| Date | Clarity | EmuLatte |
 |---|---|---|
 | 2026-07-17 | *"Import BrewBalance's 5 brand themes"* | *"5 BrewBalance themes"* |
 | 2026-07-20 | **v1.0.0** | **v1.0.0** |
@@ -208,7 +208,7 @@ The lockstep continues, and is not coincidence — the same features land in bot
 August 2–8 is compatibility work, with commit titles that name symptoms: *"Fix GOG DOS games
 spawning DOSBox and closing instantly"*, *"Fix Fallout: New California launching to a dead-end
 installer"*. `1a509ec` — *"Pin the build to our patched gogdl, not upstream's"* — formalises the
-fork GRINDER started in May. **EmuLatte's last release, v1.2.0, ships 2026-08-01.**
+fork Installer started in May. **EmuLatte's last release, v1.2.0, ships 2026-08-01.**
 
 ## Era 7 — Source ports and mods (Aug 12–14, 46 commits)
 
@@ -234,7 +234,7 @@ f763649  Hand BuildGDX a C: path, because Java asks Wine the wrong question
 ## Era 8 — The portability rewrite (Aug 22–24, 37 commits)
 
 **Phase A put a platform boundary under the entire engine** in a single day — nine commits, each
-moving one class of host assumption behind it: the GRINDER engine, compatibility runtimes, path
+moving one class of host assumption behind it: the Installer engine, compatibility runtimes, path
 resolution, Steam/Flatpak discovery, desktop integration, build tooling, and *"the last three
 host-shaped spots outside the backend."*
 
@@ -264,7 +264,7 @@ build is the one link that cannot be corrected afterwards."*
 
 ## Release history
 
-**Cafe Neurotico** — 17 versions in five weeks:
+**Clarity** — 17 versions in five weeks:
 
 | Version | Date | Headline |
 |---|---|---|
@@ -302,15 +302,15 @@ Binary-asset tags on the monorepo: `binaries-v1` (Jun 8), `binaries-v2` (Aug 7),
 commit titles — EmuLatte's Phases 1–4 in May, the suite's Phases 0–4 in June, Phases A–E in
 August. Each time the refactor came *before* the feature it enabled.
 
-**Two faces, one database, from hour one.** CNGM and CREMA were never merged so much as
+**Two faces, one database, from hour one.** Clarity and Couch were never merged so much as
 *rejoined*; they shared a schema from their identical first five commits.
 
 **Ownership over integration.** Heroic added, demoted, purged. A `gogdl` fork adopted in May and
-pinned in August. A KWin script written when a window rule wouldn't do. Steam added to GRINDER
+pinned in August. A KWin script written when a window rule wouldn't do. Steam added to Installer
 and removed two days later to keep its scope honest.
 
 **Commit messages changed voice.** May and June are written for a compiler — *"Phase 2 (slice 1):
-start window-free grinder-engine in core"*. August is written for a person — *"Stop deleting the
+start window-free installer-engine in core"*. August is written for a person — *"Stop deleting the
 game's own temp folder"*, *"Say what the Raze entry actually does."*
 
 **Corrections are committed, not hidden.** Reverts, *"Fix the real root cause…"*, *"Correct the
@@ -330,7 +330,7 @@ Between bursts, 8–10 day silences.
 - Four author identities appear across the repos (a personal address, an older one, the
   GitHub noreply address, one `jose@Jose-MBAir.local`); all are the same person on different
   machines.
-- CNGM, CREMA and GRINDER are read at their final state; they are archived, not deleted, and
+- Clarity, Couch and Installer are read at their final state; they are archived, not deleted, and
   their histories remain the authoritative record of the pre-suite era.
 - **Nothing here predates 2026-05-11.** If code existed before the first `Initial commit`, this
   history cannot see it.

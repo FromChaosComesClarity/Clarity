@@ -1,19 +1,19 @@
 'use strict';
 /*
- * @cafeneurotico/core — GRINDER engine (window-free).
+ * @clarity/core — Installer engine (window-free).
  *
- * The GOG/Epic install/uninstall/launch machinery, lifted out of GRINDER's
+ * The GOG/Epic install/uninstall/launch machinery, lifted out of Installer's
  * window-bound main.js so it can run in-process from any face of the suite
- * (the grinder GUI, and — Phase 2b — the Manager's in-process installer).
+ * (the installer GUI, and — Phase 2b — the Manager's in-process installer).
  *
  * All interactive UI (OAuth login windows, file/dir pickers) stays in
- * grinder/main.js IPC handlers; nothing here imports electron. Progress is
+ * installer/main.js IPC handlers; nothing here imports electron. Progress is
  * reported through an injected `onProgress(data)` callback instead of writing
- * a file directly, so the caller decides where it goes (grinder → progress
+ * a file directly, so the caller decides where it goes (installer → progress
  * file; Manager → IPC event).
  *
  * Usage:
- *   const engine = require('../../packages/core/grinder-engine.js');
+ *   const engine = require('../../packages/core/installer-engine.js');
  *   engine.init({ configDir, prefixesDir, logDir, binDir, appImageDir,
  *                 homeDir, db, onProgress });
  *   // then call engine.findGogdl(), engine.launchGame(id), etc.
@@ -61,12 +61,12 @@ function init(ctx = {}) {
     host.init({ homeDir: HOME, configDir, getDb: () => db, expandTilde });
 }
 
-// Allow the DB handle to be (re)attached after init (grinder opens it in initDb).
+// Allow the DB handle to be (re)attached after init (installer opens it in initDb).
 function setDb(handle) { db = handle; }
 
-// Create the grinder.db schema if it isn't there yet, so any face can bootstrap a
+// Create the library.db schema if it isn't there yet, so any face can bootstrap a
 // fresh database (e.g. headless GOG/Epic sign-in on a clean install) without ever
-// opening the GRINDER GUI. Mirrors GRINDER's own initDb schema + column migrations;
+// opening the Installer GUI. Mirrors Installer's own initDb schema + column migrations;
 // every statement is IF-NOT-EXISTS / guarded, so it's safe to run on an existing db.
 function ensureSchema(handle = db) {
     if (!handle) return;
@@ -177,7 +177,7 @@ let _installCancelled  = false;  // set by cancel → makes the failure message 
 // close handler never fires and the UI hangs on "Cancelling…". We kill the whole PROCESS GROUP (the
 // children are spawned detached = group leaders) and hard-kill with SIGKILL if it doesn't exit quickly.
 // The spawn's close handler then resolves failure, headlessInstall emits an error event, and the
-// caller's _grinderBusy clears + the queue advances.
+// caller's _installerBusy clears + the queue advances.
 function cancelActiveInstall() {
     const proc = _activeInstallProc;
     if (!proc || !proc.pid) return false;
@@ -206,7 +206,7 @@ function findComet() {
     _comet = fs.existsSync(BUNDLED_COMET) ? BUNDLED_COMET : (which('comet') || '');
     return _comet || null;
 }
-// Still exported: the GRINDER face destructures both. The caching moved to the backend.
+// Still exported: the Installer face destructures both. The caching moved to the backend.
 const findUmu        = () => host.runtime.findUmu();
 const findWineCached = () => host.runtime.findWine();
 
@@ -214,7 +214,7 @@ const findWineCached = () => host.runtime.findWine();
 // Discovering the runtime, choosing one for a given game, and reading a failure out of a
 // dead game's log are all host business — on Linux that is Proton driven by umu-run, and
 // packages/core/platform/linux.js records why we always hand umu an explicit PROTONPATH.
-// These wrappers stay because the GRINDER face and the Manager both destructure them.
+// These wrappers stay because the Installer face and the Manager both destructure them.
 const scanProtonVersions    = () => host.runtime.scan();
 const resolveProton         = (game) => host.runtime.resolve(game);
 const isProtonDir           = (dir) => host.runtime.isRuntimeDir(dir);
@@ -292,14 +292,14 @@ function watchStartup({ proc, gameId, title, logPath }) {
 // Locate the BattlEye / EasyAntiCheat runtime a game asks for.
 const findRuntime = (name) => host.runtime.findAntiCheatRuntime(name);
 
-// ── Moved from grinder/main.js (slice 2): GOG creds + install/launch/auth engine ──
+// ── Moved from installer/main.js (slice 2): GOG creds + install/launch/auth engine ──
 const GOG_CLIENT_ID     = '46899977096215655';
 
 const GOG_CLIENT_SECRET = '9d85c43b1482497dbbce61f6e4aa173a433796eeae2ca8c5f6129f2dc4de46d9';
 
 const GOG_REDIRECT_URI  = 'https://embed.gog.com/on_login_success?origin=client';
 
-// Which store an appId belongs to, for building a GrinderGameId. The row in grinder.db is
+// Which store an appId belongs to, for building a InstallerGameId. The row in library.db is
 // authoritative; 'gog' is the fallback because every numeric GOG id reaches here that way.
 function storeOfAppId(appId) {
     try { return db?.prepare("SELECT store FROM games WHERE app_id=?").get(appId)?.store || 'gog'; }
@@ -311,11 +311,11 @@ function syncSharedDb(appId, installed) {
     if (!fs.existsSync(sharedDbPath)) return;
     try {
         const sdb = new Database(sharedDbPath);
-        // ⚠️ games.db keys GRINDER games by GrinderGameId ('gog_<appId>'), and has no app_id
+        // ⚠️ games.db keys Installer games by InstallerGameId ('gog_<appId>'), and has no app_id
         // column at all. Asking for one threw on the first statement, so the whole function
         // failed inside its own try/catch and the LaunchCommand fallback below was never
         // reachable — the shared library's Installed flag was simply never written here.
-        const byGid = sdb.prepare("UPDATE games SET Installed=? WHERE GrinderGameId=?")
+        const byGid = sdb.prepare("UPDATE games SET Installed=? WHERE InstallerGameId=?")
                          .run(installed ? 1 : 0, `${storeOfAppId(appId)}_${appId}`);
         if (byGid.changes === 0) {
             sdb.prepare("UPDATE games SET Installed=? WHERE LaunchCommand LIKE ?").run(installed ? 1 : 0, `%${appId}%`);
@@ -324,7 +324,7 @@ function syncSharedDb(appId, installed) {
     } catch {}
 }
 
-// The grinder.db row for a game, creating it if the owned-library sync has not. Mirrors the
+// The library.db row for a game, creating it if the owned-library sync has not. Mirrors the
 // columns and id convention syncOwnedLibrary uses ('<store>_<appId>'), so a row made here is
 // indistinguishable from a synced one and a later sync's INSERT OR IGNORE leaves it alone.
 function ensureGameRow(store, appId, title, platform) {
@@ -341,14 +341,14 @@ function ensureGameRow(store, appId, title, platform) {
 }
 
 async function headlessInstall(store, appId, platform, installDir, opts = {}) {
-    // The shared library knows the name even when grinder.db has never been synced, and it is
+    // The shared library knows the name even when library.db has never been synced, and it is
     // what every progress message shows — without this the user watched "1207666353" download.
     const sharedTitle = () => {
         try {
             const sp = path.join(appImageDir, 'GameManagerConfig', 'games.db');
             if (!fs.existsSync(sp)) return null;
             const sdb = new Database(sp, { readonly: true });
-            const row = sdb.prepare("SELECT Game FROM games WHERE GrinderGameId=?").get(`${store}_${appId}`);
+            const row = sdb.prepare("SELECT Game FROM games WHERE InstallerGameId=?").get(`${store}_${appId}`);
             sdb.close();
             return row?.Game || null;
         } catch { return null; }
@@ -380,9 +380,9 @@ async function headlessInstall(store, appId, platform, installDir, opts = {}) {
         let dir;
         if (dlcOp) {
             const cur = db?.prepare("SELECT install_path FROM games WHERE app_id=? AND store='gog'").get(appId)?.install_path;
-            dir = cur ? path.dirname(expandTilde(cur)) : (expandTilde(installDir) || path.join(HOME, 'Games', 'CafeNeurotico'));
+            dir = cur ? path.dirname(expandTilde(cur)) : (expandTilde(installDir) || path.join(HOME, 'Games', 'Clarity'));
         } else {
-            dir = expandTilde(installDir) || path.join(HOME, 'Games', 'CafeNeurotico');
+            dir = expandTilde(installDir) || path.join(HOME, 'Games', 'Clarity');
         }
         try { fs.mkdirSync(dir, { recursive: true }); } catch {}
         try { fs.chmodSync(gogdl, '755'); } catch {}
@@ -487,13 +487,13 @@ async function headlessInstall(store, appId, platform, installDir, opts = {}) {
         writeProgress({ ...base, step: 'installing', percent: 100, message: 'Updating library...' });
 
         try {
-            // ⚠️ Rows in grinder.db are created by the owned-library sync, NOT by installing.
-            // On a machine where that sync has never run — a rebuilt grinder.db beside a
+            // ⚠️ Rows in library.db are created by the owned-library sync, NOT by installing.
+            // On a machine where that sync has never run — a rebuilt library.db beside a
             // restored library, which is exactly what a host migration leaves behind — there
             // was nothing to update. This was `if (game)` with no else: the files downloaded,
             // the bookkeeping and the redistributables were skipped, "Installation complete!"
             // was still reported, and the game then refused to start with
-            // 'Game "gog_<id>" not found in GRINDER database.'
+            // 'Game "gog_<id>" not found in Installer database.'
             //
             // An install already knows everything the row needs, so it creates one rather than
             // depending on a sync having happened first.
@@ -513,7 +513,7 @@ async function headlessInstall(store, appId, platform, installDir, opts = {}) {
     } else if (store === 'epic') {
         const leg = findLegendary();
         if (!leg) { writeProgress({ ...base, step: 'error', message: 'legendary not found.', done: true }); return; }
-        const dir = expandTilde(installDir) || path.join(HOME, 'Games', 'CafeNeurotico');
+        const dir = expandTilde(installDir) || path.join(HOME, 'Games', 'Clarity');
         try { fs.mkdirSync(dir, { recursive: true }); } catch {}
         writeProgress({ ...base, step: 'downloading', percent: 0, message: 'Starting download...' });
         await new Promise(res => { const p = spawn(leg, ['uninstall', appId, '-y'], { stdio: 'ignore' }); p.on('close', res); p.on('error', res); });
@@ -561,7 +561,7 @@ async function headlessUninstall(store, appId) {
     // after the setting is pointed somewhere else.
     const bases = [
         db?.prepare("SELECT value FROM settings WHERE key='default_install_dir'").get()?.value,
-        path.join(HOME, 'Games', 'CafeNeurotico'),
+        path.join(HOME, 'Games', 'Clarity'),
     ].filter(Boolean).map(expandTilde);
     if (installPath && fs.existsSync(installPath)) {
         const safe = installPath !== HOME && installPath !== '/' &&
@@ -585,8 +585,8 @@ async function headlessUninstall(store, appId) {
 }
 
 // Single source of truth for a game's Wine prefix path (used by launch, install
-// redist, uninstall, the GRINDER GUI, and the Manager's save-game resolver).
-// An explicit prefix_path wins; else a legacy dir named by the grinder row id if
+// redist, uninstall, the Installer GUI, and the Manager's save-game resolver).
+// An explicit prefix_path wins; else a legacy dir named by the installer row id if
 // one exists; else a sanitized dir under prefixesDir. The fallback base is app_id
 // (what install-time creation uses when a title is missing), so lookup matches
 // creation. Pass { requireExplicitExists: true } to make a set-but-missing
@@ -715,7 +715,7 @@ async function launchGame(gameId, opts = {}) {
     // problematic titles) instead of the normal detached/ignored spawn.
     const onOutput = typeof opts.onOutput === 'function' ? opts.onOutput : null;
     const game = db.prepare('SELECT * FROM games WHERE id = ?').get(gameId);
-    if (!game)           throw new Error(`Game "${gameId}" not found in GRINDER database.`);
+    if (!game)           throw new Error(`Game "${gameId}" not found in Installer database.`);
     if (!game.installed) throw new Error(`"${game.title}" is not marked as installed.`);
 
     // Parse per-game custom environment variables (KEY=VALUE, one per line)
@@ -866,7 +866,7 @@ async function launchGame(gameId, opts = {}) {
         }
     } catch (e) { console.log(`[launch] per-game fix skipped: ${e.message}`); }
 
-    // Base env: system → custom user vars → compat flags → GRINDER's required vars (highest
+    // Base env: system → custom user vars → compat flags → Installer's required vars (highest
     // priority). Every spawn below builds its environment from this.
     const baseEnv = (extra = {}) => ({ ...process.env, ...customEnv, ...compatEnv, ...extra });
 
@@ -897,7 +897,7 @@ async function launchGame(gameId, opts = {}) {
 
     // Verbose mode: pipe the child's output to onOutput line by line. The child still gets
     // `detached: true` + unref() exactly like a normal launch, so the game keeps running (and
-    // survives quitting Cafe Neurotico) whether or not anyone is watching the log — piping only
+    // survives quitting Clarity) whether or not anyone is watching the log — piping only
     // changes where its output goes, never its lifetime.
     const streamOutput = (proc, header) => {
         onOutput(header);
@@ -1220,7 +1220,7 @@ async function injectGogRegistry(game, prefix, proton) {
 // ── Per-game fix: Fallout: New California (GOG 1168267909) ───────────────────
 // ── GOG bonus manuals ────────────────────────────────────────────────────────
 // GOG sells the extras alongside the game — manuals, cluebooks, reference cards — and
-// exposes them through the same authenticated API GRINDER already uses for installs. They
+// exposes them through the same authenticated API Installer already uses for installs. They
 // are the scanned originals, so a game whose folder ships nothing can still get its manual.
 //
 // Two categories are worth offering. "manuals" is the obvious one; "guides & reference" is
@@ -1347,7 +1347,7 @@ async function gogDownloadManual(appId, bonusId, destDir, onProgress) {
 // WHICH native DOSBox, and how a person installs one, is the host's business — see the
 // platform backend. Everything above is about GOG's own files and is true everywhere.
 
-// GRINDER's own settings table, read the same way the GOG credentials are.
+// Installer's own settings table, read the same way the GOG credentials are.
 function engineSetting(key, fallback = null) {
     try { return db.prepare("SELECT value FROM settings WHERE key=?").get(key)?.value ?? fallback; }
     catch { return fallback; }
@@ -1394,7 +1394,7 @@ const nativeDosboxArgs = (gogArgs) => host.dosbox.translateArgs(gogArgs);
 // Paths inside are relative and backslashed, the same convention GOG's own configs use —
 // DOSBox rewrites those separators for the host, so one file serves both the native
 // binary and the bundled Windows DOSBox under Proton.
-const CD_AUDIO_CONF = 'dosbox_cafeneurotico_cdaudio.conf';
+const CD_AUDIO_CONF = 'dosbox_clarity_cdaudio.conf';
 
 // Cue sheets are plain text. All we need is whether any track is audio: a data-only image
 // (Albion's is a lone MODE2/2352 track) has no soundtrack to recover and is left alone.
@@ -1483,7 +1483,7 @@ function gogCdAudioConfArgs(installPath, launchCwd, gogArgs) {
         const rel = p => path.relative(launchCwd, p).replace(/\//g, '\\');
         const discs = images.map(i => `"${rel(i.path)}"`).join(' ');
         const body =
-            `# Generated by Cafe Neurotico — regenerated on every launch, edits will be lost.\n` +
+            `# Generated by Clarity — regenerated on every launch, edits will be lost.\n` +
             `# Mounts the CD image(s) GOG ships with this game so its soundtrack plays.\n` +
             (images.length > 1 ? `# Several discs on one letter: press Ctrl+F4 in DOSBox to swap.\n` : '') +
             `\n[autoexec]\n` +
@@ -1653,7 +1653,7 @@ async function applyFalloutNewCaliforniaFix(installPath, prefix, proton) {
 
 async function gogFetch(url, token) {
     const res = await fetch(url, {
-        headers: { 'Authorization': `Bearer ${token}`, 'User-Agent': 'GRINDER/1.0' },
+        headers: { 'Authorization': `Bearer ${token}`, 'User-Agent': 'Installer/1.0' },
     });
     if (!res.ok) throw new Error(`GOG API ${res.status}: ${url}`);
     return res.json();
@@ -1710,14 +1710,14 @@ function writeGogAuthConfig() {
 // ── Headless sign-in ────────────────────────────────────────────────────────────
 // The interactive OAuth window is owned by the calling face's main process; these
 // functions take the extracted auth code and do the token exchange / CLI auth. That
-// lets GOG and Epic sign-in work identically whether it happens inside GRINDER or
-// headlessly from the Manager / CREMA — so the average user never has to open the
-// GRINDER GUI to connect their stores.
+// lets GOG and Epic sign-in work identically whether it happens inside Installer or
+// headlessly from the Manager / Couch — so the average user never has to open the
+// Installer GUI to connect their stores.
 
-// Exchange a GOG OAuth `code` for tokens, persist them in grinder.db and return the
-// signed-in account name. Mirrors GRINDER's gog-login handler.
+// Exchange a GOG OAuth `code` for tokens, persist them in library.db and return the
+// signed-in account name. Mirrors Installer's gog-login handler.
 async function gogExchangeCode(code) {
-    if (!db) return { ok: false, error: 'GRINDER database not available.' };
+    if (!db) return { ok: false, error: 'Installer database not available.' };
     try {
         const res = await fetch('https://auth.gog.com/token', {
             method: 'POST',
@@ -1774,7 +1774,7 @@ async function epicAuthCode(code) {
     return { ok: r.ok, error: r.ok ? null : (r.stderr || r.error || 'legendary auth failed.') };
 }
 
-// Current Epic sign-in state (via legendary status). Mirrors GRINDER's legendary-status.
+// Current Epic sign-in state (via legendary status). Mirrors Installer's legendary-status.
 async function epicStatus() {
     const r = await runLegendary(['status']);
     if (!r.ok && r.error) return { loggedIn: false, error: r.error };
@@ -1786,9 +1786,9 @@ async function epicStatus() {
 }
 
 // Headless owned-library refresh. Pulls the full owned-games list from the GOG
-// and Epic store APIs into grinder.db (installed=0 = imported, NOT installed), so
-// any face can pick up newly-purchased titles without opening the GRINDER GUI.
-// Mirrors GRINDER's legendary-list-owned/legendary-import + gog-list-owned/gog-import,
+// and Epic store APIs into library.db (installed=0 = imported, NOT installed), so
+// any face can pick up newly-purchased titles without opening the Installer GUI.
+// Mirrors Installer's legendary-list-owned/legendary-import + gog-list-owned/gog-import,
 // but does list+import in one pass (no interactive picker). Returns per-store
 // { loggedIn, total, added, error }.
 async function syncOwnedLibrary() {
@@ -1800,8 +1800,8 @@ async function syncOwnedLibrary() {
 
     // Drop store rows the user no longer owns (refunds/removals). Only NOT-installed rows
     // are pruned — a still-installed title is left alone so its on-disk files are never
-    // orphaned. Guarded by the caller on a non-empty owned list. Returns the removed grinder
-    // ids (store_appid) so the caller can drop the matching CNGM library rows too.
+    // orphaned. Guarded by the caller on a non-empty owned list. Returns the removed installer
+    // ids (store_appid) so the caller can drop the matching Clarity library rows too.
     const pruneUnowned = (store, ownedSet) => {
         const removedIds = [];
         const rows = db.prepare("SELECT id, app_id FROM games WHERE store=? AND installed=0").all(store);
@@ -1938,10 +1938,10 @@ function findGogInstallResult(baseDir, appId, preExistingDirs = null) {
     return null;
 }
 
-// Still exported under its old name: the GRINDER face destructures it.
+// Still exported under its old name: the Installer face destructures it.
 const findLinuxGameExe = (gameDir) => host.findNativeGameExe(gameDir);
 
-// ── Pre-install size info + free disk space (shared by Manager & CREMA) ──────
+// ── Pre-install size info + free disk space (shared by Manager & Couch) ──────
 // Available bytes at a path (walks up to the first existing parent).
 async function getDiskSpace(dirPath) {
     let check = expandTilde(dirPath) || HOME;
@@ -2006,7 +2006,7 @@ async function gogListDlcs(baseAppId, platform) {
                     return { id: String(x.id), title: x.title || 'DLC', download_size: sz.download_size || 0, disk_size: sz.disk_size || 0 };
                 });
                 resolve({ ok: true, dlcs });
-            } catch { resolve({ ok: false, error: 'Could not read the DLC list. Make sure you are signed into GOG in GRINDER.', dlcs: [] }); }
+            } catch { resolve({ ok: false, error: 'Could not read the DLC list. Make sure you are signed into GOG in Installer.', dlcs: [] }); }
         });
         proc.on('error', () => { try { fs.unlinkSync(authPath); } catch {} resolve({ ok: false, error: 'gogdl failed to run.', dlcs: [] }); });
     });

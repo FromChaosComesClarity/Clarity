@@ -1,6 +1,6 @@
 'use strict';
 /*
- * @cafeneurotico/core — ProtonDB tier watch for the Home dashboard (Phase 3).
+ * @clarity/core — ProtonDB tier watch for the Home dashboard (Phase 3).
  * Fetches current ProtonDB ratings for Steam games and diffs them against the
  * tier stored in the library, surfacing anything that climbed. Network + opt-in
  * (runs only on an explicit "Check now"). Defensive: failures → skipped/[].

@@ -5,14 +5,14 @@
  * Companion pieces — the Omarchy bar widget, its launcher overlay, the Clock — need
  * three things only the app knows for certain: which binary to run, and where the two
  * databases actually are. Every one of those is a *lookup*, never a guess: a second
- * consumer computing its own grinder.db path is precisely how the library got orphaned
- * once before (the two-grinder.db split fixed in 1.8.0). A hardcoded path in a plugin
+ * consumer computing its own library.db path is precisely how the library got orphaned
+ * once before (the two-library.db split fixed in 1.8.0). A hardcoded path in a plugin
  * is the same mistake wearing a different hat, and it only works on the machine it was
  * written on.
  *
  * So the app publishes them instead. Every Manager start rewrites
- * ~/.config/cafeneurotico/desktop.json, and anything on the desktop that wants to talk
- * to Cafe Neurotico reads it there.
+ * ~/.config/clarity/desktop.json, and anything on the desktop that wants to talk
+ * to Clarity reads it there.
  *
  * ⚠️ For consumers: a missing file means "not installed, or never run" — it is never a
  * licence to fall back to a guessed path. Report nothing rather than the wrong thing.
@@ -29,7 +29,7 @@ const HOME = os.homedir();
 
 function descriptorDir() {
     const xdg = process.env.XDG_CONFIG_HOME;
-    return path.join(xdg && path.isAbsolute(xdg) ? xdg : path.join(HOME, '.config'), 'cafeneurotico');
+    return path.join(xdg && path.isAbsolute(xdg) ? xdg : path.join(HOME, '.config'), 'clarity');
 }
 
 function descriptorPath() {
@@ -39,7 +39,7 @@ function descriptorPath() {
 /*
  * The command a desktop integration should run to get this suite back.
  *
- * Prefers a CafeNeurotico AppImage sitting in the data directory over our own
+ * Prefers a Clarity AppImage sitting in the data directory over our own
  * process: `selfExecutable()` during development is the electron binary, which is
  * correct for us and useless to anyone else. The same preference is what
  * install-to-menu writes into its .desktop files, so the bar and the app menu open
@@ -47,7 +47,7 @@ function descriptorPath() {
  */
 function suiteExecutable(baseDir, selfExecutable) {
     try {
-        const hit = fs.readdirSync(baseDir).find(f => /^CafeNeurotico.*\.AppImage$/i.test(f));
+        const hit = fs.readdirSync(baseDir).find(f => /^Clarity.*\.AppImage$/i.test(f));
         if (hit) return path.join(baseDir, hit);
     } catch {}
     return selfExecutable || null;
@@ -66,7 +66,7 @@ function readDescriptor() {
 function writeDescriptor(patch) {
     try {
         const next = Object.assign(readDescriptor(), patch, {
-            app: 'CafeNeurotico',
+            app: 'Clarity',
             updatedAt: Math.floor(Date.now() / 1000),
         });
         fs.mkdirSync(descriptorDir(), { recursive: true });
@@ -77,18 +77,18 @@ function writeDescriptor(patch) {
 
 /*
  * Called once per Manager start with everything main.js already has resolved.
- * `grinderDb` may be null — GRINDER's database does not exist until the first
+ * `installerDb` may be null — Installer's database does not exist until the first
  * store sign-in, and saying so is more useful than omitting the key.
  */
-function publish({ version, baseDir, libraryDb, grinderDb, selfExecutable }) {
+function publish({ version, baseDir, libraryDb, installerDb, selfExecutable }) {
     return writeDescriptor({
         version: version || null,
         exec: suiteExecutable(baseDir, selfExecutable),
         // The argv each face answers to, so a consumer never has to know our CLI by heart.
-        faces: { manager: [], crema: ['--crema'], grinder: ['grinder'] },
+        faces: { manager: [], couch: ['--couch'], installer: ['installer'] },
         baseDir: baseDir || null,
         libraryDb: libraryDb || null,
-        grinderDb: grinderDb || null,
+        installerDb: installerDb || null,
     });
 }
 

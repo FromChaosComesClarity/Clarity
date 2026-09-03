@@ -113,13 +113,13 @@ function monitors() {
 
 // ── Window behaviour under Hyprland ──────────────────────────────────────────
 // A tiling compositor tiles everything, including windows that are obviously transient. The
-// GRINDER window is the clear case: it is a tool the Manager opens over itself, and tiling it
+// Installer window is the clear case: it is a tool the Manager opens over itself, and tiling it
 // side-by-side halves the library you were just looking at. Sign-in windows are the same
 // shape — they are dialogs, and a dialog that steals half the screen is a dialog done wrong.
 //
 // ⚠️ Every face ships as the same Electron app, so they all share one app id
-// (`cafeneurotico`). Class alone cannot tell them apart; the rules below match on TITLE, which
-// is the only thing that distinguishes GRINDER from the Manager from CREMA.
+// (`clarity`). Class alone cannot tell them apart; the rules below match on TITLE, which
+// is the only thing that distinguishes Installer from the Manager from Couch.
 //
 // Applied with `hyprctl keyword`, which is session-scoped and writes NOTHING to the user's
 // Hyprland config — the same restraint kwin-display.js exercises on KDE, and for the same
@@ -140,21 +140,21 @@ function monitors() {
 const GAME_CLASS_RE = '^(steam_app_.*|dosbox.*|scummvm|openbor|gzdoom|uzdoom|ironwail|vkquake|quake.*|raze|buildgdx|ecwolf|cannonball)$';
 
 const WINDOW_RULES = [
-    // GRINDER floats above the Manager rather than splitting the screen with it — it is a tool
+    // Installer floats above the Manager rather than splitting the screen with it — it is a tool
     // opened over the library, and tiling it halves the thing you were just looking at.
     {
-        lua: 'o.window({ class = "^(cafeneurotico)$", title = "^(GRINDER)$" }, { float = true, center = true, size = { 1100, 700 } })',
-        keyword: ['float', 'class:^(cafeneurotico)$,title:^(GRINDER)$'],
+        lua: 'o.window({ class = "^(clarity)$", title = "^(Clarity Installer)$" }, { float = true, center = true, size = { 1100, 700 } })',
+        keyword: ['float', 'class:^(clarity)$,title:^(Clarity Installer)$'],
     },
     // Store sign-in windows are dialogs, and the one place a user types a password.
     {
-        lua: 'o.window({ class = "^(cafeneurotico)$", title = "^(.*(Login to|Sign in to).*)$" }, { float = true, center = true })',
-        keyword: ['float', 'class:^(cafeneurotico)$,title:^(.*(Login to|Sign in to).*)$'],
+        lua: 'o.window({ class = "^(clarity)$", title = "^(.*(Login to|Sign in to).*)$" }, { float = true, center = true })',
+        keyword: ['float', 'class:^(clarity)$,title:^(.*(Login to|Sign in to).*)$'],
     },
     // The manual viewer is a reader opened beside a game.
     {
-        lua: 'o.window({ class = "^(cafeneurotico)$", title = "^(.*Manual.*)$" }, { float = true, center = true })',
-        keyword: ['float', 'class:^(cafeneurotico)$,title:^(.*Manual.*)$'],
+        lua: 'o.window({ class = "^(clarity)$", title = "^(.*Manual.*)$" }, { float = true, center = true })',
+        keyword: ['float', 'class:^(clarity)$,title:^(.*Manual.*)$'],
     },
     // Games launched through umu/Proton all arrive as steam_app_* (umu gives every non-Steam
     // title the same class — see kwin-display.js for why that is not ours to change). Holding
@@ -318,7 +318,7 @@ function tuningCommand() {
     const parts = [];
     const sysctls = bad.filter(t => t.sysctl).map(t => t.sysctl);
     if (sysctls.length) {
-        parts.push(`printf '${sysctls.join('\\n')}\\n' | sudo tee /etc/sysctl.d/99-cafeneurotico-gaming.conf`);
+        parts.push(`printf '${sysctls.join('\\n')}\\n' | sudo tee /etc/sysctl.d/99-clarity-gaming.conf`);
         parts.push('sudo sysctl --system');
     }
     for (const t of bad) if (!t.sysctl && t.fix) parts.push(t.fix);
@@ -353,7 +353,7 @@ function hyprGeometry() {
 }
 
 // ── Keeping the screen awake while a game runs ───────────────────────────────
-// Omarchy locks on idle. A gamepad-only CREMA session, a long cutscene or a turn spent
+// Omarchy locks on idle. A gamepad-only Couch session, a long cutscene or a turn spent
 // reading a map produces no keyboard or mouse input at all, so the desktop's idea of "idle"
 // and the player's are completely different — and the lock screen wins.
 //
@@ -424,7 +424,7 @@ function setGamingPower(on) {
 // what the tool does instead. (The comments here are developer-facing and may name it.)
 //
 // Every entry names the binary the suite actually probes for, so this list stays honest:
-// `required: true` means something in Cafe Neurotico degrades without it, and the `why`
+// `required: true` means something in Clarity degrades without it, and the `why`
 // says what. The `extra` group is what Nobara ships and a gamer will want, but which the
 // suite itself never calls — labelled so nobody is told they need something they don't.
 //
@@ -523,7 +523,7 @@ const INSTALLERS = [
       why: 'Omarchy installs RetroArch with the full libretro core set in one step. Emulation is EmuLatte\'s pillar rather than this app\'s.' },
     { key: 'xbox-controllers', label: 'Xbox controller support', pkg: 'xpadneo-dkms',
       command: 'omarchy install gaming xbox-controllers',
-      why: 'optional. Wireless Xbox pads need this to pair properly; CREMA is gamepad-first, so it is worth having if you play from the couch.' },
+      why: 'optional. Wireless Xbox pads need this to pair properly; Couch is gamepad-first, so it is worth having if you play from the couch.' },
 ];
 
 function installerStatus() {
@@ -540,7 +540,7 @@ function installerStatus() {
     });
 }
 
-// `includeEmulation` is false for Cafe Neurotico and true for EmuLatte — same module,
+// `includeEmulation` is false for Clarity and true for EmuLatte — same module,
 // each app reporting only what it is actually responsible for.
 function missingInstallers({ includeEmulation = false } = {}) {
     return installerStatus().filter(i => !i.present && (includeEmulation || !i.emulation));

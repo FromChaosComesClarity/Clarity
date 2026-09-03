@@ -297,7 +297,7 @@ const RECIPES = [
         source: {
             name: 'Your own disk',
             url: '',
-            hint: 'Cafe Neurotico scans three levels deep, sorts the likely entry point first, and lets you choose and name it.',
+            hint: 'Clarity scans three levels deep, sorts the likely entry point first, and lets you choose and name it.',
         },
         archive: null,
         dirName: '',
@@ -905,7 +905,7 @@ function detectRecipe(fileName) {
 //   { ok: true, path }                     → found, on disk, probed and confirmed
 //   { ok: false, owned: [...], message }   → they own it but it is not installed
 //   { ok: false, message }                 → nothing in the library matches
-// `rows` is grinder.db's games table; passing it in keeps this module free of any
+// `rows` is library.db's games table; passing it in keeps this module free of any
 // database handle of its own.
 // ── Data sealed inside a disc image ──────────────────────────────────────────
 // GOG ships several of its DOSBox releases as an .iso the bundled DOSBox mounts, so the
@@ -1145,7 +1145,7 @@ function resolveExtra(extra, rows) {
 // saves into its own id1/ while the multi-gigabyte data stays in one place — and the game
 // CN installed for you is never written into by something else.
 // `copy` decides how data is attached, and the rule is about who owns the source, not
-// about size. Data resolved from the library lives in a folder Cafe Neurotico installed
+// about size. Data resolved from the library lives in a folder Clarity installed
 // and manages, so a symlink is safe and saves duplicating gigabytes. Data the user pointed
 // at is theirs — a USB stick, a folder they extracted to look inside, somewhere they will
 // tidy up next week — so it is copied. A game that stops working because a folder moved is
@@ -1255,14 +1255,14 @@ function linkGameData(dataId, sourceRoot, targetRoot, extraSource, { copy = fals
 
 // ── Where installs are allowed to land ───────────────────────────────────────
 // ⚠️ `installRoot` arrives from a user setting, and that setting is stored the way it was
-// typed — `~/Games/CafeNeurotico`. path.join() does not know what a tilde is, so an
+// typed — `~/Games/Clarity`. path.join() does not know what a tilde is, so an
 // unexpanded root produced a real directory literally named "~" inside the home folder:
 //
-//     /home/jose/~/Games/CafeNeurotico/GZDoom/gzdoom.exe
+//     /home/jose/~/Games/Clarity/GZDoom/gzdoom.exe
 //
 // The install then reported success, because from its point of view it had unpacked
 // everything correctly. The launcher expands the tilde properly, looked in
-// ~/Games/CafeNeurotico/GZDoom, found nothing, and said "Executable not found" for a file
+// ~/Games/Clarity/GZDoom, found nothing, and said "Executable not found" for a file
 // that was sitting on disk the whole time under a nonsense path. 218 MB of it.
 //
 // Expanded here rather than at the call sites: this module is the thing that creates
@@ -1386,7 +1386,7 @@ function installFromArchive({ recipeId, archivePath, installRoot, dataRows, data
 
 // ── Adding a Windows game from a folder already on disk ──────────────────────
 // The other half of the same problem: plenty of things arrive as a folder you have already
-// unpacked, and until now the only route was GRINDER's importer, which scans one level deep
+// unpacked, and until now the only route was Installer's importer, which scans one level deep
 // and so finds nothing in the many releases that put the executable in a subfolder.
 //
 // Nothing is copied or moved — the folder is registered where it sits.
@@ -1586,7 +1586,7 @@ function writeEngineSearchPaths(engineId, engineRoot, gameFolders) {
     if (engineId !== 'raze') return false;          // only Raze's format is known-good
     const toWine = (p) => 'Z:' + p.replace(/\//g, '\\');
     const body =
-        '# Written by Cafe Neurotico. Lists the folders your Build games are installed in,\n' +
+        '# Written by Clarity. Lists the folders your Build games are installed in,\n' +
         '# so opening Raze on its own shows a picker for all of them.\n\n' +
         '[GlobalSettings]\n\n' +
         '[GameSearch.Directories]\n' +

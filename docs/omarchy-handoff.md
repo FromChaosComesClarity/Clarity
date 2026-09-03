@@ -1,4 +1,4 @@
-# Cafe Neurotico on Omarchy Linux — handoff
+# Clarity on Omarchy Linux — handoff
 
 **This is a new desktop environment, not a new platform.** Omarchy is Arch with Hyprland;
 `host.id` is `linux` and it runs the exact same `packages/core/platform/linux.js` every Linux host
@@ -28,7 +28,7 @@ Companion documents: `docs/mac-port-handoff.md` (the macOS equivalent) and
 
    | Binary | Highest symbol |
    |---|---|
-   | `cafeneurotico` (the Electron binary) | `GLIBC_2.25` |
+   | `clarity` (the Electron binary) | `GLIBC_2.25` |
    | `better_sqlite3.node`, `comet` | `GLIBC_2.34` |
 
    `GLIBC_2.34` is from 2021. Nothing is compiled against the build host's glibc: Electron ships
@@ -88,7 +88,7 @@ Companion documents: `docs/mac-port-handoff.md` (the macOS equivalent) and
 
    ```bash
    cd "$(mktemp -d)" && npx --yes @electron/asar extract-file \
-     ~/Documents/DEVELOPMENT/CLAUDE/CafeNeurotico/dist/linux-unpacked/resources/app.asar \
+     ~/Documents/DEVELOPMENT/CLAUDE/Clarity/dist/linux-unpacked/resources/app.asar \
      packages/core/platform/linux.js && grep -n ensureCaBundle linux.js
    ```
 
@@ -130,8 +130,8 @@ node -v                       # want v22.x — the last Nobara build ran 22.22.2
 ## Day 1 — clone and run
 
 ```bash
-git clone https://github.com/FromChaosComesClarity/CafeNeurotico.git
-cd CafeNeurotico
+git clone https://github.com/FromChaosComesClarity/Clarity.git
+cd Clarity
 npm install
 npm start
 ```
@@ -147,14 +147,14 @@ Three faces, three commands:
 
 ```bash
 npm start                 # The Manager
-npm run start:crema       # CREMA
-npx electron . grinder    # GRINDER
+npm run start:couch       # Couch
+npx electron . installer    # Installer
 ```
 
 **Read the terminal, not the window.** An Electron main-process error dialog keeps the process
 alive, so "it stayed open" proves nothing. That mistake has cost real bugs twice on this project.
 
-`npm run dist` builds the AppImage and `postdist` copies it to `~/Games/CNGM/` — that path is
+`npm run dist` builds the AppImage and `postdist` copies it to `~/Games/Clarity/` — that path is
 hardcoded in `package.json`. See gap 2 below before you run it.
 
 ---
@@ -174,18 +174,18 @@ rescued before the wipe:
 
 ```bash
 mkdir -p .claude
-cp /run/media/jose/backup/irreplaceable/06-claude-config/repo-settings-local/CafeNeurotico/settings.local.json \
+cp /run/media/jose/backup/irreplaceable/06-claude-config/repo-settings-local/Clarity/settings.local.json \
    .claude/
 ```
 
-**2. `postdist` fails loudly on a machine with no `~/Games/CNGM`.** The script is
+**2. `postdist` fails loudly on a machine with no `~/Games/Clarity`.** The script is
 `[ -f $D/$F ] && mv …; cp dist/$F $D/$F` — with the directory missing, `cp` exits non-zero and
 npm prints a red `postdist` failure **after the AppImage has already built correctly**. Nothing is
-broken and `dist/CafeNeurotico.AppImage` is fine, but the error reads like a failed build. Create
+broken and `dist/Clarity.AppImage` is fine, but the error reads like a failed build. Create
 the folder once and it never comes up again:
 
 ```bash
-mkdir -p ~/Games/CNGM
+mkdir -p ~/Games/Clarity
 ```
 
 While you are there: restoring `GameManagerConfig/` gives you a real library to test against.
@@ -193,7 +193,7 @@ Without it the machine starts empty and no library-shaped bug reproduces.
 
 ```bash
 rsync -a /run/media/jose/backup/irreplaceable/01-game-manager-config/ \
-         ~/Games/CNGM/GameManagerConfig/
+         ~/Games/Clarity/GameManagerConfig/
 ```
 
 **3. `npm run dist` here is both the test build and the shipped one.** This gap used to read
@@ -255,7 +255,7 @@ Verified by reading the code on 2026-08-24, not assumed:
 through an *asynchronous* `'error'` event, so the `try/catch` never sees it, and an unhandled
 `'error'` on a ChildProcess is fatal. Four sites had that shape, each spawning a tool a minimal
 Wayland-only Arch box plausibly lacks — `wmctrl` most of all, being an X11 tool. `focusWindow` is
-reached from CREMA, so **CREMA is the face that would have died on startup.**
+reached from Couch, so **Couch is the face that would have died on startup.**
 
 Fixed in `0f80ab3` with `spawnOptional()`. If you add another optional-tool spawn, use it.
 **`spawnSync`/`execSync` are unaffected — they really do throw.**
@@ -320,7 +320,7 @@ Everything about the app's history, decisions and traps lives in Claude Code's m
 not in this repo. Restore it with **ClaudeMemKeeper** — see `MEMORY_RESTORE.md` beside this file.
 Start the first session on this machine with:
 
-> "Resume the Cafe Neurotico project. Read your memory files for context."
+> "Resume the Clarity project. Read your memory files for context."
 
 ### ⚠️ `.claude/` is gitignored, so the project config does not arrive with the clone
 

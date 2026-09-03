@@ -1,4 +1,4 @@
-Cafe Neurotico 1.9.0
+Clarity 1.9.0
 
 Windows games now run on macOS, and a panel that had no business being on Linux is gone.
 
@@ -8,7 +8,7 @@ Windows games now run on macOS, and a panel that had no business being on Linux 
 
 This needs CrossOver installed separately; it is commercial software and is not bundled. **Honest about the state of it:** the plumbing is verified end-to-end with real launches — a fresh prefix builds a bottle and runs a program inside it, a second launch reuses it — but it has not yet been driven against a large library of real games, so treat per-title compatibility as unproven. macOS as a whole remains **Experimental**. [macOS guide →](docs/macos-guide.md)
 
-**GRINDER's tool panel tells the truth on macOS.** The External Tools panel and welcome screen were still listing Linux's `umu-run`/`wine` rows and offering the GE-Proton downloader on a Mac, where none of it applies. They now report CrossOver status instead.
+**Installer's tool panel tells the truth on macOS.** The External Tools panel and welcome screen were still listing Linux's `umu-run`/`wine` rows and offering the GE-Proton downloader on a Mac, where none of it applies. They now report CrossOver status instead.
 
 ## Fixes
 
@@ -17,10 +17,10 @@ This needs CrossOver installed separately; it is commercial software and is not 
 ## Install
 
 **Linux:**
-1. Download `CafeNeurotico.AppImage` below
-2. `chmod +x CafeNeurotico.AppImage`
+1. Download `Clarity.AppImage` below
+2. `chmod +x Clarity.AppImage`
 3. Run it
 
-**macOS (Experimental):** download `CafeNeurotico.dmg` below (or the `.zip`). See the [full guide](docs/macos-guide.md) for the one-time Gatekeeper step an unsigned build needs, and for what does and doesn't work yet.
+**macOS (Experimental):** download `Clarity.dmg` below (or the `.zip`). See the [full guide](docs/macos-guide.md) for the one-time Gatekeeper step an unsigned build needs, and for what does and doesn't work yet.
 
 Upgrading from any 1.x? Just replace the AppImage (or the `.app`, on macOS). Your library, artwork, playlists and settings are untouched.

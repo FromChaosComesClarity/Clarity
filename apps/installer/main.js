@@ -6,9 +6,9 @@ const os   = require('os');
 const { spawn, execSync } = require('child_process');
 const Database = require('better-sqlite3');
 
-// Shared window-free GRINDER engine. Leaf helpers are re-bound here so existing
+// Shared window-free Installer engine. Leaf helpers are re-bound here so existing
 // call sites in this file keep working unchanged; engine.init() runs in initDb().
-const grinderEngine = require('../../packages/core/grinder-engine.js');
+const installerEngine = require('../../packages/core/installer-engine.js');
 const host = require('../../packages/core/platform/index.js');
 const {
     sanitizeLogName, expandTilde, resolvePathCaseInsensitive,
@@ -18,36 +18,36 @@ const {
     syncSharedDb, headlessInstall, headlessUninstall, launchGame, runLegendary,
     getGameInstallInfo, runRedist, injectGogRegistry, gogFetch, getGogToken,
     writeGogAuthConfig, findGogInstallResult, findLinuxGameExe,
-} = grinderEngine;
+} = installerEngine;
 
-// GRINDER face keeps its own 'grinder' identity even inside the unified suite:
-//  - userData stays ~/.config/grinder  → preserves existing data + the CNGM↔GRINDER DB bridge
-//  - independent single-instance lock  → GRINDER GUI can open alongside the Manager window
-app.setName('grinder');
+// Installer face keeps its own identity even inside the unified suite:
+//  - userData is ~/.config/clarity-installer  → its own data dir + the Clarity↔Installer DB bridge
+//  - independent single-instance lock  → Installer GUI can open alongside the Manager window
+app.setName('clarity-installer');
 
 // ── Paths ─────────────────────────────────────────────────────────────────────
 const configDir = app.isPackaged
-    ? app.getPath('userData')          // ~/.config/grinder on Linux (Electron uses lowercase app name)
-    : path.join(__dirname, 'GRINDERConfig');
+    ? app.getPath('userData')          // ~/.config/clarity-installer on Linux (Electron uses the app name verbatim)
+    : path.join(__dirname, 'InstallerConfig');
 
 const prefixesDir = path.join(configDir, 'prefixes');
 const logDir      = path.join(configDir, 'game_logs');
 
-// Directory containing the AppImage (same folder as CNGM.AppImage)
+// Directory containing the AppImage (same folder as Clarity.AppImage)
 const appImageDir  = host.portableBaseDir({ devDir: configDir });
-const progressFile = path.join(appImageDir, 'GameManagerConfig', 'grinder-progress.json');
+const progressFile = path.join(appImageDir, 'GameManagerConfig', 'installer-progress.json');
 
-// GRINDER's own db normally lives at configDir/grinder.db — its dedicated identity (see the
-// comment above), and findGrinderDb's own candidate list already includes that exact path
-// first. But if a grinder.db with real data already exists at one of the OTHER candidates
-// (most likely the shared suite's own baseDir/GRINDERConfig, from an install or sync that ran
+// Installer's own db normally lives at configDir/library.db — its dedicated identity (see the
+// comment above), and findInstallerDb's own candidate list already includes that exact path
+// first. But if a library.db with real data already exists at one of the OTHER candidates
+// (most likely the shared suite's own baseDir/InstallerConfig, from an install or sync that ran
 // against it before this dedicated path ever got created — e.g. dev-mode testing, or the
-// Manager face running before GRINDER's own packaged path existed), use that instead of
-// silently creating another, empty grinder.db right next to it. Two live, disagreeing
+// Manager face running before Installer's own packaged path existed), use that instead of
+// silently creating another, empty library.db right next to it. Two live, disagreeing
 // databases for the same suite is exactly the split that made "Play" fail with a real, correct
-// GrinderGameId that simply wasn't in *this* file. Falls back to the original dedicated path
+// InstallerGameId that simply wasn't in *this* file. Falls back to the original dedicated path
 // when nothing exists anywhere yet (the normal fresh-install case — unchanged from before).
-const dbPath = host.findGrinderDb(appImageDir) || path.join(configDir, 'grinder.db');
+const dbPath = host.findInstallerDb(appImageDir) || path.join(configDir, 'library.db');
 
 
 let db;
@@ -74,7 +74,7 @@ function writeProgress(data) {
     try { fs.writeFileSync(progressFile, JSON.stringify(data), 'utf8'); } catch {}
 }
 
-// [engine] GOG consts + install/launch/auth functions moved to packages/core/grinder-engine.js
+// [engine] GOG consts + install/launch/auth functions moved to packages/core/installer-engine.js
 
 
 
@@ -87,7 +87,7 @@ function initDb() {
     db.pragma('journal_mode = WAL');
 
     // Wire the shared engine now that paths + DB handle are available.
-    grinderEngine.init({ configDir, prefixesDir, logDir, binDir, appImageDir, homeDir: HOME, db, onProgress: writeProgress });
+    installerEngine.init({ configDir, prefixesDir, logDir, binDir, appImageDir, homeDir: HOME, db, onProgress: writeProgress });
 
     db.exec(`
         CREATE TABLE IF NOT EXISTS games (
@@ -139,8 +139,8 @@ function initDb() {
 // ── Proton scanner ────────────────────────────────────────────────────────────
 const HOME = os.homedir();
 
-// Proton discovery (PROTON_DIRS + scanProtonVersions) now lives in packages/core/grinder-engine.js
-// so the Manager and CREMA resolve exactly the same builds this face lists; `scanProtonVersions`
+// Proton discovery (PROTON_DIRS + scanProtonVersions) now lives in packages/core/installer-engine.js
+// so the Manager and Couch resolve exactly the same builds this face lists; `scanProtonVersions`
 // is re-bound from the engine at the top of this file.
 
 // Expand ~ to HOME so spawn() (which doesn't use a shell) gets real paths
@@ -150,7 +150,7 @@ const HOME = os.homedir();
 const binDir = path.join(app.isPackaged ? process.resourcesPath : __dirname, 'assets', 'bin', host.binDirName);
 
 // expandTilde, resolvePathCaseInsensitive, which, find* and findRuntime now live
-// in packages/core/grinder-engine.js (re-bound at the top of this file).
+// in packages/core/installer-engine.js (re-bound at the top of this file).
 
 
 // ── Launch engine ─────────────────────────────────────────────────────────────
@@ -164,11 +164,11 @@ if (cliMode) {
     app.whenReady().then(() => {
         initDb();
         launchGame(cliGameId)
-            .then(r  => { console.log(`GRINDER: launched via ${r.method}`); setTimeout(() => app.quit(), 300); })
-            .catch(e => { console.error('GRINDER error:', e.message); app.quit(); });
+            .then(r  => { console.log(`Installer: launched via ${r.method}`); setTimeout(() => app.quit(), 300); })
+            .catch(e => { console.error('Installer error:', e.message); app.quit(); });
     });
 } else if (headlessInstMode) {
-    // Headless install/uninstall mode — no window, writes progress to grinder-progress.json
+    // Headless install/uninstall mode — no window, writes progress to installer-progress.json
     app.disableHardwareAcceleration();
     app.whenReady().then(async () => {
         initDb();
@@ -181,11 +181,11 @@ if (cliMode) {
         setTimeout(() => app.quit(), 500);
     });
 } else {
-    // ⚠️ GRINDER has no GUI as of Phase 2B. Its setup modal and storage view live in
-    // the Manager now, so a bare `grinder` invocation has nothing to show. The CLI
+    // ⚠️ Installer has no GUI as of Phase 2B. Its setup modal and storage view live in
+    // the Manager now, so a bare `installer` invocation has nothing to show. The CLI
     // paths above — launch, install, uninstall-headless — are the whole face, and the
-    // `grinder://launch/…` scheme every installed game carries still routes here.
-    console.error('GRINDER is headless: use `grinder launch <id>`, `grinder install …` or `grinder uninstall-headless …`.');
+    // `installer://launch/…` scheme every installed game carries still routes here.
+    console.error('Installer is headless: use `installer launch <id>`, `installer install …` or `installer uninstall-headless …`.');
     app.whenReady().then(() => app.quit());
 }
 
@@ -220,7 +220,7 @@ ipcMain.handle('update-game', (_, id, data) => {
     const set = entries.map(([k]) => `${k}=?`).join(', ');
     const vals = entries.map(([,v]) => v);
     db.prepare(`UPDATE games SET ${set} WHERE id=?`).run(...vals, id);
-    // Propagate install-state changes (e.g. GUI install completion) to the shared CNGM games.db
+    // Propagate install-state changes (e.g. GUI install completion) to the shared Clarity games.db
     if (Object.prototype.hasOwnProperty.call(data, 'installed')) {
         try { const g = db.prepare("SELECT app_id FROM games WHERE id=?").get(id); if (g?.app_id) syncSharedDb(g.app_id, data.installed ? 1 : 0); } catch {}
     }
@@ -240,7 +240,7 @@ ipcMain.handle('uninstall-game-files', async (_, id) => {
     // folder is user-changeable, so games installed under the previous one must stay removable.
     const bases = [
         db.prepare("SELECT value FROM settings WHERE key='default_install_dir'").get()?.value,
-        path.join(HOME, 'Games', 'CafeNeurotico'),
+        path.join(HOME, 'Games', 'Clarity'),
     ].filter(Boolean).map(expandTilde);
 
     // Safety guard: never delete a base install directory or any ancestor of one.
@@ -259,7 +259,7 @@ ipcMain.handle('uninstall-game-files', async (_, id) => {
         }
     }
 
-    const prefixPath = grinderEngine.prefixPathForGame(game);
+    const prefixPath = installerEngine.prefixPathForGame(game);
     if (fs.existsSync(prefixPath)) {
         try { fs.rmSync(prefixPath, { recursive: true, force: true }); }
         catch (e) { errors.push(`Prefix: ${e.message}`); }
@@ -276,7 +276,7 @@ ipcMain.handle('uninstall-game-files', async (_, id) => {
     }
 
     db.prepare("UPDATE games SET installed=0, install_path=NULL, executable=NULL, version=NULL WHERE id=?").run(id);
-    if (game.app_id) syncSharedDb(game.app_id, false);   // reflect uninstall in the shared CNGM games.db
+    if (game.app_id) syncSharedDb(game.app_id, false);   // reflect uninstall in the shared Clarity games.db
 
     return errors.length ? { ok: false, error: errors.join('; ') } : { ok: true };
 });
@@ -359,24 +359,24 @@ ipcMain.handle('save-install-log', (_, entries) => {
     try { fs.writeFileSync(installLogPath, JSON.stringify(entries), 'utf8'); return true; } catch { return false; }
 });
 
-// Read the active theme name from CNGM's settings DB so GRINDER can match its appearance
-ipcMain.handle('get-cngm-theme', () => {
-    const cngmDb = path.join(appImageDir, 'GameManagerConfig', 'games.db');
-    if (!fs.existsSync(cngmDb)) return null;
+// Read the active theme name from Clarity's settings DB so Installer can match its appearance
+ipcMain.handle('get-clarity-theme', () => {
+    const clarityDb = path.join(appImageDir, 'GameManagerConfig', 'games.db');
+    if (!fs.existsSync(clarityDb)) return null;
     try {
-        const db2 = new Database(cngmDb, { readonly: true });
-        const row = db2.prepare("SELECT value FROM settings WHERE key='cngm_theme'").get();
+        const db2 = new Database(clarityDb, { readonly: true });
+        const row = db2.prepare("SELECT value FROM settings WHERE key='clarity_theme'").get();
         db2.close();
         return row?.value || null;
     } catch { return null; }
 });
 
-// GRINDER follows the Manager's interface font (games.db setting ui_font).
+// Installer follows the Manager's interface font (games.db setting ui_font).
 ipcMain.handle('get-ui-font', () => {
-    const cngmDb = path.join(appImageDir, 'GameManagerConfig', 'games.db');
-    if (!fs.existsSync(cngmDb)) return null;
+    const clarityDb = path.join(appImageDir, 'GameManagerConfig', 'games.db');
+    if (!fs.existsSync(clarityDb)) return null;
     try {
-        const db2 = new Database(cngmDb, { readonly: true });
+        const db2 = new Database(clarityDb, { readonly: true });
         const row = db2.prepare("SELECT value FROM settings WHERE key='ui_font'").get();
         db2.close();
         return row?.value || null;
@@ -549,7 +549,7 @@ ipcMain.handle('get-all-disk-sizes', () => {
 ipcMain.handle('get-config-dir', () => configDir);
 ipcMain.handle('open-config-dir', () => shell.openPath(configDir));
 
-ipcMain.handle('reset-grinder', () => {
+ipcMain.handle('reset-installer', () => {
     if (db) { try { db.close(); } catch(e) {} db = null; }
     try { fs.unlinkSync(dbPath); } catch(e) {}
     try { fs.rmSync(prefixesDir, { recursive: true, force: true }); } catch(e) {}
@@ -558,7 +558,7 @@ ipcMain.handle('reset-grinder', () => {
     return { ok: true };
 });
 
-ipcMain.handle('delete-all-grinder-data', () => {
+ipcMain.handle('delete-all-installer-data', () => {
     if (db) { try { db.close(); } catch(e) {} db = null; }
     try { fs.rmSync(configDir, { recursive: true, force: true }); } catch(e) {}
     app.quit();
@@ -801,7 +801,7 @@ ipcMain.handle('legendary-install', async (event, appName, installDir) => {
     const leg = findLegendary();
     if (!leg) return { ok: false, error: 'legendary not found.' };
 
-    const dir = expandTilde(installDir) || path.join(HOME, 'Games', 'CafeNeurotico');
+    const dir = expandTilde(installDir) || path.join(HOME, 'Games', 'Clarity');
     try { fs.mkdirSync(dir, { recursive: true }); } catch (e) {}
 
     // Validate write access before starting
@@ -863,7 +863,7 @@ ipcMain.handle('legendary-uninstall', (event, appName) => {
     });
 });
 
-// Import selected games into GRINDER DB
+// Import selected games into Installer DB
 ipcMain.handle('legendary-import', (_, games) => {
     const stmt = db.prepare(`
         INSERT OR IGNORE INTO games (id, title, store, app_id, install_path, executable, installed, version)
@@ -872,7 +872,7 @@ ipcMain.handle('legendary-import', (_, games) => {
     const tx = db.transaction(list => {
         let n = 0;
         for (const g of list) {
-            // installed=0 by default — will be updated when user installs via GRINDER
+            // installed=0 by default — will be updated when user installs via Installer
         stmt.run('epic_' + g.app_name, g.title, g.app_name,
                      g.install_path || null, g.executable || null, g.version || null);
             n++;
@@ -888,9 +888,9 @@ ipcMain.handle('legendary-import', (_, games) => {
 ipcMain.handle('get-game-prefix', (_, gameId) => {
     const game = db.prepare('SELECT * FROM games WHERE id=?').get(gameId);
     if (!game) return null;
-    // Single source of truth (grinder-engine); requireExplicitExists keeps the GUI's
+    // Single source of truth (installer-engine); requireExplicitExists keeps the GUI's
     // "return the prefix only if it actually exists" behaviour.
-    return grinderEngine.prefixPathForGame(game, { requireExplicitExists: true });
+    return installerEngine.prefixPathForGame(game, { requireExplicitExists: true });
 });
 
 // Winetricks: detect and run
@@ -926,7 +926,7 @@ ipcMain.handle('gogdl-install-redist', async (event, appId, platform, _installPa
 });
 
 // Play tasks from goggame-<id>.info (GOG only) — shared with the Manager face's picker.
-ipcMain.handle('get-play-tasks', (_, gameId) => grinderEngine.gogPlayTasks(gameId));
+ipcMain.handle('get-play-tasks', (_, gameId) => installerEngine.gogPlayTasks(gameId));
 
 // Run any .exe / .msi inside the game's Wine prefix (mod installers, tools, etc.)
 // Inject GOG game registry entries into a Wine prefix so DLC/tool .exe installers
@@ -948,7 +948,7 @@ async function runExeForGame(gameId, dialogOpts) {
     if (result.canceled || !result.filePaths.length) return { ok: false, canceled: true };
 
     const exe    = result.filePaths[0];
-    const prefix = grinderEngine.prefixPathForGame(game);
+    const prefix = installerEngine.prefixPathForGame(game);
     const proton = expandTilde(game.proton_path)
         || db.prepare("SELECT value FROM settings WHERE key='default_proton_path'").get()?.value || '';
     fs.mkdirSync(prefix, { recursive: true });
@@ -1145,7 +1145,7 @@ ipcMain.handle('fetch-gog-achievements', async (_, appId) => {
         });
         tx(items);
 
-        // Mirror to shared DB so CNGM / CREMA can read without opening GRINDER's DB
+        // Mirror to shared DB so Clarity / Couch can read without opening Installer's DB
         try {
             const sharedDbPath = path.join(appImageDir, 'GameManagerConfig', 'games.db');
             if (fs.existsSync(sharedDbPath)) {
@@ -1198,9 +1198,9 @@ let activeGogInstallProc = null;
 ipcMain.handle('gogdl-install', (event, appId, platform, installDir, isDlc = false, baseAppId = null) => {
     if (activeGogInstallProc) return { ok: false, error: 'An installation is already in progress.' };
     const gogdl = findGogdl();
-    if (!gogdl) return { ok: false, error: 'gogdl not found. Place the gogdl binary in the same folder as GRINDER.AppImage.' };
+    if (!gogdl) return { ok: false, error: 'gogdl not found. Place the gogdl binary in the same folder as Installer.AppImage.' };
 
-    const dir = expandTilde(installDir) || path.join(HOME, 'Games', 'CafeNeurotico');
+    const dir = expandTilde(installDir) || path.join(HOME, 'Games', 'Clarity');
 
     // For DLCs the user selects the base game's install folder.
     // gogdl --path expects the PARENT of the game folder; we pass dirname(dir).
@@ -1244,7 +1244,7 @@ ipcMain.handle('gogdl-install', (event, appId, platform, installDir, isDlc = fal
 
         activeGogInstallProc = spawn(gogdl, args, {
             stdio: ['ignore', 'pipe', 'pipe'],
-            // Point gogdl to GRINDER's own config dir so manifests don't
+            // Point gogdl to Installer's own config dir so manifests don't
             // collide with another GOG launcher's cached manifests causing false "Nothing to do"
             env: { ...process.env, GOGDL_CONFIG_PATH: configDir },
         });
@@ -1270,7 +1270,7 @@ ipcMain.handle('gogdl-install', (event, appId, platform, installDir, isDlc = fal
                 // Auto-install compatibility files right after a successful GOG install
                 const game = db.prepare("SELECT * FROM games WHERE app_id=? AND store='gog'").get(appId);
                 if (game) {
-                    const prefixPath = grinderEngine.prefixPathForGame(game);
+                    const prefixPath = installerEngine.prefixPathForGame(game);
                     const protonPath = game.proton_path
                         || db.prepare("SELECT value FROM settings WHERE key='default_proton_path'").get()?.value;
                     send('\n─── Auto-installing compatibility files ───\n');

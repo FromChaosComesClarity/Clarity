@@ -1,5 +1,5 @@
 const { app, BrowserWindow, ipcMain, shell } = require('electron');
-app.setName('crema');
+app.setName('clarity-couch');
 const path = require('path');
 const os = require('os');
 const fs = require('fs');
@@ -79,7 +79,7 @@ const audioCfgPath = path.join(configDir, 'audio.json');
 const playlistsPath = path.join(configDir, 'playlists.json');
 const imagesDir = path.join(configDir, 'images');
 const trailersDir = path.join(configDir, 'videos');
-const musicDir = path.join(baseDir, 'CREMA_CUSTOM_MUSIC');
+const musicDir = path.join(baseDir, 'CUSTOM_MUSIC');
 // App Assets (INTERNAL - Uses __dirname so it stays packed inside the AppImage)
 const soundsDir = path.join(__dirname, 'assets', 'sounds');
 
@@ -110,14 +110,14 @@ app.whenReady().then(() => {
         db.pragma('journal_mode = WAL');
         registerSharedHandlers({ db, baseDir, trailersDir, ytDlpPath, ytDlpConfigPath, ffmpegPath, getBeautifulName, getOldCrushedName });
         db.prepare("CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT)").run();
-        // FIX: Ensure the LastPlayed column exists so CREMA can register game launches
+        // FIX: Ensure the LastPlayed column exists so Couch can register game launches
         try { db.prepare("ALTER TABLE games ADD COLUMN LastPlayed INTEGER DEFAULT 0").run(); } catch(e) {}
         try { db.prepare("ALTER TABLE games ADD COLUMN Description_i18n TEXT DEFAULT ''").run(); } catch(e) {}
         try { db.prepare("ALTER TABLE games ADD COLUMN Franchise TEXT DEFAULT ''").run(); } catch(e) {}
         try { db.prepare("ALTER TABLE games ADD COLUMN IGDBTrailer TEXT DEFAULT ''").run(); } catch(e) {}
         try { db.prepare("ALTER TABLE games ADD COLUMN Installed INTEGER DEFAULT 1").run(); } catch(e) {}
-        // One-time migration: rename the legacy launch scheme heroic://launch/… → grinder://launch/… (Heroic-era leftover)
-        try { db.prepare("UPDATE games SET LaunchCommand = REPLACE(LaunchCommand, 'heroic://launch/', 'grinder://launch/') WHERE LaunchCommand LIKE '%heroic://launch/%'").run(); } catch(e) {}
+        // One-time migration: rename the legacy launch scheme heroic://launch/… → installer://launch/… (Heroic-era leftover)
+        try { db.prepare("UPDATE games SET LaunchCommand = REPLACE(LaunchCommand, 'heroic://launch/', 'installer://launch/') WHERE LaunchCommand LIKE '%heroic://launch/%'").run(); } catch(e) {}
         // Game playlists + Recently-Imported support — schema MUST match The Manager
         // (apps/manager/main.js) since both faces share this games.db. Whichever face
         // opens first creates the tables; the other is a no-op.
@@ -131,7 +131,7 @@ app.whenReady().then(() => {
                 WHEN NEW.date_added IS NULL OR NEW.date_added = 0
                 BEGIN UPDATE games SET date_added = CAST(strftime('%s','now') AS INTEGER) WHERE id = NEW.id; END`).run();
         } catch(e) {}
-        // A blank Store leaves a game uncategorizable; file it under "Others" (same bucket GRINDER games use).
+        // A blank Store leaves a game uncategorizable; file it under "Others" (same bucket Installer games use).
         try { db.prepare("UPDATE games SET Store = 'Others' WHERE Store IS NULL OR TRIM(Store) = ''").run(); } catch(e) {}
         try {
             db.prepare(`CREATE TRIGGER IF NOT EXISTS auto_store_others
@@ -162,22 +162,22 @@ async function fetchDescI18n(appId, enDesc) {
     return JSON.stringify(i18n);
 }
 
-// ── GRINDER integration ───────────────────────────────────────────────────────
-// GRINDER is a face of this same binary now: re-invoke self with a leading 'grinder' arg.
-function spawnGrinderFace(subArgs, opts) {
+// ── Installer integration ───────────────────────────────────────────────────────
+// Installer is a face of this same binary now: re-invoke self with a leading 'installer' arg.
+function spawnInstallerFace(subArgs, opts) {
     const bin  = host.selfExecutable();
-    const args = host.selfSpawnArgs(['grinder', ...subArgs], path.join(__dirname, '..', '..'));
+    const args = host.selfSpawnArgs(['installer', ...subArgs], path.join(__dirname, '..', '..'));
     return spawn(bin, args, opts);
 }
 
-function readGrinderDb() {
-    const dbPath = host.findGrinderDb(baseDir);
+function readInstallerDb() {
+    const dbPath = host.findInstallerDb(baseDir);
     if (!dbPath) return null;
     try {
         const gdb = new Database(dbPath, { readonly: true });
         const rows = gdb.prepare("SELECT id, app_id, store, installed FROM games WHERE installed=1 AND (is_dlc IS NULL OR is_dlc=0)").all();
         gdb.close();
-        // Build lookup: app_id → grinder game id
+        // Build lookup: app_id → installer game id
         const map = new Map();
         for (const r of rows) {
             if (r.app_id) map.set(String(r.app_id), r.id);
@@ -186,37 +186,37 @@ function readGrinderDb() {
     } catch { return null; }
 }
 
-let _grinderMap = null;   // cached at launch, refreshed lazily
-let _grinderPath = null;
+let _installerMap = null;   // cached at launch, refreshed lazily
+let _installerPath = null;
 
-function getGrinderMap() {
-    if (_grinderMap === null) {
-        _grinderMap = readGrinderDb() || new Map();   // read GRINDER's DB directly (no external AppImage needed)
+function getInstallerMap() {
+    if (_installerMap === null) {
+        _installerMap = readInstallerDb() || new Map();   // read Installer's DB directly (no external AppImage needed)
     }
-    return _grinderMap;
+    return _installerMap;
 }
 
-// In-process GRINDER engine — launch GOG/Epic games without spawning anything
-// (GRINDER is a face of this same binary now). Points at ~/.config/grinder.
-const grinderEngine = require('../../packages/core/grinder-engine.js');
-let _grinderEngineDb = null;
-function ensureGrinderEngine() {
-    if (_grinderEngineDb) return true;
+// In-process Installer engine — launch GOG/Epic games without spawning anything
+// (Installer is a face of this same binary now). Points at ~/.config/installer.
+const installerEngine = require('../../packages/core/installer-engine.js');
+let _installerEngineDb = null;
+function ensureInstallerEngine() {
+    if (_installerEngineDb) return true;
     const home = os.homedir();
-    const gdbPath = host.findGrinderDb(baseDir);
+    const gdbPath = host.findInstallerDb(baseDir);
     if (!gdbPath) return false;
     const gConfigDir   = path.dirname(gdbPath);
     const engineBinDir = path.join(isPackaged ? process.resourcesPath : __dirname, 'assets', 'bin', host.binDirName);
-    try { _grinderEngineDb = new Database(gdbPath, { timeout: 5000 }); }
-    catch (e) { console.error('[grinder-engine] DB open failed:', e); _grinderEngineDb = null; return false; }
-    grinderEngine.init({
+    try { _installerEngineDb = new Database(gdbPath, { timeout: 5000 }); }
+    catch (e) { console.error('[installer-engine] DB open failed:', e); _installerEngineDb = null; return false; }
+    installerEngine.init({
         configDir:   gConfigDir,
         prefixesDir: path.join(gConfigDir, 'prefixes'),
         logDir:      path.join(gConfigDir, 'game_logs'),
         binDir:      engineBinDir,
         appImageDir: baseDir,
         homeDir:     home,
-        db:          _grinderEngineDb,
+        db:          _installerEngineDb,
         onProgress:  () => {},
         onLaunchIssue: (info) => reportLaunchFailure(info),
         onLaunchProgress: (info) => {
@@ -230,11 +230,11 @@ function ensureGrinderEngine() {
 
 // A Windows game that dies the moment it starts (almost always: no Proton installed) is
 // invisible on a TV — the couch UI would just sit there. Push it to the overlay instead.
-// CREMA can't install Proton itself (no keyboard, and it never owns store/setup flows), so it
+// Couch can't install Proton itself (no keyboard, and it never owns store/setup flows), so it
 // says what's wrong and points at the Manager.
-function reportLaunchThrow(grinderGameId, err) {
+function reportLaunchThrow(installerGameId, err) {
     let title = '';
-    try { title = _grinderEngineDb?.prepare('SELECT title FROM games WHERE id=?').get(grinderGameId)?.title || ''; } catch {}
+    try { title = _installerEngineDb?.prepare('SELECT title FROM games WHERE id=?').get(installerGameId)?.title || ''; } catch {}
     reportLaunchFailure({ title, reason: { code: err?.code || 'LAUNCH_ERROR', message: err?.message || 'The game could not be started.' } });
 }
 
@@ -251,11 +251,11 @@ function reportLaunchFailure(info) {
     } catch {}
 }
 
-// Sync installed/uninstalled status from GRINDER's DB into CREMA's games.db
-// Same logic as CNGM's grinder-status + sync-all-grinder-games
-function syncInstalledFromGrinder() {
+// Sync installed/uninstalled status from Installer's DB into Couch's games.db
+// Same logic as Clarity's installer-status + sync-all-installer-games
+function syncInstalledFromInstaller() {
     if (!db) return;
-    const gDbPath = host.findGrinderDb(baseDir);
+    const gDbPath = host.findInstallerDb(baseDir);
     if (!gDbPath) return;
     try {
         const gdb = new Database(gDbPath, { readonly: true });
@@ -266,41 +266,41 @@ function syncInstalledFromGrinder() {
             const val = r.installed ? 1 : 0;
             const res = db.prepare("UPDATE games SET Installed=? WHERE LaunchCommand LIKE ?")
                           .run(val, `%${r.app_id}%`);
-            // ⚠️ games.db has no app_id column — it keys GRINDER games by GrinderGameId, which
-            // is exactly the shape of grinder.db's own row id ('gog_<appId>'). The old fallback
+            // ⚠️ games.db has no app_id column — it keys Installer games by InstallerGameId, which
+            // is exactly the shape of library.db's own row id ('gog_<appId>'). The old fallback
             // asked for app_id and threw, and because the whole loop sits in one try/catch that
             // throw abandoned the sync for every remaining row, not just this one.
             if (res.changes === 0)
-                db.prepare("UPDATE games SET Installed=? WHERE GrinderGameId=?").run(val, r.id);
+                db.prepare("UPDATE games SET Installed=? WHERE InstallerGameId=?").run(val, r.id);
         }
         // The writes above set Installed purely from the GOG/Epic side, which zeroes a
         // mixed-store row (e.g. Steam+GOG) whose Steam copy is the installed one. Re-assert
         // the Steam OR so those rows aren't wrongly downgraded.
         reconcileSteamInstalls();
-        _grinderMap = null; // invalidate map so launch routing picks up changes
+        _installerMap = null; // invalidate map so launch routing picks up changes
     } catch {}
 }
 
-ipcMain.handle('sync-grinder-installed', () => { syncInstalledFromGrinder(); return true; });
+ipcMain.handle('sync-installer-installed', () => { syncInstalledFromInstaller(); return true; });
 
 ipcMain.on('launch-game', (event, cmd) => {
     if (!cmd) return;
 
-    // 1. GOG/Epic via GRINDER's in-process engine.
-    const grinderMatch = cmd.match(/grinder:\/\/launch\/(epic|gog)\/([^"\s]+)/i);
-    if (grinderMatch) {
-        const gId = getGrinderMap().get(grinderMatch[2]);
-        if (gId && ensureGrinderEngine()) {
-            grinderEngine.launchGame(gId).catch(e => { console.error('[launch-game] grinder launch failed:', e.message); reportLaunchThrow(gId, e); });
+    // 1. GOG/Epic via Installer's in-process engine.
+    const installerMatch = cmd.match(/installer:\/\/launch\/(epic|gog)\/([^"\s]+)/i);
+    if (installerMatch) {
+        const gId = getInstallerMap().get(installerMatch[2]);
+        if (gId && ensureInstallerEngine()) {
+            installerEngine.launchGame(gId).catch(e => { console.error('[launch-game] installer launch failed:', e.message); reportLaunchThrow(gId, e); });
         } else {
-            console.error('[launch-game] no GRINDER mapping/engine for', grinderMatch[2]);
+            console.error('[launch-game] no Installer mapping/engine for', installerMatch[2]);
         }
-        return; // GOG/Epic must go through GRINDER — never fall through to a shell command
+        return; // GOG/Epic must go through Installer — never fall through to a shell command
     }
-    // grinder://launch/<id> (direct GRINDER id)
-    const gLaunch = cmd.match(/^grinder:\/\/(?:launch\/)?(.+)$/);
+    // installer://launch/<id> (direct Installer id)
+    const gLaunch = cmd.match(/^installer:\/\/(?:launch\/)?(.+)$/);
     if (gLaunch) {
-        if (ensureGrinderEngine()) grinderEngine.launchGame(gLaunch[1]).catch(e => { console.error('[launch-game]', e.message); reportLaunchThrow(gLaunch[1], e); });
+        if (ensureInstallerEngine()) installerEngine.launchGame(gLaunch[1]).catch(e => { console.error('[launch-game]', e.message); reportLaunchThrow(gLaunch[1], e); });
         return;
     }
 
@@ -336,31 +336,31 @@ function isSteamGameInstalled(appId) {
 // A row can front several stores (Store "Steam, GOG") with one launcher per store in
 // LaunchCommands. Install state is the OR across those stores; keying off only the
 // primary LaunchCommand hid an installed Steam copy whenever the primary was GOG/Epic.
-function grinderDbPath() {
-    return host.findGrinderDb(baseDir);
+function installerDbPath() {
+    return host.findInstallerDb(baseDir);
 }
 function guessLauncherLabel(cmd) {
     if (!cmd) return 'Custom';
     if (/steam:\/\/rungameid/i.test(cmd))     return 'Steam';
-    if (/grinder:\/\/launch\/gog/i.test(cmd))  return 'GOG via GRINDER';
-    if (/grinder:\/\/launch\/epic/i.test(cmd)) return 'Epic via GRINDER';
+    if (/installer:\/\/launch\/gog/i.test(cmd))  return 'GOG via Installer';
+    if (/installer:\/\/launch\/epic/i.test(cmd)) return 'Epic via Installer';
     if (cmd.startsWith('itch://'))            return 'itch.io';
     if (cmd.startsWith('pico8-cart:'))        return 'PICO-8';
     if (/^flatpak run/i.test(cmd))           return 'Flatpak';
-    if (cmd.startsWith('grinder://'))         return 'GRINDER';
+    if (cmd.startsWith('installer://'))         return 'Installer';
     return 'Custom';
 }
 function launcherStore(cmd) {
     if (/steam:\/\/rungameid/i.test(cmd))        return 'steam';
-    if (/grinder:\/\/launch\/gog\//i.test(cmd))  return 'gog';
-    if (/grinder:\/\/launch\/epic\//i.test(cmd)) return 'epic';
+    if (/installer:\/\/launch\/gog\//i.test(cmd))  return 'gog';
+    if (/installer:\/\/launch\/epic\//i.test(cmd)) return 'epic';
     return null;
 }
 // The canonical per-store launcher list for a row: [{ label, cmd }] — mirrors the Manager.
 // LaunchCommands is the source of truth when populated, but plenty of genuinely multi-store
 // rows never had it written (legacy cross-store merges, or a Manager save that dropped the
-// GRINDER launcher), so anything the row's own store fields prove exists is filled back in.
-// Needs Store + GrinderGameId on the row; a SELECT without them just skips the synthesis.
+// Installer launcher), so anything the row's own store fields prove exists is filled back in.
+// Needs Store + InstallerGameId on the row; a SELECT without them just skips the synthesis.
 function expandLaunchers(game) {
     const out = [], seen = new Set();
     const add = (label, cmd) => {
@@ -379,11 +379,11 @@ function expandLaunchers(game) {
     if (stores.includes('steam') && appId && appId !== 'None' && !has('steam')) {
         add('Steam', host.steamLaunchCommand(appId));
     }
-    const gg = String(game.GrinderGameId || '').match(/^(gog|epic)_(.+)$/i);
+    const gg = String(game.InstallerGameId || '').match(/^(gog|epic)_(.+)$/i);
     if (gg) {
         const store = gg[1].toLowerCase();
         if (stores.includes(store) && !has(store)) {
-            add(store === 'gog' ? 'GOG via GRINDER' : 'Epic via GRINDER', `grinder://launch/${store}/${gg[2]}`);
+            add(store === 'gog' ? 'GOG via Installer' : 'Epic via Installer', `installer://launch/${store}/${gg[2]}`);
         }
     }
     return out;
@@ -391,28 +391,28 @@ function expandLaunchers(game) {
 function launchCmdsOf(game) {
     return expandLaunchers(game).map(l => l.cmd);
 }
-let _grinderInstalledCache = { key: '', set: new Set() };
-function grinderInstalledSet() {
-    const p = grinderDbPath();
-    if (!p) { _grinderInstalledCache = { key: '', set: new Set() }; return _grinderInstalledCache.set; }
+let _installerInstalledCache = { key: '', set: new Set() };
+function installerInstalledSet() {
+    const p = installerDbPath();
+    if (!p) { _installerInstalledCache = { key: '', set: new Set() }; return _installerInstalledCache.set; }
     let key = p;
     try { key += ':' + fs.statSync(p).mtimeMs; } catch {}
-    if (key === _grinderInstalledCache.key) return _grinderInstalledCache.set;
+    if (key === _installerInstalledCache.key) return _installerInstalledCache.set;
     const set = new Set();
     try {
         const gdb = new Database(p, { readonly: true, timeout: 5000 });
         for (const r of gdb.prepare("SELECT id FROM games WHERE installed=1").all()) set.add(String(r.id));
         gdb.close();
     } catch {}
-    _grinderInstalledCache = { key, set };
+    _installerInstalledCache = { key, set };
     return set;
 }
 function launcherInstalled(cmd, steamAppId) {
     const c = cmd || '';
     const sm = c.match(/steam:\/\/rungameid\/(\d+)/i);
     if (sm) return isSteamGameInstalled(sm[1] || steamAppId);
-    const gm = c.match(/grinder:\/\/launch\/(gog|epic)\/([^"\s]+)/i);
-    if (gm) return grinderInstalledSet().has(`${gm[1].toLowerCase()}_${gm[2]}`);
+    const gm = c.match(/installer:\/\/launch\/(gog|epic)\/([^"\s]+)/i);
+    if (gm) return installerInstalledSet().has(`${gm[1].toLowerCase()}_${gm[2]}`);
     return null;
 }
 function resolveInstallState(game) {
@@ -436,12 +436,12 @@ function launcherStatesForGame(game) {
 }
 ipcMain.handle('launcher-states', (e, gameId) => {
     if (!db) return [];
-    const game = db.prepare("SELECT Store, SteamAppID, GrinderGameId, LaunchCommand, LaunchCommands FROM games WHERE id=?").get(gameId);
+    const game = db.prepare("SELECT Store, SteamAppID, InstallerGameId, LaunchCommand, LaunchCommands FROM games WHERE id=?").get(gameId);
     return game ? launcherStatesForGame(game) : [];
 });
 ipcMain.handle('verify-install-status', (e, gameId) => {
     if (!db) return { installed: 1 };
-    const game = db.prepare("SELECT id, Store, SteamAppID, GrinderGameId, LaunchCommand, LaunchCommands, Installed FROM games WHERE id=?").get(gameId);
+    const game = db.prepare("SELECT id, Store, SteamAppID, InstallerGameId, LaunchCommand, LaunchCommands, Installed FROM games WHERE id=?").get(gameId);
     if (!game) return { installed: 1 };
     const installed = resolveInstallState(game);
     if (installed !== null) db.prepare("UPDATE games SET Installed=? WHERE id=?").run(installed, gameId);
@@ -454,7 +454,7 @@ function reconcileSteamInstalls() {
     if (!db) return 0;
     let changed = 0;
     const games = db.prepare(
-        "SELECT id, Store, SteamAppID, GrinderGameId, LaunchCommand, LaunchCommands, Installed FROM games " +
+        "SELECT id, Store, SteamAppID, InstallerGameId, LaunchCommand, LaunchCommands, Installed FROM games " +
         // Also rows that only imply their Steam launcher: a Steam tag plus an appid (see expandLaunchers).
         "WHERE LaunchCommand LIKE '%steam://rungameid%' OR LaunchCommands LIKE '%steam://rungameid%' " +
         "OR (LOWER(Store) LIKE '%steam%' AND SteamAppID IS NOT NULL AND SteamAppID NOT IN ('', 'None'))"
@@ -623,8 +623,8 @@ const GOG_CLIENT_ID     = '46899977096215655';
 const GOG_CLIENT_SECRET = '9d85c43b1482497dbbce61f6e4aa173a433796eeae2ca8c5f6129f2dc4de46d9';
 
 ipcMain.handle('fetch-achievements-now', async (_, appId) => {
-    const gdbPath = host.findGrinderDb(baseDir);
-    if (!gdbPath) return { ok: false, error: 'grinder_not_found' };
+    const gdbPath = host.findInstallerDb(baseDir);
+    if (!gdbPath) return { ok: false, error: 'installer_not_found' };
 
     let token, userId;
     try {
@@ -661,7 +661,7 @@ ipcMain.handle('fetch-achievements-now', async (_, appId) => {
     try {
         const res = await fetch(
             `https://gameplay.gog.com/clients/${appId}/users/${userId}/achievements`,
-            { headers: { 'Authorization': `Bearer ${token}`, 'User-Agent': 'CREMA/1.0' } }
+            { headers: { 'Authorization': `Bearer ${token}`, 'User-Agent': 'Couch/1.0' } }
         );
         if (!res.ok) return { ok: false, error: `GOG API ${res.status}` };
         const data = await res.json();
@@ -902,7 +902,7 @@ ipcMain.handle('get-audio-config', () => {
     try {
         if (fs.existsSync(audioCfgPath)) return JSON.parse(fs.readFileSync(audioCfgPath, 'utf8'));
     } catch(e){}
-    return { bgm: true, sfx: true, vol: 0.3, bgm_mode: "AMBIENT", theme: "CREMA (DEFAULT)", screensaver: "SCREENSHOTS", screensaverDelay: 3, gamepadLayout: "XBOX", wakeMethod: "START + SELECT" };
+    return { bgm: true, sfx: true, vol: 0.3, bgm_mode: "AMBIENT", theme: "Couch (DEFAULT)", screensaver: "SCREENSHOTS", screensaverDelay: 3, gamepadLayout: "XBOX", wakeMethod: "START + SELECT" };
 });
 
 ipcMain.on('save-audio-config', (e, cfg) => { try { fs.writeFileSync(audioCfgPath, JSON.stringify(cfg)); } catch(err){} });
@@ -984,82 +984,82 @@ ipcMain.handle('remove-game-from-playlist', (_, playlistId, gameId) => {
     try { db.prepare('DELETE FROM playlist_games WHERE playlist_id=? AND game_id=?').run(playlistId, gameId); return true; } catch(e) { return false; }
 });
 
-// ── GRINDER headless install/uninstall ────────────────────────────────────────
-const grinderProgressFile = path.join(configDir, 'grinder-progress.json');
+// ── Installer headless install/uninstall ────────────────────────────────────────
+const installerProgressFile = path.join(configDir, 'installer-progress.json');
 let _headlessProc = null;
 
-function getGrinderDbPath() {
-    return host.findGrinderDb(baseDir);
+function getInstallerDbPath() {
+    return host.findInstallerDb(baseDir);
 }
 
 /*
  * Whether the stores are signed in — REPORTED, never offered.
  *
- * ⚠️ CREMA does not and must not have a store login: it is a gamepad UI on a television, and
+ * ⚠️ Couch does not and must not have a store login: it is a gamepad UI on a television, and
  * a device-code flow with a browser and a password field has no business there. But it does
  * need to be able to say *why* an install cannot start, because "Size info unavailable" for a
  * signed-out account is the least useful sentence in the app — it was the oldest open bug in
  * the project. Reading the status is not offering a login.
  */
-ipcMain.handle('crema-store-auth', async () => {
-    if (!ensureGrinderEngine()) return { gog: false, epic: false, engine: false };
+ipcMain.handle('couch-store-auth', async () => {
+    if (!ensureInstallerEngine()) return { gog: false, epic: false, engine: false };
     // ⚠️ Both are async — read synchronously they return a Promise, which is truthy without
     // `.loggedIn`, so every account came back signed out.
     let gog = false, epic = false;
-    try { gog = !!(await grinderEngine.gogStatus())?.loggedIn; } catch {}
-    try { epic = !!(await grinderEngine.epicStatus())?.loggedIn; } catch {}
+    try { gog = !!(await installerEngine.gogStatus())?.loggedIn; } catch {}
+    try { epic = !!(await installerEngine.epicStatus())?.loggedIn; } catch {}
     return { gog, epic, engine: true };
 });
 
-ipcMain.handle('grinder-get-default-install-dir', () => {
-    const gDbPath = getGrinderDbPath();
+ipcMain.handle('installer-get-default-install-dir', () => {
+    const gDbPath = getInstallerDbPath();
     if (!gDbPath) return null;
     try { const gdb = new Database(gDbPath, { readonly: true }); const row = gdb.prepare("SELECT value FROM settings WHERE key='default_install_dir'").get(); gdb.close(); return row?.value || null; } catch { return null; }
 });
 
-ipcMain.handle('open-grinder-gui', (_, searchTerm) => {
-    spawnGrinderFace(searchTerm ? ['search', searchTerm] : [], { detached: true, stdio: 'ignore' }).unref();
+ipcMain.handle('open-installer-gui', (_, searchTerm) => {
+    spawnInstallerFace(searchTerm ? ['search', searchTerm] : [], { detached: true, stdio: 'ignore' }).unref();
     return { ok: true };
 });
 
 // Pre-install: free disk space at a path + download/disk size for a GOG/Epic title (shared engine).
-ipcMain.handle('get-disk-space', (_, p) => grinderEngine.getDiskSpace(p));
+ipcMain.handle('get-disk-space', (_, p) => installerEngine.getDiskSpace(p));
 ipcMain.handle('get-install-size', async (_, gid) => {
-    if (!ensureGrinderEngine()) return null;
+    if (!ensureInstallerEngine()) return null;
     const m = String(gid || '').match(/^(gog|epic)_(.+)$/i); if (!m) return null;
     const store = m[1].toLowerCase(), appId = m[2];
     if (store === 'gog') {
         let platform = null;
-        try { platform = _grinderEngineDb.prepare("SELECT platform FROM games WHERE app_id=? AND store=?").get(appId, store)?.platform; } catch {}
-        return grinderEngine.gogInstallInfo(appId, platform || 'linux');
+        try { platform = _installerEngineDb.prepare("SELECT platform FROM games WHERE app_id=? AND store=?").get(appId, store)?.platform; } catch {}
+        return installerEngine.gogInstallInfo(appId, platform || 'linux');
     }
-    return grinderEngine.epicInstallInfo(appId);
+    return installerEngine.epicInstallInfo(appId);
 });
 
-ipcMain.handle('grinder-headless-install', (_, store, appId, platform, installDir) => {
+ipcMain.handle('installer-headless-install', (_, store, appId, platform, installDir) => {
     if (_headlessProc) return { ok: false, error: 'Install already in progress.' };
     const args = ['install', store, appId];
     if (platform) args.push(platform);
     if (installDir) args.push(installDir);
-    _headlessProc = spawnGrinderFace(args, { detached: false, stdio: 'ignore' });
-    _headlessProc.on('close', () => { _headlessProc = null; _grinderMap = null; }); // refresh map on completion
+    _headlessProc = spawnInstallerFace(args, { detached: false, stdio: 'ignore' });
+    _headlessProc.on('close', () => { _headlessProc = null; _installerMap = null; }); // refresh map on completion
     return { ok: true };
 });
 
-ipcMain.handle('grinder-headless-uninstall', (_, store, appId) => {
+ipcMain.handle('installer-headless-uninstall', (_, store, appId) => {
     if (_headlessProc) return { ok: false, error: 'Operation already in progress.' };
-    _headlessProc = spawnGrinderFace(['uninstall-headless', store, appId], { detached: false, stdio: 'ignore' });
-    _headlessProc.on('close', () => { _headlessProc = null; _grinderMap = null; });
+    _headlessProc = spawnInstallerFace(['uninstall-headless', store, appId], { detached: false, stdio: 'ignore' });
+    _headlessProc.on('close', () => { _headlessProc = null; _installerMap = null; });
     return { ok: true };
 });
 
-ipcMain.handle('grinder-get-progress', () => {
-    try { return JSON.parse(fs.readFileSync(grinderProgressFile, 'utf8')); } catch { return null; }
+ipcMain.handle('installer-get-progress', () => {
+    try { return JSON.parse(fs.readFileSync(installerProgressFile, 'utf8')); } catch { return null; }
 });
 
-ipcMain.handle('grinder-cancel-headless', () => {
+ipcMain.handle('installer-cancel-headless', () => {
     if (_headlessProc) { try { _headlessProc.kill('SIGTERM'); } catch {} _headlessProc = null; }
-    try { fs.unlinkSync(grinderProgressFile); } catch {}
+    try { fs.unlinkSync(installerProgressFile); } catch {}
     return { ok: true };
 });
 

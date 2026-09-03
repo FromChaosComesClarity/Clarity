@@ -58,7 +58,7 @@ contextBridge.exposeInMainWorld('api', {
                                 forceFocus: () => ipcRenderer.send('force-focus'),
 
 
-                                // FIX: Expose Gaming History IPCs for CREMA
+                                // FIX: Expose Gaming History IPCs for Couch
                                 updateLastPlayed: (gameName) => ipcRenderer.invoke('update-last-played', gameName),
                                 clearHistory: () => ipcRenderer.invoke('clear-history'),
 
@@ -70,17 +70,17 @@ contextBridge.exposeInMainWorld('api', {
                                 // --- I18N ---
                                 getStrings: (lang) => ipcRenderer.invoke('get-strings', lang),
 
-                                // --- GRINDER headless install/uninstall ---
-                                openGrinderGui: (term) => ipcRenderer.invoke('open-grinder-gui', term),
-                                syncGrinderInstalled: () => ipcRenderer.invoke('sync-grinder-installed'),
-                                storeAuthStatus: () => ipcRenderer.invoke('crema-store-auth'),
-                                grinderGetDefaultInstallDir: () => ipcRenderer.invoke('grinder-get-default-install-dir'),
+                                // --- Installer headless install/uninstall ---
+                                openInstallerGui: (term) => ipcRenderer.invoke('open-installer-gui', term),
+                                syncInstallerInstalled: () => ipcRenderer.invoke('sync-installer-installed'),
+                                storeAuthStatus: () => ipcRenderer.invoke('couch-store-auth'),
+                                installerGetDefaultInstallDir: () => ipcRenderer.invoke('installer-get-default-install-dir'),
                                 getDiskSpace:   (p)   => ipcRenderer.invoke('get-disk-space', p),
                                 getInstallSize: (gid) => ipcRenderer.invoke('get-install-size', gid),
-                                grinderHeadlessInstall: (store, appId, platform, installDir) => ipcRenderer.invoke('grinder-headless-install', store, appId, platform, installDir),
-                                grinderHeadlessUninstall: (store, appId) => ipcRenderer.invoke('grinder-headless-uninstall', store, appId),
-                                grinderGetProgress: () => ipcRenderer.invoke('grinder-get-progress'),
-                                grinderCancelHeadless: () => ipcRenderer.invoke('grinder-cancel-headless'),
+                                installerHeadlessInstall: (store, appId, platform, installDir) => ipcRenderer.invoke('installer-headless-install', store, appId, platform, installDir),
+                                installerHeadlessUninstall: (store, appId) => ipcRenderer.invoke('installer-headless-uninstall', store, appId),
+                                installerGetProgress: () => ipcRenderer.invoke('installer-get-progress'),
+                                installerCancelHeadless: () => ipcRenderer.invoke('installer-cancel-headless'),
 
                                 // --- PICO-8 ---
                                 scanPico8: () => ipcRenderer.invoke('scan-pico8'),

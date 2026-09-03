@@ -1,4 +1,4 @@
-Cafe Neurotico 1.4.0
+Clarity 1.4.0
 
 Your library finally knows the difference between an ARPG and a CRPG.
 
@@ -18,7 +18,7 @@ Run it from **Control Panel → Tools → Detect Genres**. It works through your
 
 ## Fixes
 
-**The storefront picker is back for games you own twice.** If a game sits in your library on more than one store, Cafe Neurotico is supposed to ask which one you mean. It had stopped asking, in two different ways.
+**The storefront picker is back for games you own twice.** If a game sits in your library on more than one store, Clarity is supposed to ask which one you mean. It had stopped asking, in two different ways.
 
 Installing never asked at all — an uninstalled game on both Steam and GOG went straight to GOG without offering the choice. Now Install opens the same picker Play uses, with each store showing whether it is installed and routing to its own installer.
 
@@ -30,8 +30,8 @@ Playing sometimes could not ask, because the second launcher had gone missing fr
 
 ## Install
 
-1. Download `CafeNeurotico.AppImage` below
-2. `chmod +x CafeNeurotico.AppImage`
+1. Download `Clarity.AppImage` below
+2. `chmod +x Clarity.AppImage`
 3. Run it
 
 Upgrading from any 1.x? Just replace the AppImage. Your `GameManagerConfig` folder — your entire library — is untouched, and the new genre data is added alongside it.

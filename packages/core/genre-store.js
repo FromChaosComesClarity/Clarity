@@ -1,6 +1,6 @@
 'use strict';
 /*
- * @cafeneurotico/core — where a game's genres live in games.db.
+ * @clarity/core — where a game's genres live in games.db.
  *
  * Both faces open the same database and each one used to re-declare the schema in its
  * own migration block; this keeps the genre tables in one place so they cannot drift.

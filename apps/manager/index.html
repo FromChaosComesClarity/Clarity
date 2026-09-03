@@ -2,7 +2,7 @@
 <html>
 <head>
   <meta charset="UTF-8">
-  <title>Cafe Neurotico - Game Library Manager</title>
+  <title>Clarity Game Manager</title>
   <style>
     @font-face { font-family: 'Raleway'; src: url('assets/fonts/Raleway-Regular.ttf') format('truetype'); font-weight: 400; }
     @font-face { font-family: 'Raleway'; src: url('assets/fonts/Raleway-Bold.ttf') format('truetype'); font-weight: 700; }
@@ -73,18 +73,18 @@
     .dlm-clickable { cursor: pointer; }
     .dlm-clickable:hover { color: var(--accent); text-decoration: underline; }
 
-    /* CREMA call-to-action — compact pill inside the titlebar, just before the window controls */
-    #crema-cta { -webkit-app-region: no-drag; align-self: center; display: flex; align-items: center; gap: 7px;
+    /* Couch call-to-action — compact pill inside the titlebar, just before the window controls */
+    #couch-cta { -webkit-app-region: no-drag; align-self: center; display: flex; align-items: center; gap: 7px;
         height: 25px; margin: 0 10px 0 4px; padding: 0 13px 0 5px;
         background: linear-gradient(135deg, #2C1E16 0%, #432818 55%, #5a3a22 100%);
         border: 1px solid #D4A373; border-radius: 50px; cursor: pointer; font-family: var(--ui-font, 'Raleway'), sans-serif;
         box-shadow: 0 0 10px rgba(212,163,115,0.25);
         transition: box-shadow 0.18s ease, border-color 0.18s ease, transform 0.12s ease; }
-    #crema-cta:hover { border-color: #FFE6A7; box-shadow: 0 0 16px rgba(212,163,115,0.6); }
-    #crema-cta:active { transform: scale(0.96); }
-    .crema-cta-icon { width: 19px; height: 19px; flex-shrink: 0; }
-    .crema-cta-text { font-size: 10px; font-weight: 900; letter-spacing: 0.4px; color: #FFE6A7; white-space: nowrap; }
-    /* Support call-to-action — amber pill (same family as the CREMA pill), red pixel heart */
+    #couch-cta:hover { border-color: #FFE6A7; box-shadow: 0 0 16px rgba(212,163,115,0.6); }
+    #couch-cta:active { transform: scale(0.96); }
+    .couch-cta-icon { width: 19px; height: 19px; flex-shrink: 0; }
+    .couch-cta-text { font-size: 10px; font-weight: 900; letter-spacing: 0.4px; color: #FFE6A7; white-space: nowrap; }
+    /* Support call-to-action — amber pill (same family as the Couch pill), red pixel heart */
     #support-cta { -webkit-app-region: no-drag; align-self: center; display: flex; align-items: center; gap: 6px;
         height: 25px; margin: 0 4px 0 4px; padding: 0 13px 0 11px;
         background: linear-gradient(135deg, #2C1E16 0%, #432818 55%, #5a3a22 100%);
@@ -175,8 +175,8 @@
     .btn-install-primary:hover { background: #ff6d00; }
     #btn-install-pick-steam { background: #1b2838; color: #66c0f4; border: 1px solid #66c0f4; border-radius: 6px; font-family: inherit; font-weight: 900; font-size: 13px; cursor: pointer; letter-spacing: 1px; transition: box-shadow 0.2s, background 0.2s; }
     #btn-install-pick-steam:hover { background: #223344; box-shadow: 0 0 14px rgba(102,192,244,0.55); }
-    #btn-install-pick-grinder { background: rgba(230,81,0,0.15); color: #ff6d00; border: 1px solid #e65100; border-radius: 6px; font-family: inherit; font-weight: 900; font-size: 13px; cursor: pointer; letter-spacing: 1px; transition: box-shadow 0.2s, background 0.2s; }
-    #btn-install-pick-grinder:hover { background: rgba(230,81,0,0.28); box-shadow: 0 0 14px rgba(255,109,0,0.45); }
+    #btn-install-pick-installer { background: rgba(230,81,0,0.15); color: #ff6d00; border: 1px solid #e65100; border-radius: 6px; font-family: inherit; font-weight: 900; font-size: 13px; cursor: pointer; letter-spacing: 1px; transition: box-shadow 0.2s, background 0.2s; }
+    #btn-install-pick-installer:hover { background: rgba(230,81,0,0.28); box-shadow: 0 0 14px rgba(255,109,0,0.45); }
     .gallery-title { padding: 10px; font-size: 13px; font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--text_sec); }
 
     /* ── Compact chrome (Omarchy / any tiling WM) ───────────────────────────────
@@ -191,7 +191,7 @@
        keep in sync. See applyCompactChrome() in the renderer. */
     .compact-chrome #titlebar { display: none; }
     /* ── The hero pills ─────────────────────────────────────────────────────────
-       ⚠️ In the title bar these two carry CREMA's own brand colours, hardcoded — a tan
+       ⚠️ In the title bar these two carry Couch's own brand colours, hardcoded — a tan
        gradient with an amber border, owing nothing to the theme. That is fine on a bar that
        is itself chrome, and wrong the moment they sit on the hero of a themed app: on the
        green Omarchy palette they read as something pasted on from another program.
@@ -203,7 +203,7 @@
     body > #hero-pills { position: fixed; top: 32px; right: 34px; z-index: 500; }
 
     .compact-chrome #hero-pills #support-cta,
-    .compact-chrome #hero-pills #crema-cta {
+    .compact-chrome #hero-pills #couch-cta {
         height: 24px; margin: 0; padding: 0 10px; gap: 6px; border-radius: 6px;
         background: color-mix(in srgb, var(--bg_menu) 78%, transparent);
         border: 1px solid var(--border_solid);
@@ -211,26 +211,26 @@
         backdrop-filter: blur(8px);
         transition: border-color 0.16s ease, background 0.16s ease; }
     .compact-chrome #hero-pills #support-cta:hover,
-    .compact-chrome #hero-pills #crema-cta:hover {
+    .compact-chrome #hero-pills #couch-cta:hover {
         border-color: var(--accent);
         background: color-mix(in srgb, var(--bg_menu) 92%, var(--accent)); }
-    .compact-chrome #hero-pills .crema-cta-text,
+    .compact-chrome #hero-pills .couch-cta-text,
     .compact-chrome #hero-pills .support-cta-text {
         display: inline; font-size: 9px; font-weight: 900; letter-spacing: 1px;
         text-transform: uppercase; color: var(--text_sec); }
     .compact-chrome #hero-pills #support-cta:hover .support-cta-text,
-    .compact-chrome #hero-pills #crema-cta:hover .crema-cta-text { color: var(--text_main); }
+    .compact-chrome #hero-pills #couch-cta:hover .couch-cta-text { color: var(--text_main); }
     /* The icons are artwork in their own right; muted so they sit with the text rather than
        leading it, and brought back to full strength on hover. */
-    .compact-chrome #hero-pills .crema-cta-icon { width: 14px; height: 14px; opacity: 0.75; }
+    .compact-chrome #hero-pills .couch-cta-icon { width: 14px; height: 14px; opacity: 0.75; }
     .compact-chrome #hero-pills .support-cta-heart { width: 11px; height: 10px; opacity: 0.8; filter: none; }
-    .compact-chrome #hero-pills #crema-cta:hover .crema-cta-icon,
+    .compact-chrome #hero-pills #couch-cta:hover .couch-cta-icon,
     .compact-chrome #hero-pills #support-cta:hover .support-cta-heart { opacity: 1; }
     /* Narrow tiles: the words go, the icons stay. */
-    .narrow.compact-chrome #hero-pills .crema-cta-text,
+    .narrow.compact-chrome #hero-pills .couch-cta-text,
     .narrow.compact-chrome #hero-pills .support-cta-text { display: none; }
     .narrow.compact-chrome #hero-pills #support-cta,
-    .narrow.compact-chrome #hero-pills #crema-cta { padding: 0 8px; }
+    .narrow.compact-chrome #hero-pills #couch-cta { padding: 0 8px; }
 
     #rail-chrome { display: none; flex-direction: column; align-items: center; gap: 4px; padding: 6px 0 2px; border-bottom: 1px solid var(--border_solid); }
     .compact-chrome #rail-chrome { display: flex; }
@@ -272,7 +272,7 @@
        Classes rather than inline styles so a theme can still override anything. */
     .narrow .titlebar-brand { display: none; }
     .very-narrow #icon-rail { width: 40px; }
-    .very-narrow #rail-chrome .crema-cta-text, .very-narrow #rail-chrome .support-cta-text { display: none; }/* Below this the split pane is two columns in a space that barely fits one, so the list
+    .very-narrow #rail-chrome .couch-cta-text, .very-narrow #rail-chrome .support-cta-text { display: none; }/* Below this the split pane is two columns in a space that barely fits one, so the list
        goes and the detail takes the width. The list is still reachable — every other layout
        still lists games, and this only applies to the split view. */
 
@@ -527,9 +527,9 @@
     .tgp-hbar-full .hb-f { color:#55ff55; } .tgp-hbar-full .hb-e { color:#1a1a1a; }
     .tgp-proton-plat { color:#55ffff; } .tgp-proton-gold { color:#ffff55; } .tgp-proton-silv { color:#ffffff; } .tgp-proton-brnz { color:#ffaa55; }
     .tgp-mc-badge { display:inline-block; padding:1px 6px; font-size:9px; }
-    .tgp-mc-badge.g { background:#55ff55; color:#000; }/* fkeys DOS blue *//* filter widget *//* font picker widget *//* shared TTY layout font menu *//* per-filter image overrides — default (crt) is the base CSS on the img elements *//* ── Mac OS 1.0 system-wide theme — overrides CNGM theme selector ───────── *//* ── Mac OS 1.0 system-wide theme ─────────────────────────────────────────
+    .tgp-mc-badge.g { background:#55ff55; color:#000; }/* fkeys DOS blue *//* filter widget *//* font picker widget *//* shared TTY layout font menu *//* per-filter image overrides — default (crt) is the base CSS on the img elements *//* ── Mac OS 1.0 system-wide theme — overrides Clarity theme selector ───────── *//* ── Mac OS 1.0 system-wide theme ─────────────────────────────────────────
        Variables live on body so they cascade to modals outside #app-container.
-       Adding future Ancient OS / TTY themes follows the same pattern.        *//* CNGM titlebar — black bar, white text, Chicago font *//* Hardcoded-color outliers that bypass the variable system *//* #modal-tools has no .modal-box wrapper — override its buttons directly *//* Strip hover zoom from trailer search items — causes glitch in Mac layout *//* Playlist picker — thin scrollbar only when needed *//* Playlist picker buttons — strip box-shadow so it doesn't bleed outside container */
+       Adding future Ancient OS / TTY themes follows the same pattern.        *//* Clarity titlebar — black bar, white text, Chicago font *//* Hardcoded-color outliers that bypass the variable system *//* #modal-tools has no .modal-box wrapper — override its buttons directly *//* Strip hover zoom from trailer search items — causes glitch in Mac layout *//* Playlist picker — thin scrollbar only when needed *//* Playlist picker buttons — strip box-shadow so it doesn't bleed outside container */
     /* Disabled Mac dropdown item */
     .mac-ditem-disabled { opacity:0.35; pointer-events:none; cursor:default !important; }/* Connect modal — Mac OS 1.0 theme *//* Tools modal — Mac OS 1.0 theme *//* Edit game panel — Mac OS 1.0 theme *//* ── Mac OS 1.0 Layout ─────────────────────────────────────────────────── *//* Menubar *//* View dropdown *//* Desktop — CSS Grid guarantees every cell has bounded dimensions *//* Shared Mac window chrome *//* Finder window *//* List — bounded by grid cell, scrolls within its own box */
     .mac-list-row { display:flex; align-items:center; height:18px; cursor:pointer; font-size:11px; border-bottom:1px solid #e8e8e8; background:#fff; color:#000; user-select:none; }
@@ -672,7 +672,7 @@
     .xp-btn:active { border-style:inset; }
     .xp-btn.xp-btn-primary { border:2px solid #316ac5; font-weight:bold; }
     .xp-btn-play { background:linear-gradient(180deg,#60c840 0%,#3aac18 100%) !important; color:#fff !important; border:2px outset #1a6808 !important; text-shadow:1px 1px 1px rgba(0,0,0,0.3); font-weight:bold !important; }
-    .xp-btn-play:hover { background:linear-gradient(180deg,#78d858 0%,#4aba28 100%) !important; }/* ── Windows XP — CSS variable overrides (fixes all inline var() usages) ──── *//* ── Windows XP — global font for all modal / panel content ──────────────── *//* ── Windows XP — modal overlay ─────────────────────────────────────────── *//* ── .modal-box — XP window frame ───────────────────────────────────────── *//* ── h2/h3 → XP title bar (break out of the 30px modal padding) ─────────── *//* ── Text elements ───────────────────────────────────────────────────────── *//* ── Buttons ─────────────────────────────────────────────────────────────── *//* ── Inputs ──────────────────────────────────────────────────────────────── *//* ── tool-card (used in Welcome, Connect, Tools) ────────────────────────── *//* ── Playlist picker rows ────────────────────────────────────────────────── *//* ── Welcome modal — custom non-.modal-box wrapper ──────────────────────── *//* ── Connect & Tools — custom non-.modal-box wrapper ───────────────────── *//* ── Segmented controls ──────────────────────────────────────────────────── *//* ── Edit game panel ─────────────────────────────────────────────────────── *//* ── Now playing card ────────────────────────────────────────────────────── *//* ── Strip hover transforms / glows in modals ────────────────────────────── *//* ── CNGM titlebar ───────────────────────────────────────────────────────── *//* ── Install picker ──────────────────────────────────────────────────────── */
+    .xp-btn-play:hover { background:linear-gradient(180deg,#78d858 0%,#4aba28 100%) !important; }/* ── Windows XP — CSS variable overrides (fixes all inline var() usages) ──── *//* ── Windows XP — global font for all modal / panel content ──────────────── *//* ── Windows XP — modal overlay ─────────────────────────────────────────── *//* ── .modal-box — XP window frame ───────────────────────────────────────── *//* ── h2/h3 → XP title bar (break out of the 30px modal padding) ─────────── *//* ── Text elements ───────────────────────────────────────────────────────── *//* ── Buttons ─────────────────────────────────────────────────────────────── *//* ── Inputs ──────────────────────────────────────────────────────────────── *//* ── tool-card (used in Welcome, Connect, Tools) ────────────────────────── *//* ── Playlist picker rows ────────────────────────────────────────────────── *//* ── Welcome modal — custom non-.modal-box wrapper ──────────────────────── *//* ── Connect & Tools — custom non-.modal-box wrapper ───────────────────── *//* ── Segmented controls ──────────────────────────────────────────────────── *//* ── Edit game panel ─────────────────────────────────────────────────────── *//* ── Now playing card ────────────────────────────────────────────────────── *//* ── Strip hover transforms / glows in modals ────────────────────────────── *//* ── Clarity titlebar ───────────────────────────────────────────────────────── *//* ── Install picker ──────────────────────────────────────────────────────── */
     .sr-row { margin-bottom:30px; }
     .sr-row-label { font-size:9px; font-weight:900; letter-spacing:2px; color:var(--text_dim); text-transform:uppercase; padding:0 18px 10px; display:flex; align-items:center; gap:10px; }
     .sr-row-label span:first-child { flex:1; }
@@ -727,7 +727,7 @@
     button:hover { background-color: var(--text_main); color: var(--bg); }
     /* Light themes: the invert-to-text_main hover above lands near-black — highlight with the accent instead
        (window controls keep their red close; danger buttons keep their red). */
-    body.theme-light button:not(.win-btn):not(.cp-rail-danger):hover { background-color: var(--accent) !important; color: var(--bg) !important; border-color: var(--accent) !important; }/* ── CREMA launch — Ancient-OS faux-desktop launchers (classic/TTY use the titlebar pill) ── *//* ── Connect button retired everywhere — Connections now lives in the Control Panel ── */
+    body.theme-light button:not(.win-btn):not(.cp-rail-danger):hover { background-color: var(--accent) !important; color: var(--bg) !important; border-color: var(--accent) !important; }/* ── Couch launch — Ancient-OS faux-desktop launchers (classic/TTY use the titlebar pill) ── *//* ── Connect button retired everywhere — Connections now lives in the Control Panel ── */
     
     #btn-open-connect, [data-htop-f="connect"], [data-ranger-f="connect"], [data-bbs-f="connect"], [data-vi-f="connect"], [data-adv-f="connect"], [data-mc-f="connect"], [data-nethack-f="connect"], [data-grub-f="connect"] {
         display: none !important;
@@ -1085,14 +1085,14 @@
        never to a blank window. -->
   <script>(function(){
     var d = document.documentElement;
-    try{var c=localStorage.getItem('cngm_theme_cache');if(c){var t=JSON.parse(c);Object.keys(t).forEach(function(k){d.style.setProperty('--'+k,t[k]);});}}catch(e){}
+    try{var c=localStorage.getItem('clarity_theme_cache');if(c){var t=JSON.parse(c);Object.keys(t).forEach(function(k){d.style.setProperty('--'+k,t[k]);});}}catch(e){}
     try{
-      var cc=localStorage.getItem('cngm_compact_chrome');
+      var cc=localStorage.getItem('clarity_compact_chrome');
       // No cache means a first run: fall back to the synchronous Omarchy check from preload,
       // which is the same default the async path would land on a moment later.
       if(cc==='1' || (cc===null && window.api && window.api.isOmarchy)) d.classList.add('compact-chrome');
     }catch(e){}
-    try{ if(localStorage.getItem('cngm_omarchy_geometry')) { d.classList.add('omarchy-geometry'); d.style.setProperty('--omarchy-radius', localStorage.getItem('cngm_omarchy_geometry')+'px'); } }catch(e){}
+    try{ if(localStorage.getItem('clarity_omarchy_geometry')) { d.classList.add('omarchy-geometry'); d.style.setProperty('--omarchy-radius', localStorage.getItem('clarity_omarchy_geometry')+'px'); } }catch(e){}
     // The width/height classes are cheap to derive right here — no storage needed, and the
     // window is already at its final size before the first paint.
     try{
@@ -1106,7 +1106,7 @@
     // ⚠️ Key bumped to _v2 deliberately: the old key holds whatever the retired auto-derivation
     // cached (usually 0.75), and this script runs BEFORE the reset that clears it — so without a
     // new key the window would still paint at 75% for a frame on the first launch after the fix.
-    try{ var z=localStorage.getItem('cngm_ui_scale_cache_v2'); if(z && window.api && window.api.setZoomLevel) window.api.setZoomLevel(parseFloat(z)); }catch(e){}
+    try{ var z=localStorage.getItem('clarity_ui_scale_cache_v2'); if(z && window.api && window.api.setZoomLevel) window.api.setZoomLevel(parseFloat(z)); }catch(e){}
   })();</script>
   <link rel="stylesheet" href="vendor/gridstack.min.css">
   <link rel="stylesheet" href="vendor/gridstack-extra.min.css">
@@ -1114,7 +1114,7 @@
 <body>
 
   <div id="titlebar">
-    <div class="titlebar-brand">CAFE NEUROTICO GAME MANAGER</div>
+    <div class="titlebar-brand">CLARITY GAME MANAGER</div>
     <div class="titlebar-controls">
       <button id="btn-titlebar-home" title="Home dashboard">
         <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
@@ -1138,8 +1138,8 @@
         </svg>
         <span class="support-cta-text">Support</span>
       </button>
-      <button id="crema-cta" title="Go fullscreen with CREMA — couch &amp; gamepad mode">
-        <svg class="crema-cta-icon" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+      <button id="couch-cta" title="Go fullscreen with Couch — couch &amp; gamepad mode">
+        <svg class="couch-cta-icon" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
           <rect width="512" height="512" rx="112" fill="#2C1E16"/>
           <rect x="24" y="24" width="464" height="464" rx="88" fill="none" stroke="#8B5A2B" stroke-width="12"/>
           <path d="M 380 256 C 490 256, 490 150, 380 150" fill="none" stroke="#D4A373" stroke-width="24" stroke-linecap="round"/>
@@ -1153,7 +1153,7 @@
           <circle cx="204" cy="256" r="18" fill="#FFE6A7"/>
           <circle cx="308" cy="256" r="18" fill="#FFE6A7"/>
         </svg>
-        <span class="crema-cta-text">Go Fullscreen with CREMA</span>
+        <span class="couch-cta-text">Go Fullscreen with Couch</span>
       </button>
       <button id="btn-min" class="win-btn">—</button>
       <button id="btn-max" class="win-btn">□</button>
@@ -1231,7 +1231,7 @@
         <button class="rail-btn" id="btn-rail-emulatte" title="Launch EmuLatte" style="display:none;">
           <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="2"/><path d="M6 10h4M8 8v4"/><circle cx="15" cy="13" r="1" fill="currentColor"/><circle cx="18" cy="11" r="1" fill="currentColor"/></svg>
         </button>
-        <div id="btn-about" class="rail-btn" title="Cafe Neurotico Game Manager" style="cursor:pointer; height:38px; flex-direction:column; gap:1px; margin-top:6px; border-top:1px solid var(--border_solid);">
+        <div id="btn-about" class="rail-btn" title="Clarity Game Manager" style="cursor:pointer; height:38px; flex-direction:column; gap:1px; margin-top:6px; border-top:1px solid var(--border_solid);">
           <span style="font-size:7px; font-weight:900; color:var(--text_dim); letter-spacing:1px; line-height:1;">CN</span>
           <span style="font-size:9px; font-weight:900; color:var(--accent); letter-spacing:0.5px; line-height:1;">GM</span>
         </div>
@@ -1466,8 +1466,8 @@
           body.corners-flat [style*="border-radius:50%"], body.corners-flat [style*="border-radius: 50%"] { border-radius: 50% !important; }
           /* the one exception you asked for: the gallery cover-art box (card) keeps its rounded corners */
           body.corners-flat .gallery-item { border-radius: 8px !important; }
-          /* keep the CREMA + Support pills in the titlebar as pills */
-          body.corners-flat #crema-cta, body.corners-flat #support-cta { border-radius: 50px !important; }
+          /* keep the Couch + Support pills in the titlebar as pills */
+          body.corners-flat #couch-cta, body.corners-flat #support-cta { border-radius: 50px !important; }
           /* gallery Install / Play buttons: match the cover-art card's 8px radius */
           body.corners-flat .btn-play-gallery, body.corners-flat .btn-install-gallery { border-radius: 8px !important; }
         </style>
@@ -1709,7 +1709,7 @@
                         <button id="btn-gamepage-remove-playlist" class="btn-hero btn-hero-sq" title="Remove from current Playlist" style="display:none; border-color:#ef5350; color:#ef5350;">
                           <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="11" y2="18"/><line x1="15" y1="16" x2="21" y2="22"/><line x1="21" y1="16" x2="15" y2="22"/></svg>
                         </button>
-                        <button id="btn-gamepage-grinder" class="btn-hero btn-hero-sq" title="Compatibility settings" style="display:none;">
+                        <button id="btn-gamepage-installer" class="btn-hero btn-hero-sq" title="Compatibility settings" style="display:none;">
                           <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
                         </button>
                         <button id="btn-gamepage-steam" class="btn-hero btn-hero-sq" title="Open in Steam" style="display:none;">
@@ -1868,10 +1868,10 @@
                   </div>
                   <div id="edit-launchers-list" style="display:flex; flex-direction:column; gap:4px;"></div>
                 </div>
-                <div id="grinder-launch-row" style="display:none; align-items:center; gap:8px; padding:7px 10px; background:rgba(0,0,0,0.25); border-radius:5px; border:1px solid var(--border_solid); flex-shrink:0;">
-                  <span style="font-size:9px; font-weight:900; letter-spacing:1px; color:var(--accent); text-transform:uppercase; flex-shrink:0;">GRINDER</span>
-                  <span id="grinder-launch-status" style="font-size:11px; color:var(--text_sec); flex:1;"></span>
-                  <button id="btn-open-grinder-detail" style="font-size:10px; font-weight:900; padding:4px 12px; border-radius:4px; border:1px solid var(--border_solid); background:transparent; color:var(--text_sec); cursor:pointer; font-family:var(--ui-font,'Raleway'),sans-serif; letter-spacing:0.5px; display:none;">Compatibility</button>
+                <div id="installer-launch-row" style="display:none; align-items:center; gap:8px; padding:7px 10px; background:rgba(0,0,0,0.25); border-radius:5px; border:1px solid var(--border_solid); flex-shrink:0;">
+                  <span style="font-size:9px; font-weight:900; letter-spacing:1px; color:var(--accent); text-transform:uppercase; flex-shrink:0;">Installer</span>
+                  <span id="installer-launch-status" style="font-size:11px; color:var(--text_sec); flex:1;"></span>
+                  <button id="btn-open-installer-detail" style="font-size:10px; font-weight:900; padding:4px 12px; border-radius:4px; border:1px solid var(--border_solid); background:transparent; color:var(--text_sec); cursor:pointer; font-family:var(--ui-font,'Raleway'),sans-serif; letter-spacing:0.5px; display:none;">Compatibility</button>
                 </div>
                 <div class="row" style="flex-shrink: 0;">
                   <label style="flex: 1; color: var(--text_sec); font-weight: bold; font-size: 11px; text-transform: uppercase;"><span data-i18n="html.lbl_genre">Genre:</span> <input type="text" id="edit-genre" style="margin-top: 5px;"></label>
@@ -2068,16 +2068,16 @@
 
   <div id="modal-about" class="modal-overlay">
     <div class="modal-box" style="text-align: center;">
-      <h2 style="margin: 0; color: var(--text_main); font-weight: 900; letter-spacing: 2px;">CAFE NEUROTICO</h2>
+      <h2 style="margin: 0; color: var(--text_main); font-weight: 900; letter-spacing: 2px;">CLARITY</h2>
       <h3 style="margin: 0; color: var(--accent); font-weight: 900; letter-spacing: 4px;">GAMING SUITE</h3>
       <p id="about-version" style="font-size: 11px; color: var(--text_dim); margin: 6px 0 0; letter-spacing: 2px; font-weight: 700;"></p>
       <p id="about-platform-badge" style="display:none; font-size: 10px; color: #e58a70; margin: 6px 0 0; letter-spacing: 1.5px; font-weight: 900; text-transform: uppercase;">macOS build — Experimental</p>
 
-      <p style="font-size: 13px; color: var(--text_sec); margin: 15px 0 5px 0;" data-i18n="html.about_tagline">One app, many faces — a whole gaming ecosystem brewed under one roof.</p>
+      <p style="font-size: 13px; color: var(--text_sec); margin: 15px 0 5px 0;" data-i18n="html.about_tagline">One app, many faces — your whole gaming world in one good plwed under one roof.</p>
 
-      <p style="font-size: 12px; color: var(--text_sec); margin: 5px 0; text-align: justify;" data-i18n-html="html.about_cngm"><strong>The Manager</strong> is the desktop hub: detail-obsessed, neurotic about your library, doing all the heavy lifting &mdash; automatic and manual importing, artwork and metadata scraping. <strong>GRINDER</strong> works quietly under the hood, installing and launching your GOG and Epic games. Check the <span id="btn-open-manual" style="color: var(--accent); cursor: pointer; text-decoration: underline; font-weight: bold;">manual</span> for everything else.</p>
+      <p style="font-size: 12px; color: var(--text_sec); margin: 5px 0; text-align: justify;" data-i18n-html="html.about_clarity"><strong>The Manager</strong> is the desktop hub: detail-obsessed, devoted to your library, doing all the heavy lifting &mdash; automatic and manual importing, artwork and metadata scraping. <strong>Installer</strong> works quietly under the hood, installing and launching your GOG and Epic games. Check the <span id="btn-open-manual" style="color: var(--accent); cursor: pointer; text-decoration: underline; font-weight: bold;">manual</span> for everything else.</p>
 
-      <p style="font-size: 12px; color: var(--text_sec); margin: 5px 0 15px 0; text-align: justify;" data-i18n-html="html.about_crema"><strong>CREMA</strong> is the sweet foam on top: a fullscreen, controller-first companion, laidback and focused purely on fun &mdash; a true connoisseur of good games and good music. <strong>EmuLatte</strong> rounds out the suite for your emulators. Grab a controller and enjoy.</p>
+      <p style="font-size: 12px; color: var(--text_sec); margin: 5px 0 15px 0; text-align: justify;" data-i18n-html="html.about_couch"><strong>Couch</strong> is where you kick back: a fullscreen, controller-first companion, laidback and focused purely on fun &mdash; a true connoisseur of good games and good music. <strong>EmuLatte</strong> rounds out the suite for your emulators. Grab a controller and enjoy.</p>
 
       <hr style="border: 1px solid var(--border); width: 100%;">
 
@@ -2098,7 +2098,7 @@
 
       <!-- Sticky header -->
       <div style="padding: 24px 20px 18px; flex-shrink: 0; border-bottom: 1px solid var(--border_solid); text-align: center;">
-        <p style="font-size: 9px; font-weight: 900; letter-spacing: 4px; color: var(--text_dim); margin: 0 0 8px; text-transform: uppercase;">Cafe Neurotico</p>
+        <p style="font-size: 9px; font-weight: 900; letter-spacing: 4px; color: var(--text_dim); margin: 0 0 8px; text-transform: uppercase;">Clarity</p>
         <h3 style="margin: 0 0 10px; color: var(--accent); text-transform: uppercase; letter-spacing: 2px;">Welcome to the System</h3>
         <p style="margin: 0; color: var(--text_sec); line-height: 1.6;">One thing matters here: getting your games onto the shelf. Everything else can wait.</p>
         <p style="margin: 6px 0 0; color: var(--text_dim); font-size: 11px; line-height: 1.5; font-style: italic;">Nothing is mandatory — everything here also lives in Connect and the menu.</p>
@@ -2138,7 +2138,7 @@
             <button id="btn-welcome-login-gog"  style="flex: 1; background: transparent; border: 1px solid #a78bfa; color: #a78bfa;">Sign in to GOG</button>
             <button id="btn-welcome-login-epic" style="flex: 1; background: transparent; border: 1px solid #a78bfa; color: #a78bfa;">Sign in to Epic</button>
           </div>
-          <div id="wlc-grinder-status" style="font-size: 12px; font-weight: bold; min-height: 16px; text-align: center; margin-top: 6px;"></div>
+          <div id="wlc-installer-status" style="font-size: 12px; font-weight: bold; min-height: 16px; text-align: center; margin-top: 6px;"></div>
 
           <p style="margin: 8px 0 0; color: var(--text_dim); font-size: 10.5px; line-height: 1.5; font-style: italic; text-align: center;">Flatpak, PICO-8 and itch.io are picked up automatically — and you can add anything else by hand.</p>
         </div>
@@ -2165,7 +2165,7 @@
         <!-- STEP 3: SYSTEM MENU -->
         <div class="tool-card">
           <div class="tool-card-title"><span style="color:var(--accent);">3</span> &nbsp;Add to Your App Menu</div>
-          <p style="margin: 0 0 10px; line-height: 1.6; color: var(--text_sec); font-size: 11px;">Puts <strong style="color: var(--text_main);">Cafe Neurotico</strong> and <strong style="color: var(--text_main);">CREMA</strong> (the fullscreen TV mode) in your launcher — GNOME, KDE, anything. If <strong style="color: var(--text_main);">EmuLatte</strong>'s AppImage is in the folder, it's added too.</p>
+          <p style="margin: 0 0 10px; line-height: 1.6; color: var(--text_sec); font-size: 11px;">Puts <strong style="color: var(--text_main);">Clarity</strong> and <strong style="color: var(--text_main);">Couch</strong> (the fullscreen TV mode) in your launcher — GNOME, KDE, anything. If <strong style="color: var(--text_main);">EmuLatte</strong>'s AppImage is in the folder, it's added too.</p>
           <button id="btn-welcome-add-menu" class="primary" style="width: 100%;">Add to Application Menu</button>
           <div id="wlc-menu-status" style="font-size: 12px; font-weight: bold; min-height: 16px; text-align: center; margin-top: 4px;"></div>
         </div>
@@ -2176,7 +2176,7 @@
         <div style="background: rgba(102,187,106,0.06); border: 1px solid rgba(102,187,106,0.3); border-left: 4px solid #66bb6a; border-radius: 6px; padding: 12px 16px; text-align: center;">
 
 
-          <p style="margin: 0; color: var(--text_sec); line-height: 1.65; font-size: 11px;"><strong style="color: #66bb6a;">That's it.</strong> Grab a controller and press the CREMA button anytime to go fullscreen — same library, couch edition.</p>
+          <p style="margin: 0; color: var(--text_sec); line-height: 1.65; font-size: 11px;"><strong style="color: #66bb6a;">That's it.</strong> Grab a controller and press the Couch button anytime to go fullscreen — same library, couch edition.</p>
         </div>
 
       </div>
@@ -2210,12 +2210,12 @@
   <div id="modal-steam-results" class="modal-overlay"><div class="modal-box" style="max-height: 80vh;"><h3 style="margin: 0; color: var(--accent); text-transform: uppercase;">Multiple Results Found</h3><p style="font-size: 12px; color: var(--text_sec); margin: 0;">Select the correct game from the Steam database:</p><div id="steam-results-list" style="display: flex; flex-direction: column; gap: 8px; overflow-y: auto; padding-right: 5px;"></div><button id="btn-close-steam-results" style="margin-top: 10px;">Cancel</button></div></div>
 
   <!-- Scan for Updates — results (z-index above the Control Panel it opens from) -->
-  <!-- Everything Cafe Neurotico knows how to install from a download you already have.
+  <!-- Everything Clarity knows how to install from a download you already have.
        Opened from the Control Panel, which is itself a modal-overlay, hence z-index 26000. -->
   <div id="modal-custom" class="modal-overlay" style="z-index:26000;">
     <div class="modal-box" style="width:660px; max-width:95vw; max-height:84vh; text-align:left; display:flex; flex-direction:column;">
       <h3 style="margin:0; color:var(--accent); text-transform:uppercase;">Fan Games &amp; Source Ports</h3>
-      <div style="font-size:12px; color:var(--text_sec); margin:6px 0 10px;">You download the port; Cafe Neurotico does the rest. Each one below says exactly where to get it and what the file is called &mdash; the game data comes from a title you already own.</div>
+      <div style="font-size:12px; color:var(--text_sec); margin:6px 0 10px;">You download the port; Clarity does the rest. Each one below says exactly where to get it and what the file is called &mdash; the game data comes from a title you already own.</div>
       <div class="row" style="gap:8px; margin-bottom:10px; flex-shrink:0;">
         <input type="text" id="custom-search" placeholder="Search the catalogue&hellip;" autocomplete="off" spellcheck="false"
                style="flex:1; box-sizing:border-box; padding:9px 12px; background:var(--bg); border:1.5px solid var(--border_solid); border-radius:8px; color:var(--text_main); font-family:var(--ui-font,'Raleway'),sans-serif; font-size:12px; font-weight:700;">
@@ -2308,7 +2308,7 @@
   <div id="modal-shortcut" class="modal-overlay" style="z-index:26000;">
     <div class="modal-box" style="width:400px; max-width:95vw; text-align:left;">
       <h3 style="margin:0; color:var(--accent); text-transform:uppercase;">Add to Desktop</h3>
-      <p style="font-size:12px; color:var(--text_sec); margin:6px 0 12px;">Create a launcher that opens <b id="shortcut-game-name">this game</b> straight through Cafe Neurotico. Where should it go?</p>
+      <p style="font-size:12px; color:var(--text_sec); margin:6px 0 12px;">Create a launcher that opens <b id="shortcut-game-name">this game</b> straight through Clarity. Where should it go?</p>
       <div style="display:flex; flex-direction:column; gap:8px;">
         <button id="btn-shortcut-both" class="primary" style="width:100%; padding:10px; font-size:12px;">App Menu + Desktop</button>
         <button id="btn-shortcut-menu" style="width:100%; padding:10px; font-size:12px; background:transparent; border:1px solid var(--border_solid); color:var(--text_sec);">App Menu only</button>
@@ -2328,17 +2328,17 @@
       <!-- Scrollable cards -->
       <div id="connect-cards-container" style="flex: 1; overflow-y: auto; padding: 14px 20px; display: flex; flex-direction: column; gap: 12px;">
 
-        <!-- GOG & Epic — headless sign-in (GRINDER is the under-the-hood engine) -->
-        <div class="tool-card connect-section" data-search="grinder gog epic install launcher proton umu wine configure setup sign in login connect account">
+        <!-- GOG & Epic — headless sign-in (Installer is the under-the-hood engine) -->
+        <div class="tool-card connect-section" data-search="installer gog epic install launcher proton umu wine configure setup sign in login connect account">
           <div class="tool-card-title" style="color: #a78bfa;">GOG &amp; Epic</div>
           <p style="font-size: 11px; color: var(--text_sec); margin: 0 0 8px; line-height: 1.6;">Sign in once and your libraries import automatically — new purchases arrive on every <em>Refresh Library</em>. Games install and launch through the built-in engine; you never have to open it.</p>
           <div class="row" style="gap:6px;">
             <button id="btn-connect-login-gog"  style="flex:1; font-size:11px; background:transparent; border:1px solid #a78bfa; color:#a78bfa;">Sign in to GOG</button>
             <button id="btn-connect-login-epic" style="flex:1; font-size:11px; background:transparent; border:1px solid #a78bfa; color:#a78bfa;">Sign in to Epic</button>
           </div>
-          <div id="grinder-connect-status" style="font-size:11px; color:var(--text_dim); min-height:16px; text-align:center; margin-top:8px;"></div>
+          <div id="installer-connect-status" style="font-size:11px; color:var(--text_dim); min-height:16px; text-align:center; margin-top:8px;"></div>
           <div class="row" style="margin-top:6px; gap:6px;">
-                        <button id="btn-check-grinder" style="flex:1; font-size:10px; background:transparent; border:1px solid var(--border_solid); color:var(--text_dim);">Check Connection</button>
+                        <button id="btn-check-installer" style="flex:1; font-size:10px; background:transparent; border:1px solid var(--border_solid); color:var(--text_dim);">Check Connection</button>
           </div>
         </div>
 
@@ -2454,7 +2454,7 @@
           <section class="cp-pane active" data-pane="welcome">
             <div class="cp-welcome">
               <div class="cp-welcome-glow"></div>
-              <div class="cp-welcome-brand">CAFE<br>NEUROTICO</div>
+              <div class="cp-welcome-brand">CLARITY</div>
               <div class="cp-welcome-rule"></div>
               <div class="cp-welcome-sub">GAME MANAGER</div>
               <!-- Version chip + "what's new" link out to the GitHub releases page (no in-app updater). -->
@@ -2526,7 +2526,7 @@
           <button id="btn-clear-history" style="width: 100%; background-color: transparent; border: 1px solid #f57c00; color: #f57c00; font-size: 11px; margin-top: 4px;"><svg class="cp-bico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg><span data-i18n="html.btn_clear_history">Clear History</span></button>
         </div>
 
-        <div class="tool-card tools-section" data-search="recently imported playlist new games added steam grinder manual">
+        <div class="tool-card tools-section" data-search="recently imported playlist new games added steam installer manual">
           <div class="tool-card-title"><svg class="cp-tico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Recently Imported <span style="font-weight:400; font-size:9px; color:var(--text_dim); letter-spacing:0.5px;">(Playlist)</span></div>
           <p style="font-size:10px; color:var(--text_dim); margin:0 0 6px;">Show last imported games as a fixed playlist. Newest arrivals always on top.</p>
           <div class="segmented-control" id="recently-imported-segmented-control">
@@ -2556,14 +2556,14 @@
           </div>
         </div>
 
-        <div class="tool-card tools-section" data-search="storage disk space size manage free up gog epic steam grinder installed games usage">
+        <div class="tool-card tools-section" data-search="storage disk space size manage free up gog epic steam installer installed games usage">
           <div class="tool-card-title"><svg class="cp-tico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="10" rx="2"/><line x1="6" y1="12" x2="6.01" y2="12"/><line x1="10" y1="12" x2="10.01" y2="12"/></svg><span data-i18n="html.card_storage">Manage Storage</span></div>
           <div style="font-size: 11px; color: var(--text_dim); line-height: 1.5; margin-bottom: 2px;" data-i18n="html.storage_hint">See disk usage per game (largest first) and free up space.</div>
-          <button id="btn-storage-grinder" class="primary" style="width: 100%; font-size: 12px; padding: 10px; letter-spacing: 1px;"><svg class="cp-bico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg><span data-i18n="html.btn_manage_storage_grinder">GOG &amp; Epic Games</span></button>
+          <button id="btn-storage-installer" class="primary" style="width: 100%; font-size: 12px; padding: 10px; letter-spacing: 1px;"><svg class="cp-bico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg><span data-i18n="html.btn_manage_storage_installer">GOG &amp; Epic Games</span></button>
           <button id="btn-storage-steam" style="width: 100%; font-size: 11px; background: transparent; border: 1px solid var(--border_solid); color: var(--text_sec);"><svg class="cp-bico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="10" rx="2"/><line x1="6" y1="12" x2="6.01" y2="12"/><line x1="10" y1="12" x2="10.01" y2="12"/></svg><span data-i18n="html.btn_manage_storage_steam">Steam Games</span></button>
         </div>
 
-        <div class="tool-card tools-section" data-search="install folder directory path default location download where games installed gog epic grinder drive disk change move">
+        <div class="tool-card tools-section" data-search="install folder directory path default location download where games installed gog epic installer drive disk change move">
           <div class="tool-card-title"><svg class="cp-tico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>Game Install Folder</div>
           <div style="font-size: 11px; color: var(--text_dim); line-height: 1.5; margin-bottom: 2px;">Where GOG &amp; Epic downloads are installed — each game gets its own sub-folder. You can still pick a different folder for any single game while installing it.</div>
           <input id="install-dir-current" type="text" readonly style="width:100%; box-sizing:border-box; font-family:monospace; font-size:11px; padding:8px 10px; background:var(--bg); border:1px solid var(--border_solid); color:var(--text_main); border-radius:6px;">
@@ -2582,7 +2582,7 @@
 
         <div class="tool-card tools-section" id="display-card" data-search="display monitor screen multi-monitor which screen games open kde kwin hyprland wayland" style="display:none;">
           <div class="tool-card-title"><svg class="cp-tico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg><span>Which Screen Games Open On</span></div>
-          <div style="font-size: 11px; color: var(--text_dim); line-height: 1.5; margin-bottom: 6px;">On a multi-monitor desktop it is the compositor that decides where a game lands, not the game. This adds a single window rule so they open where you want, and on Hyprland it also makes that screen the primary one for X11 games &mdash; without a primary they pick whichever monitor sits at the left edge of the desktop, which on most desks is the small one. Both are the only settings that reach outside Cafe Neurotico's own folder: they own that one rule, touch nothing else, and are undone by setting this back to Default and restarting the session.</div>
+          <div style="font-size: 11px; color: var(--text_dim); line-height: 1.5; margin-bottom: 6px;">On a multi-monitor desktop it is the compositor that decides where a game lands, not the game. This adds a single window rule so they open where you want, and on Hyprland it also makes that screen the primary one for X11 games &mdash; without a primary they pick whichever monitor sits at the left edge of the desktop, which on most desks is the small one. Both are the only settings that reach outside Clarity's own folder: they own that one rule, touch nothing else, and are undone by setting this back to Default and restarting the session.</div>
           <select id="display-select" title="Screen games open on" aria-label="Screen games open on" style="width:100%; box-sizing:border-box; padding:9px 10px; background:var(--bg); border:1px solid var(--border_solid); color:var(--text_main); border-radius:6px; font-family:var(--ui-font,'Raleway'),sans-serif; font-size:12px; font-weight:700;"></select>
           <div id="display-status" style="font-size: 11px; text-align:center; font-weight:bold; min-height: 14px; margin-top:4px;"></div>
         </div>
@@ -2613,7 +2613,7 @@
           </div>
 
           <div style="margin-top:10px; padding-top:9px; border-top:1px solid var(--border);">
-            <div style="font-size:11px; color:var(--text_dim); line-height:1.5;">Cafe Neurotico can wear your actual Omarchy palette &mdash; not a lookalike, the same colours your desktop is using. Change it with <code style="color:var(--accent);">omarchy theme set</code> and this follows along. It is in the theme picker under <b>Your Desktop</b> too.</div>
+            <div style="font-size:11px; color:var(--text_dim); line-height:1.5;">Clarity can wear your actual Omarchy palette &mdash; not a lookalike, the same colours your desktop is using. Change it with <code style="color:var(--accent);">omarchy theme set</code> and this follows along. It is in the theme picker under <b>Your Desktop</b> too.</div>
             <div style="font-size:11px; color:var(--text_sec); margin:6px 0 7px;">Your Omarchy theme: <b id="omarchy-theme-name" style="color:var(--accent);">&mdash;</b></div>
             <button id="btn-omarchy-theme" style="width:100%; font-size:12px; padding:9px; letter-spacing:1px;">Match My Omarchy Theme</button>
           </div>
@@ -2627,7 +2627,7 @@
             </div>
             <div id="omarchy-game-window-hint" style="font-size:11px; color:var(--text_dim); line-height:1.5; margin-bottom:6px;"></div>
             <button id="btn-omarchy-apply-rules" style="width:100%; font-size:11px; padding:8px; letter-spacing:1px;">Apply To This Session</button>
-            <div id="omarchy-apply-rules-status" style="font-size:10px; color:var(--text_dim); text-align:center; line-height:1.45; margin:4px 0 9px;">A Hyprland rule cannot be taken back once set, so a change only shows on the next login &mdash; unless you press this, which has Hyprland re-read your config and then puts Cafe Neurotico's rules back. Anything else that set a window rule this session loses it.</div>
+            <div id="omarchy-apply-rules-status" style="font-size:10px; color:var(--text_dim); text-align:center; line-height:1.45; margin:4px 0 9px;">A Hyprland rule cannot be taken back once set, so a change only shows on the next login &mdash; unless you press this, which has Hyprland re-read your config and then puts Clarity's rules back. Anything else that set a window rule this session loses it.</div>
 
             <label style="display:flex; align-items:flex-start; gap:8px; cursor:pointer;">
               <input type="checkbox" id="omarchy-compact-chrome" style="margin-top:2px; flex-shrink:0;">
@@ -2639,7 +2639,7 @@
 
         <div class="tool-card tools-section" data-search="source port fan game custom engine install ironwail vkquake quake openbor gzdoom mod archive zip">
           <div class="tool-card-title"><svg class="cp-tico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg><span>Fan Games &amp; Source Ports</span></div>
-          <div style="font-size: 11px; color: var(--text_dim); line-height: 1.5; margin-bottom: 6px;">Install source ports, custom engines and fan games from the file you downloaded. Cafe Neurotico knows where each one comes from and what it needs &mdash; and wires up the game data from a title you already own, so a port never arrives unplayable.</div>
+          <div style="font-size: 11px; color: var(--text_dim); line-height: 1.5; margin-bottom: 6px;">Install source ports, custom engines and fan games from the file you downloaded. Clarity knows where each one comes from and what it needs &mdash; and wires up the game data from a title you already own, so a port never arrives unplayable.</div>
           <button id="btn-custom-install" class="primary" style="width: 100%; font-size: 12px; padding: 10px; letter-spacing: 1px;"><svg class="cp-bico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg><span>What Can I Install?</span></button>
         </div>
 
@@ -2709,7 +2709,7 @@
 
         <div class="tool-card tools-section" data-search="system backup restore zip menu install desktop application welcome setup guide">
           <div class="tool-card-title"><svg class="cp-tico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="8" rx="2" ry="2"/><rect x="2" y="14" width="20" height="8" rx="2" ry="2"/><line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/></svg><span data-i18n="html.card_system">System</span></div>
-          <p style="font-size: 10px; color: var(--text_dim); margin: 0 0 8px; line-height: 1.5;">CNGM and CREMA are fully backupable from the <code>GameManagerConfig</code> folder. GRINDER is system-specific and must be reconfigured on each machine.</p>
+          <p style="font-size: 10px; color: var(--text_dim); margin: 0 0 8px; line-height: 1.5;">Clarity and Couch are fully backupable from the <code>GameManagerConfig</code> folder. Installer is system-specific and must be reconfigured on each machine.</p>
           <div class="row">
             <button id="btn-backup-zip" style="flex: 1; font-size: 11px;"><svg class="cp-bico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5"/><line x1="10" y1="12" x2="14" y2="12"/></svg><span data-i18n="html.btn_backup">Backup ZIP</span></button>
             <button id="btn-restore-zip" style="flex: 1; font-size: 11px;"><svg class="cp-bico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-4.56L1 10"/></svg><span data-i18n="html.btn_restore">Restore ZIP</span></button>
@@ -2717,8 +2717,8 @@
           <button id="btn-install-menu" style="width: 100%; font-size: 11px; margin-top: 4px;"><svg class="cp-bico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg><span data-i18n="status.add_to_menu">Add to Application Menu</span></button>
           <div id="install-menu-status" style="font-size: 11px; text-align: center; font-weight: bold; min-height: 5px;"></div>
           <label style="display:flex; align-items:flex-start; gap:9px; font-size:11px; color:var(--text_sec); margin-top:8px; cursor:pointer; line-height:1.4;">
-            <input type="checkbox" id="chk-crema-autostart" style="accent-color:var(--accent); width:15px; height:15px; margin-top:1px; cursor:pointer; flex-shrink:0;">
-            <span>Start in <b>CREMA</b> (fullscreen) on login &mdash; for living-room / TV setups</span>
+            <input type="checkbox" id="chk-couch-autostart" style="accent-color:var(--accent); width:15px; height:15px; margin-top:1px; cursor:pointer; flex-shrink:0;">
+            <span>Start in <b>Couch</b> (fullscreen) on login &mdash; for living-room / TV setups</span>
           </label>
           <button id="btn-show-welcome" style="width: 100%; font-size: 11px; margin-top: 4px; background: transparent; border: 1px solid var(--border_solid); color: var(--text_sec);"><svg class="cp-bico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>Show Welcome &amp; Setup Guide</button>
         </div>
@@ -2752,8 +2752,8 @@
   </div>
 
   <!-- Install store picker (multi-store games) -->
-  <!-- In-process GOG/Epic install (no GRINDER window) -->
-  <div id="modal-grinder-install" class="modal-overlay" style="z-index:26000;">
+  <!-- In-process GOG/Epic install (no Installer window) -->
+  <div id="modal-installer-install" class="modal-overlay" style="z-index:26000;">
     <div class="modal-box" style="max-width:460px; gap:14px;">
       <h3 style="margin:0; color:var(--accent); text-transform:uppercase; letter-spacing:2px;">Install Game</h3>
       <p id="gi-title" style="font-size:14px; font-weight:900; color:var(--text_main); margin:0;"></p>
@@ -2795,7 +2795,7 @@
       <p id="pr-message" style="font-size:12px; color:var(--text_sec); line-height:1.7; margin:0;"></p>
 
       <div id="pr-explain" style="display:none; font-size:11px; color:var(--text_dim); line-height:1.7; background:rgba(0,0,0,0.25); border:1px solid var(--border_solid); border-radius:8px; padding:10px 12px;">
-        Windows games run through <b style="color:var(--text_sec);">Proton</b>, a compatibility layer. Cafe Neurotico can install
+        Windows games run through <b style="color:var(--text_sec);">Proton</b>, a compatibility layer. Clarity can install
         <b style="color:var(--text_sec);">GE-Proton</b> for you — it's a one-time download of about 400&nbsp;MB that every Windows game then shares.
       </div>
 
@@ -2948,8 +2948,8 @@
   </div>
 
   <!-- ── Per-game compatibility ────────────────────────────────────────────────
-       Everything GRINDER's setup modal owned, in the Manager. Writes go through
-       grinder-compat-set, which allowlists the columns it will touch. -->
+       Everything Installer's setup modal owned, in the Manager. Writes go through
+       installer-compat-set, which allowlists the columns it will touch. -->
   <!-- ── Command palette (Ctrl+K) ──────────────────────────────────────────────
        Omarchy is keyboard-driven — everything else on this desktop is reachable
        from a fuzzy menu, and the library was the exception. -->
@@ -2989,7 +2989,7 @@
 
         <div style="display:flex; flex-direction:column; gap:4px;">
           <label style="font-size:11px; color:var(--text_sec);">Wine prefix <span style="color:var(--text_dim);">(blank = the default for this game)</span></label>
-          <input type="text" id="compat-prefix" placeholder="~/.config/grinder/prefixes/&lt;Game&gt;">
+          <input type="text" id="compat-prefix" placeholder="~/.config/installer/prefixes/&lt;Game&gt;">
         </div>
 
         <div style="display:flex; flex-direction:column; gap:4px;">
@@ -3055,16 +3055,16 @@
 
   <div id="modal-support" class="modal-overlay" style="z-index:29000;">
     <div class="modal-box" style="max-width: 520px; width: 520px;">
-      <h3 style="margin: 0; color: var(--accent); text-transform: uppercase; letter-spacing: 2px;">Tip the barista</h3>
+      <h3 style="margin: 0; color: var(--accent); text-transform: uppercase; letter-spacing: 2px;">Spread the good vibes</h3>
       <p style="font-size: 12px; color: var(--text_sec); line-height: 1.6; margin: 0 0 4px;">
-        If Cafe Neurotico organized your gaming life, consider buying me a coffee — it keeps the pot warm.
+        If Clarity got your gaming life together, consider sending a little support my way — it keeps the good vibes flowing.
         <strong>&ldquo;more caffeine is <em>more good</em>.&rdquo;</strong>
       </p>
       <div style="display:flex; flex-direction:column; gap:10px; margin-top:6px;">
         <div class="support-row">
           <div class="support-meta">
             <div class="support-label">Ko-fi &middot; international</div>
-            <code id="support-kofi" class="support-value">https://ko-fi.com/cafeneurotico</code>
+            <code id="support-kofi" class="support-value">https://ko-fi.com/clarity</code>
           </div>
           <button class="support-copy" data-copy="support-kofi" style="font-size:11px;">Copy</button>
         </div>
@@ -3165,7 +3165,7 @@
 
         <h4>Can't find your saves? Locate them yourself</h4>
         <p>If detection comes up empty or points at the wrong folder, press <strong>Locate saves…</strong>. The folder picker opens <em>inside</em> the game's Windows environment, here:</p>
-        <p><code>~/.config/grinder/prefixes/&lt;Game&gt;/drive_c/users/steamuser/</code></p>
+        <p><code>~/.config/installer/prefixes/&lt;Game&gt;/drive_c/users/steamuser/</code></p>
         <p>From there, saves are almost always in one of these — open them and look for the folder holding the actual save files:</p>
         <ul>
           <li><code>Documents\My Games\&lt;Game&gt;</code></li>
@@ -3255,7 +3255,7 @@
       <!-- Empty state -->
       <div id="ach-modal-empty" style="display:none; flex:1; flex-direction:column; align-items:center; justify-content:center; gap:14px; padding:40px; color:var(--text_dim);">
         <svg viewBox="0 0 24 24" width="42" height="42" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="opacity:0.3;"><path d="M8 21h8M12 17v4M5 7H3v4a4 4 0 0 0 4 4h10a4 4 0 0 0 4-4V7h-2"/><path d="M5 3h14v8a7 7 0 0 1-7 7 7 7 0 0 1-7-7V3z"/></svg>
-        <span style="font-size:13px;">No achievements synced yet. Open GRINDER and click Sync Now in the edit modal for this game.</span>
+        <span style="font-size:13px;">No achievements synced yet. Open Installer and click Sync Now in the edit modal for this game.</span>
       </div>
     </div>
   </div>
@@ -3345,7 +3345,7 @@
       </div>
       <div style="border-top:1px solid var(--border_solid); margin-top:14px; padding-top:14px;">
         <p style="font-size:10px; color:#ff6d00; font-weight:900; letter-spacing:1px; margin:0 0 6px; text-transform:uppercase;">🪟 Windows Game</p>
-        <p style="font-size:10px; color:var(--text_dim); margin:0 0 10px; line-height:1.6;">Install and run Windows games via Proton using GRINDER.</p>
+        <p style="font-size:10px; color:var(--text_dim); margin:0 0 10px; line-height:1.6;">Install and run Windows games via Proton using Installer.</p>
               </div>
     </div>
   </div>
@@ -3534,7 +3534,7 @@
     <div class="modal-box" style="width:600px; max-width:94vw; max-height:85vh; padding:0; gap:0; overflow:hidden;">
       <div style="padding:18px 24px 14px; border-bottom:1px solid var(--border_solid); flex-shrink:0; display:flex; align-items:center; justify-content:space-between;">
         <div>
-          <div style="font-size:9px; font-weight:900; letter-spacing:3px; color:var(--text_dim); text-transform:uppercase; margin-bottom:4px;">Cafe Neurotico</div>
+          <div style="font-size:9px; font-weight:900; letter-spacing:3px; color:var(--text_dim); text-transform:uppercase; margin-bottom:4px;">Clarity</div>
           <h3 style="margin:0; font-size:15px; letter-spacing:2.5px; color:var(--accent); text-transform:uppercase;">Download Manager</h3>
         </div>
         <button id="btn-dlm-close" style="background:transparent; border:none; color:var(--text_dim); font-size:20px; cursor:pointer; padding:4px 8px; line-height:1;">✕</button>

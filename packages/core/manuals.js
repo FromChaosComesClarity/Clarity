@@ -1,6 +1,6 @@
 'use strict';
 /*
- * @cafeneurotico/core — per-game manuals.
+ * @clarity/core — per-game manuals.
  *
  * Plenty of games, RPGs above all, still expect you to read something, and more often than
  * not the file is already on disk: GOG ships manuals, cluebooks and reference cards inside

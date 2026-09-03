@@ -1,6 +1,6 @@
 'use strict';
 /*
- * @cafeneurotico/core — the genre vocabulary and the classifier that fills it.
+ * @clarity/core — the genre vocabulary and the classifier that fills it.
  *
  * The library's GENRE column is a free-text string from two scrapers with different
  * vocabularies ("RPG" from Steam, "Role-playing (RPG)" from IGDB) and it is far too

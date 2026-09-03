@@ -1,7 +1,7 @@
 'use strict';
 /*
- * @cafeneurotico/core — shared IPC handlers that are byte-identical across the
- * suite's faces (Manager today; CREMA in Phase 3). Single source of truth so a
+ * @clarity/core — shared IPC handlers that are byte-identical across the
+ * suite's faces (Manager today; Couch in Phase 3). Single source of truth so a
  * fix here can never drift between faces.
  *
  * Call once per face (faces run as separate processes) after the DB is open:
@@ -105,8 +105,8 @@ function registerSharedHandlers(ctx) {
 
     // ── The Omarchy theme ────────────────────────────────────────────────────
     // Shared rather than Manager-only, and that is a correctness matter, not tidiness:
-    // CREMA mirrors the Manager's theme by name when themeSource is MANAGER, resolving it
-    // against its OWN theme table. A theme the Manager knows about and CREMA does not
+    // Couch mirrors the Manager's theme by name when themeSource is MANAGER, resolving it
+    // against its OWN theme table. A theme the Manager knows about and Couch does not
     // resolves to null there and the couch face silently falls back to its default — so a
     // user matching their desktop on one face would stop matching it on the other.
     //
@@ -187,7 +187,7 @@ function registerSharedHandlers(ctx) {
         return _cached('news:' + urls.join('|'), 15 * 60000, () => rss.fetchNews(urls, 14).catch(() => []));
     });
 
-    // Raw page HTML for the in-app TV Reader (CREMA) — extraction/sanitizing happens in
+    // Raw page HTML for the in-app TV Reader (Couch) — extraction/sanitizing happens in
     // the renderer via DOMParser, so main stays DOM-free. Same fetch path as rss/freebies.
     ipcMain.handle('fetch-article', async (_, url) => {
         try {
@@ -334,7 +334,7 @@ function registerSharedHandlers(ctx) {
 
     ipcMain.handle('get-game-achievements', (_, appId) => {
         try {
-            // Ensure the table exists (created by GRINDER on first sync)
+            // Ensure the table exists (created by Installer on first sync)
             db.exec(`CREATE TABLE IF NOT EXISTS achievements (
                 app_id TEXT NOT NULL, key TEXT NOT NULL, name TEXT,
                 description TEXT, image_locked TEXT, image_unlocked TEXT,

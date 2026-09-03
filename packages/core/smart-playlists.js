@@ -1,6 +1,6 @@
 'use strict';
 /*
- * @cafeneurotico/core — playlists that fill themselves.
+ * @clarity/core — playlists that fill themselves.
  *
  * A playlist is normally a hand-picked list of games in playlist_games. A *smart*
  * playlist instead stores a rule and computes its members on read, so "CRPGs" stays
@@ -58,7 +58,7 @@ function ruleQuery(rule) {
     // other view in the suite decides it.
     if (r.installed) {
         where.push(
-            "(CASE WHEN g.GrinderGameId IS NULL AND (LOWER(IFNULL(g.Store,'')) LIKE '%others%' OR LOWER(IFNULL(g.Store,'')) LIKE '%emulation%' " +
+            "(CASE WHEN g.InstallerGameId IS NULL AND (LOWER(IFNULL(g.Store,'')) LIKE '%others%' OR LOWER(IFNULL(g.Store,'')) LIKE '%emulation%' " +
             "OR LOWER(IFNULL(g.Store,'')) LIKE '%physical%' OR LOWER(IFNULL(g.Store,'')) LIKE '%apps%') " +
             "THEN IFNULL(g.LaunchCommand,'') <> '' ELSE g.Installed = 1 END)"
         );

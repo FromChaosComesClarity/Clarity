@@ -1,5 +1,5 @@
 const { app, BrowserWindow, ipcMain, dialog, net, session, shell, Menu, Notification, nativeImage, screen, powerSaveBlocker } = require('electron');
-app.setName('cafeneurotico');
+app.setName('clarity');
 const path = require('path');
 const os = require('os');
 const Database = require('better-sqlite3');
@@ -12,9 +12,9 @@ const { exec, execFile, spawn } = require('child_process');
 const https = require('https');
 
 // Embedded SVG icons for the menu installer
-const CNGM_SVG_B64 = 'PHN2ZyB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgdmlld0JveD0iMCAwIDUxMiA1MTIiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CiAgPCEtLSBCYXNlIEJhY2tncm91bmQgLS0+CiAgPHJlY3Qgd2lkdGg9IjUxMiIgaGVpZ2h0PSI1MTIiIHJ4PSIxMTIiIGZpbGw9IiMyQzFFMTYiLz4KICAKICA8IS0tIE91dGVyIENvbm5lY3RvcnMgLS0+CiAgPHBhdGggZD0iTSAyNCAyNTYgSCAxMTYiIGZpbGw9Im5vbmUiIHN0cm9rZT0iI0Q0QTM3MyIgc3Ryb2tlLXdpZHRoPSIxMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIi8+CiAgPGNpcmNsZSBjeD0iNzAiIGN5PSIyNTYiIHI9IjgiIGZpbGw9IiNENEEzNzMiLz4KICA8cGF0aCBkPSJNIDM5NiAyNTYgSCA0ODgiIGZpbGw9Im5vbmUiIHN0cm9rZT0iI0Q0QTM3MyIgc3Ryb2tlLXdpZHRoPSIxMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIi8+CiAgPGNpcmNsZSBjeD0iNDQyIiBjeT0iMjU2IiByPSI4IiBmaWxsPSIjRDRBMzczIi8+CgogIDwhLS0gVGhlIFBpbGwgQmVhbiBCb2R5IC0tPgogIDxyZWN0IHg9IjExNiIgeT0iODAiIHdpZHRoPSIyODAiIGhlaWdodD0iMzUyIiByeD0iMTQwIiBmaWxsPSIjNDMyODE4IiBzdHJva2U9IiNENEEzNzMiIHN0cm9rZS13aWR0aD0iMjAiLz4KCiAgPCEtLSBUaGUgUy1DcmFjayBFcmFzZXIgKFNwbGl0cyB0aGUgYmVhbiB1c2luZyBiYWNrZ3JvdW5kIGNvbG9yKSAtLT4KICA8cGF0aCBkPSJNIDI1NiAyNCBWIDEzNiBMIDIxNiAxNzYgViAyMTYgTCAyOTYgMjk2IFYgMzM2IEwgMjU2IDM3NiBWIDQ4OCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjMkMxRTE2IiBzdHJva2Utd2lkdGg9IjI4IiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+CgogIDwhLS0gVGhlIEdsb3dpbmcgUy1DcmFjayBDaXJjdWl0IFRyYWNlIC0tPgogIDxwYXRoIGQ9Ik0gMjU2IDI0IFYgMTM2IEwgMjE2IDE3NiBWIDIxNiBMIDI5NiAyOTYgViAzMzYgTCAyNTYgMzc2IFYgNDg4IiBmaWxsPSJub25lIiBzdHJva2U9IiNGRkU2QTciIHN0cm9rZS13aWR0aD0iOCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPgoKICA8IS0tIENpcmN1aXQgTm9kZXMgYWxvbmcgdGhlIHRyYWNlIC0tPgogIDxjaXJjbGUgY3g9IjI1NiIgY3k9IjEzNiIgcj0iOCIgZmlsbD0iI0ZGRTZBNyIvPgogIDxjaXJjbGUgY3g9IjIxNiIgY3k9IjE3NiIgcj0iOCIgZmlsbD0iI0ZGRTZBNyIvPgogIDxjaXJjbGUgY3g9IjIxNiIgY3k9IjIxNiIgcj0iOCIgZmlsbD0iI0ZGRTZBNyIvPgogIDxjaXJjbGUgY3g9IjI1NiIgY3k9IjI1NiIgcj0iMTIiIGZpbGw9IiNGRkU2QTciLz4gPCEtLSBDb3JlIENlbnRlciBOb2RlIC0tPgogIDxjaXJjbGUgY3g9IjI5NiIgY3k9IjI5NiIgcj0iOCIgZmlsbD0iI0ZGRTZBNyIvPgogIDxjaXJjbGUgY3g9IjI5NiIgY3k9IjMzNiIgcj0iOCIgZmlsbD0iI0ZGRTZBNyIvPgogIDxjaXJjbGUgY3g9IjI1NiIgY3k9IjM3NiIgcj0iOCIgZmlsbD0iI0ZGRTZBNyIvPgoKICA8IS0tIEdvbGRlbiBPdXRlciBCb3JkZXIgKERyYXduIGxhc3QgdG8gb3ZlcmxheSBwZXJmZWN0bHkpIC0tPgogIDxyZWN0IHg9IjI0IiB5PSIyNCIgd2lkdGg9IjQ2NCIgaGVpZ2h0PSI0NjQiIHJ4PSI4OCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjOEI1QTJCIiBzdHJva2Utd2lkdGg9IjEyIi8+Cjwvc3ZnPgo=';
-const GRINDER_SVG_B64 = 'PHN2ZyB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgdmlld0JveD0iMCAwIDUxMiA1MTIiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CiAgPHJlY3Qgd2lkdGg9IjUxMiIgaGVpZ2h0PSI1MTIiIHJ4PSIxMTIiIGZpbGw9IiMyQzFFMTYiLz4KICAKICA8Y2lyY2xlIGN4PSIyNTYiIGN5PSI2NCIgcj0iOCIgZmlsbD0iI0ZGRTZBNyIvPgogIDxjaXJjbGUgY3g9IjI1NiIgY3k9IjkyIiByPSI4IiBmaWxsPSIjRkZFNkE3Ii8+CgogIDxwYXRoIGQ9Ik0gMTM2IDEyNCBMIDM3NiAxMjQgTCAzMjYgMjEwIEwgMTg2IDIxMCBaIiBmaWxsPSIjNDMyODE4IiBzdHJva2U9IiNENEEzNzMiIHN0cm9rZS13aWR0aD0iMTYiIHN0cm9rZS1saW5lam9pbj0icm91bmQiLz4KICAKICA8cmVjdCB4PSIxNjYiIHk9IjIxMCIgd2lkdGg9IjE4MCIgaGVpZ2h0PSIxODAiIHJ4PSIzMiIgZmlsbD0iIzQzMjgxOCIgc3Ryb2tlPSIjRDRBMzczIiBzdHJva2Utd2lkdGg9IjE2Ii8+CgogIDxwYXRoIGQ9Ik0gMjE2IDI2MCBIIDI5NiIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjRkZFNkE3IiBzdHJva2Utd2lkdGg9IjEyIiBzdHJva2UtbGluZWNhcD0icm91bmQiLz4KICA8cGF0aCBkPSJNIDIxNiAzMDAgSCAyOTYiIGZpbGw9Im5vbmUiIHN0cm9rZT0iI0ZGRTZBNyIgc3Ryb2tlLXdpZHRoPSIxMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIi8+CiAgPHBhdGggZD0iTSAyMTYgMzQwIEggMjk2IiBmaWxsPSJub25lIiBzdHJva2U9IiNGRkU2QTciIHN0cm9rZS13aWR0aD0iMTIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIvPgoKICA8cGF0aCBkPSJNIDIwNiAzOTAgViA0MzAgQyAyMDYgNDQxIDIxNSA0NTAgMjI2IDQ1MCBIIDI4NiBDIDI5NyA0NTAgMzA2IDQ0MSAzMDYgNDMwIFYgMzkwIiBmaWxsPSIjNDMyODE4IiBzdHJva2U9IiNENEEzNzMiIHN0cm9rZS13aWR0aD0iMTYiIHN0cm9rZS1saW5lam9pbj0icm91bmQiLz4KCiAgPHBhdGggZD0iTSAzNDYgMjcwIEggNDIwIiBmaWxsPSJub25lIiBzdHJva2U9IiNENEEzNzMiIHN0cm9rZS13aWR0aD0iMTYiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIvPgogIAogIDxjaXJjbGUgY3g9IjM0NiIgY3k9IjI3MCIgcj0iNiIgZmlsbD0iI0ZGRTZBNyIvPgoKICA8Y2lyY2xlIGN4PSI0MzYiIGN5PSIyNzAiIHI9IjE2IiBmaWxsPSIjRkZFNkE3Ii8+CgogIDxyZWN0IHg9IjI0IiB5PSIyNCIgd2lkdGg9IjQ2NCIgaGVpZ2h0PSI0NjQiIHJ4PSI4OCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjOEI1QTJCIiBzdHJva2Utd2lkdGg9IjEyIi8+Cjwvc3ZnPgo=';
-const CREMA_SVG_B64    = 'PHN2ZyB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgdmlld0JveD0iMCAwIDUxMiA1MTIiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CiAgPCEtLSBCYXNlIEJhY2tncm91bmQgLS0+CiAgPHJlY3Qgd2lkdGg9IjUxMiIgaGVpZ2h0PSI1MTIiIHJ4PSIxMTIiIGZpbGw9IiMyQzFFMTYiLz4KICAKICA8IS0tIEdvbGRlbiBJbm5lciBCb3JkZXIgLS0+CiAgPHJlY3QgeD0iMjQiIHk9IjI0IiB3aWR0aD0iNDY0IiBoZWlnaHQ9IjQ2NCIgcng9Ijg4IiBmaWxsPSJub25lIiBzdHJva2U9IiM4QjVBMkIiIHN0cm9rZS13aWR0aD0iMTIiLz4KCiAgPCEtLSBDb2ZmZWUgQ3VwIEhhbmRsZSAtLT4KICA8cGF0aCBkPSJNIDM4MCAyNTYgQyA0OTAgMjU2LCA0OTAgMTUwLCAzODAgMTUwIiBmaWxsPSJub25lIiBzdHJva2U9IiNENEEzNzMiIHN0cm9rZS13aWR0aD0iMjQiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIvPgoKICA8IS0tIEVzcHJlc3NvIEN1cCBCYXNlIC0tPgogIDxjaXJjbGUgY3g9IjI1NiIgY3k9IjI1NiIgcj0iMTYwIiBmaWxsPSIjNDMyODE4IiBzdHJva2U9IiNENEEzNzMiIHN0cm9rZS13aWR0aD0iMTYiLz4KCiAgPCEtLSBDcmVtYSAvIFZpbnlsIFN3aXJscyAtLT4KICA8cGF0aCBkPSJNIDI1NiAxMzYgQSAxMjAgMTIwIDAgMCAxIDM3NiAyNTYiIGZpbGw9Im5vbmUiIHN0cm9rZT0iI0Q0QTM3MyIgc3Ryb2tlLXdpZHRoPSIxNiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIi8+CiAgPHBhdGggZD0iTSAyNTYgMzc2IEEgMTIwIDEyMCAwIDAgMSAxMzYgMjU2IiBmaWxsPSJub25lIiBzdHJva2U9IiNENEEzNzMiIHN0cm9rZS13aWR0aD0iMTYiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIvPgogIDxwYXRoIGQ9Ik0gMTg2IDI1NiBBIDcwIDcwIDAgMCAxIDI1NiAxODYiIGZpbGw9Im5vbmUiIHN0cm9rZT0iI0ZGRTZBNyIgc3Ryb2tlLXdpZHRoPSIxMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIi8+CiAgPHBhdGggZD0iTSAzMjYgMjU2IEEgNzAgNzAgMCAwIDEgMjU2IDMyNiIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjRkZFNkE3IiBzdHJva2Utd2lkdGg9IjEyIiBzdHJva2UtbGluZWNhcD0icm91bmQiLz4KCiAgPCEtLSBHYW1lcGFkIEFCWFkgQnV0dG9ucyAtLT4KICA8IS0tIFRvcCBCdXR0b24gKFkvVHJpYW5nbGUpIC0tPgogIDxjaXJjbGUgY3g9IjI1NiIgY3k9IjIwNCIgcj0iMTgiIGZpbGw9IiNGRkU2QTciLz4KICA8IS0tIEJvdHRvbSBCdXR0b24gKEEvQ3Jvc3MpIC0tPgogIDxjaXJjbGUgY3g9IjI1NiIgY3k9IjMwOCIgcj0iMTgiIGZpbGw9IiNGRkU2QTciLz4KICA8IS0tIExlZnQgQnV0dG9uIChYL1NxdWFyZSkgLS0+CiAgPGNpcmNsZSBjeD0iMjA0IiBjeT0iMjU2IiByPSIxOCIgZmlsbD0iI0ZGRTZBNyIvPgogIDwhLS0gUmlnaHQgQnV0dG9uIChCL0NpcmNsZSkgLS0+CiAgPGNpcmNsZSBjeD0iMzA4IiBjeT0iMjU2IiByPSIxOCIgZmlsbD0iI0ZGRTZBNyIvPgo8L3N2Zz4K';
+const Clarity_SVG_B64 = 'PHN2ZyB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgdmlld0JveD0iMCAwIDUxMiA1MTIiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CiAgPCEtLSBCYXNlIEJhY2tncm91bmQgLS0+CiAgPHJlY3Qgd2lkdGg9IjUxMiIgaGVpZ2h0PSI1MTIiIHJ4PSIxMTIiIGZpbGw9IiMyQzFFMTYiLz4KICAKICA8IS0tIE91dGVyIENvbm5lY3RvcnMgLS0+CiAgPHBhdGggZD0iTSAyNCAyNTYgSCAxMTYiIGZpbGw9Im5vbmUiIHN0cm9rZT0iI0Q0QTM3MyIgc3Ryb2tlLXdpZHRoPSIxMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIi8+CiAgPGNpcmNsZSBjeD0iNzAiIGN5PSIyNTYiIHI9IjgiIGZpbGw9IiNENEEzNzMiLz4KICA8cGF0aCBkPSJNIDM5NiAyNTYgSCA0ODgiIGZpbGw9Im5vbmUiIHN0cm9rZT0iI0Q0QTM3MyIgc3Ryb2tlLXdpZHRoPSIxMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIi8+CiAgPGNpcmNsZSBjeD0iNDQyIiBjeT0iMjU2IiByPSI4IiBmaWxsPSIjRDRBMzczIi8+CgogIDwhLS0gVGhlIFBpbGwgQmVhbiBCb2R5IC0tPgogIDxyZWN0IHg9IjExNiIgeT0iODAiIHdpZHRoPSIyODAiIGhlaWdodD0iMzUyIiByeD0iMTQwIiBmaWxsPSIjNDMyODE4IiBzdHJva2U9IiNENEEzNzMiIHN0cm9rZS13aWR0aD0iMjAiLz4KCiAgPCEtLSBUaGUgUy1DcmFjayBFcmFzZXIgKFNwbGl0cyB0aGUgYmVhbiB1c2luZyBiYWNrZ3JvdW5kIGNvbG9yKSAtLT4KICA8cGF0aCBkPSJNIDI1NiAyNCBWIDEzNiBMIDIxNiAxNzYgViAyMTYgTCAyOTYgMjk2IFYgMzM2IEwgMjU2IDM3NiBWIDQ4OCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjMkMxRTE2IiBzdHJva2Utd2lkdGg9IjI4IiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+CgogIDwhLS0gVGhlIEdsb3dpbmcgUy1DcmFjayBDaXJjdWl0IFRyYWNlIC0tPgogIDxwYXRoIGQ9Ik0gMjU2IDI0IFYgMTM2IEwgMjE2IDE3NiBWIDIxNiBMIDI5NiAyOTYgViAzMzYgTCAyNTYgMzc2IFYgNDg4IiBmaWxsPSJub25lIiBzdHJva2U9IiNGRkU2QTciIHN0cm9rZS13aWR0aD0iOCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPgoKICA8IS0tIENpcmN1aXQgTm9kZXMgYWxvbmcgdGhlIHRyYWNlIC0tPgogIDxjaXJjbGUgY3g9IjI1NiIgY3k9IjEzNiIgcj0iOCIgZmlsbD0iI0ZGRTZBNyIvPgogIDxjaXJjbGUgY3g9IjIxNiIgY3k9IjE3NiIgcj0iOCIgZmlsbD0iI0ZGRTZBNyIvPgogIDxjaXJjbGUgY3g9IjIxNiIgY3k9IjIxNiIgcj0iOCIgZmlsbD0iI0ZGRTZBNyIvPgogIDxjaXJjbGUgY3g9IjI1NiIgY3k9IjI1NiIgcj0iMTIiIGZpbGw9IiNGRkU2QTciLz4gPCEtLSBDb3JlIENlbnRlciBOb2RlIC0tPgogIDxjaXJjbGUgY3g9IjI5NiIgY3k9IjI5NiIgcj0iOCIgZmlsbD0iI0ZGRTZBNyIvPgogIDxjaXJjbGUgY3g9IjI5NiIgY3k9IjMzNiIgcj0iOCIgZmlsbD0iI0ZGRTZBNyIvPgogIDxjaXJjbGUgY3g9IjI1NiIgY3k9IjM3NiIgcj0iOCIgZmlsbD0iI0ZGRTZBNyIvPgoKICA8IS0tIEdvbGRlbiBPdXRlciBCb3JkZXIgKERyYXduIGxhc3QgdG8gb3ZlcmxheSBwZXJmZWN0bHkpIC0tPgogIDxyZWN0IHg9IjI0IiB5PSIyNCIgd2lkdGg9IjQ2NCIgaGVpZ2h0PSI0NjQiIHJ4PSI4OCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjOEI1QTJCIiBzdHJva2Utd2lkdGg9IjEyIi8+Cjwvc3ZnPgo=';
+const Installer_SVG_B64 = 'PHN2ZyB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgdmlld0JveD0iMCAwIDUxMiA1MTIiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CiAgPHJlY3Qgd2lkdGg9IjUxMiIgaGVpZ2h0PSI1MTIiIHJ4PSIxMTIiIGZpbGw9IiMyQzFFMTYiLz4KICAKICA8Y2lyY2xlIGN4PSIyNTYiIGN5PSI2NCIgcj0iOCIgZmlsbD0iI0ZGRTZBNyIvPgogIDxjaXJjbGUgY3g9IjI1NiIgY3k9IjkyIiByPSI4IiBmaWxsPSIjRkZFNkE3Ii8+CgogIDxwYXRoIGQ9Ik0gMTM2IDEyNCBMIDM3NiAxMjQgTCAzMjYgMjEwIEwgMTg2IDIxMCBaIiBmaWxsPSIjNDMyODE4IiBzdHJva2U9IiNENEEzNzMiIHN0cm9rZS13aWR0aD0iMTYiIHN0cm9rZS1saW5lam9pbj0icm91bmQiLz4KICAKICA8cmVjdCB4PSIxNjYiIHk9IjIxMCIgd2lkdGg9IjE4MCIgaGVpZ2h0PSIxODAiIHJ4PSIzMiIgZmlsbD0iIzQzMjgxOCIgc3Ryb2tlPSIjRDRBMzczIiBzdHJva2Utd2lkdGg9IjE2Ii8+CgogIDxwYXRoIGQ9Ik0gMjE2IDI2MCBIIDI5NiIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjRkZFNkE3IiBzdHJva2Utd2lkdGg9IjEyIiBzdHJva2UtbGluZWNhcD0icm91bmQiLz4KICA8cGF0aCBkPSJNIDIxNiAzMDAgSCAyOTYiIGZpbGw9Im5vbmUiIHN0cm9rZT0iI0ZGRTZBNyIgc3Ryb2tlLXdpZHRoPSIxMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIi8+CiAgPHBhdGggZD0iTSAyMTYgMzQwIEggMjk2IiBmaWxsPSJub25lIiBzdHJva2U9IiNGRkU2QTciIHN0cm9rZS13aWR0aD0iMTIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIvPgoKICA8cGF0aCBkPSJNIDIwNiAzOTAgViA0MzAgQyAyMDYgNDQxIDIxNSA0NTAgMjI2IDQ1MCBIIDI4NiBDIDI5NyA0NTAgMzA2IDQ0MSAzMDYgNDMwIFYgMzkwIiBmaWxsPSIjNDMyODE4IiBzdHJva2U9IiNENEEzNzMiIHN0cm9rZS13aWR0aD0iMTYiIHN0cm9rZS1saW5lam9pbj0icm91bmQiLz4KCiAgPHBhdGggZD0iTSAzNDYgMjcwIEggNDIwIiBmaWxsPSJub25lIiBzdHJva2U9IiNENEEzNzMiIHN0cm9rZS13aWR0aD0iMTYiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIvPgogIAogIDxjaXJjbGUgY3g9IjM0NiIgY3k9IjI3MCIgcj0iNiIgZmlsbD0iI0ZGRTZBNyIvPgoKICA8Y2lyY2xlIGN4PSI0MzYiIGN5PSIyNzAiIHI9IjE2IiBmaWxsPSIjRkZFNkE3Ii8+CgogIDxyZWN0IHg9IjI0IiB5PSIyNCIgd2lkdGg9IjQ2NCIgaGVpZ2h0PSI0NjQiIHJ4PSI4OCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjOEI1QTJCIiBzdHJva2Utd2lkdGg9IjEyIi8+Cjwvc3ZnPgo=';
+const Couch_SVG_B64    = 'PHN2ZyB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgdmlld0JveD0iMCAwIDUxMiA1MTIiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CiAgPCEtLSBCYXNlIEJhY2tncm91bmQgLS0+CiAgPHJlY3Qgd2lkdGg9IjUxMiIgaGVpZ2h0PSI1MTIiIHJ4PSIxMTIiIGZpbGw9IiMyQzFFMTYiLz4KICAKICA8IS0tIEdvbGRlbiBJbm5lciBCb3JkZXIgLS0+CiAgPHJlY3QgeD0iMjQiIHk9IjI0IiB3aWR0aD0iNDY0IiBoZWlnaHQ9IjQ2NCIgcng9Ijg4IiBmaWxsPSJub25lIiBzdHJva2U9IiM4QjVBMkIiIHN0cm9rZS13aWR0aD0iMTIiLz4KCiAgPCEtLSBDb2ZmZWUgQ3VwIEhhbmRsZSAtLT4KICA8cGF0aCBkPSJNIDM4MCAyNTYgQyA0OTAgMjU2LCA0OTAgMTUwLCAzODAgMTUwIiBmaWxsPSJub25lIiBzdHJva2U9IiNENEEzNzMiIHN0cm9rZS13aWR0aD0iMjQiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIvPgoKICA8IS0tIEVzcHJlc3NvIEN1cCBCYXNlIC0tPgogIDxjaXJjbGUgY3g9IjI1NiIgY3k9IjI1NiIgcj0iMTYwIiBmaWxsPSIjNDMyODE4IiBzdHJva2U9IiNENEEzNzMiIHN0cm9rZS13aWR0aD0iMTYiLz4KCiAgPCEtLSBDcmVtYSAvIFZpbnlsIFN3aXJscyAtLT4KICA8cGF0aCBkPSJNIDI1NiAxMzYgQSAxMjAgMTIwIDAgMCAxIDM3NiAyNTYiIGZpbGw9Im5vbmUiIHN0cm9rZT0iI0Q0QTM3MyIgc3Ryb2tlLXdpZHRoPSIxNiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIi8+CiAgPHBhdGggZD0iTSAyNTYgMzc2IEEgMTIwIDEyMCAwIDAgMSAxMzYgMjU2IiBmaWxsPSJub25lIiBzdHJva2U9IiNENEEzNzMiIHN0cm9rZS13aWR0aD0iMTYiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIvPgogIDxwYXRoIGQ9Ik0gMTg2IDI1NiBBIDcwIDcwIDAgMCAxIDI1NiAxODYiIGZpbGw9Im5vbmUiIHN0cm9rZT0iI0ZGRTZBNyIgc3Ryb2tlLXdpZHRoPSIxMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIi8+CiAgPHBhdGggZD0iTSAzMjYgMjU2IEEgNzAgNzAgMCAwIDEgMjU2IDMyNiIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjRkZFNkE3IiBzdHJva2Utd2lkdGg9IjEyIiBzdHJva2UtbGluZWNhcD0icm91bmQiLz4KCiAgPCEtLSBHYW1lcGFkIEFCWFkgQnV0dG9ucyAtLT4KICA8IS0tIFRvcCBCdXR0b24gKFkvVHJpYW5nbGUpIC0tPgogIDxjaXJjbGUgY3g9IjI1NiIgY3k9IjIwNCIgcj0iMTgiIGZpbGw9IiNGRkU2QTciLz4KICA8IS0tIEJvdHRvbSBCdXR0b24gKEEvQ3Jvc3MpIC0tPgogIDxjaXJjbGUgY3g9IjI1NiIgY3k9IjMwOCIgcj0iMTgiIGZpbGw9IiNGRkU2QTciLz4KICA8IS0tIExlZnQgQnV0dG9uIChYL1NxdWFyZSkgLS0+CiAgPGNpcmNsZSBjeD0iMjA0IiBjeT0iMjU2IiByPSIxOCIgZmlsbD0iI0ZGRTZBNyIvPgogIDwhLS0gUmlnaHQgQnV0dG9uIChCL0NpcmNsZSkgLS0+CiAgPGNpcmNsZSBjeD0iMzA4IiBjeT0iMjU2IiByPSIxOCIgZmlsbD0iI0ZGRTZBNyIvPgo8L3N2Zz4K';
 const EMULATTE_SVG_B64 = 'PHN2ZyB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgdmlld0JveD0iMCAwIDUxMiA1MTIiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CiAgPCEtLSBCYXNlIGJhY2tncm91bmQgLS0+CiAgPHJlY3Qgd2lkdGg9IjUxMiIgaGVpZ2h0PSI1MTIiIHJ4PSIxMTIiIGZpbGw9IiMyQzFFMTYiLz4KICA8IS0tIE91dGVyIGJvcmRlciAtLT4KICA8cmVjdCB4PSIyNCIgeT0iMjQiIHdpZHRoPSI0NjQiIGhlaWdodD0iNDY0IiByeD0iODgiIGZpbGw9Im5vbmUiIHN0cm9rZT0iIzhCNUEyQiIgc3Ryb2tlLXdpZHRoPSIxMiIvPgoKICA8IS0tIENvZmZlZSBjdXAgYm9keSAtLT4KICA8cGF0aCBkPSJNIDE0MCAxODAgTCAzNzIgMTgwIEwgMzQwIDM5MCBDIDMzNiA0MTAgMzE4IDQyNCAyOTggNDI0IEwgMjE0IDQyNCBDIDE5NCA0MjQgMTc2IDQxMCAxNzIgMzkwIFoiCiAgICAgICAgZmlsbD0iIzQzMjgxOCIgc3Ryb2tlPSIjRDRBMzczIiBzdHJva2Utd2lkdGg9IjE2IiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+CgogIDwhLS0gQ3VwIGhhbmRsZSAtLT4KICA8cGF0aCBkPSJNIDM3MiAyMzAgQyA0NDAgMjMwIDQ0MCAzMTAgMzcyIDMxMCIKICAgICAgICBmaWxsPSJub25lIiBzdHJva2U9IiNENEEzNzMiIHN0cm9rZS13aWR0aD0iMjAiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIvPgoKICA8IS0tIENhcnRyaWRnZSB0b3AgKGdhbWUgc2xvdCkgLS0+CiAgPHJlY3QgeD0iMTYwIiB5PSIxNDAiIHdpZHRoPSIxOTIiIGhlaWdodD0iNTAiIHJ4PSIxMCIKICAgICAgICBmaWxsPSIjNDMyODE4IiBzdHJva2U9IiNENEEzNzMiIHN0cm9rZS13aWR0aD0iMTQiLz4KICA8IS0tIENhcnRyaWRnZSBub3RjaCAtLT4KICA8cmVjdCB4PSIyMjAiIHk9IjE0NSIgd2lkdGg9IjcyIiBoZWlnaHQ9IjIwIiByeD0iNCIgZmlsbD0iIzJDMUUxNiIvPgoKICA8IS0tIFN0ZWFtIHdpc3BzIC0tPgogIDxwYXRoIGQ9Ik0gMjIwIDE0MCBDIDIxMCAxMTAgMjMwIDkwIDIyMCA2NSIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjRkZFNkE3IiBzdHJva2Utd2lkdGg9IjgiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgb3BhY2l0eT0iMC42Ii8+CiAgPHBhdGggZD0iTSAyNTYgMTQwIEMgMjQ2IDEwNSAyNjYgODAgMjU2IDUwIiAgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjRkZFNkE3IiBzdHJva2Utd2lkdGg9IjgiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgb3BhY2l0eT0iMC42Ii8+CiAgPHBhdGggZD0iTSAyOTIgMTQwIEMgMjgyIDExMCAzMDIgOTAgMjkyIDY1IiBmaWxsPSJub25lIiBzdHJva2U9IiNGRkU2QTciIHN0cm9rZS13aWR0aD0iOCIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBvcGFjaXR5PSIwLjYiLz4KPC9zdmc+Cg==';
 
 async function searchHltb(gameName) {
@@ -68,9 +68,9 @@ const baseDir = host.portableBaseDir({ isPackaged: app.isPackaged, execPath: pro
 
 const configDir = path.join(baseDir, 'GameManagerConfig');
 
-// Write a minimal game entry to GRINDER's DB (called before opening GRINDER for setup)
+// Write a minimal game entry to Installer's DB (called before opening Installer for setup)
 
-// Open GRINDER focused on a specific game's setup (called by "Setup with GRINDER" button)
+// Open Installer focused on a specific game's setup (called by "Setup with Installer" button)
 const imagesDir = path.join(configDir, 'images');
 const trailersDir = path.join(configDir, 'videos');
 const dbPath = path.join(configDir, 'games.db');
@@ -169,7 +169,7 @@ function createWindow () {
     win.setMenu(null);
     win.loadFile(path.join(__dirname, 'index.html'));
 
-    // When the Manager regains focus (e.g. after using the GRINDER window to
+    // When the Manager regains focus (e.g. after using the Installer window to
     // install/uninstall), tell the renderer to re-sync install states from the
     // shared DB so the Play/Install buttons reflect external changes.
     win.on('focus', () => { try { win.webContents.send('window-refocused'); } catch {} });
@@ -263,12 +263,12 @@ app.whenReady().then(() => {
 
     // Tell the desktop where this installation lives, so a bar widget or an overlay can
     // read our paths instead of hardcoding someone else's. Rewritten every start: the
-    // AppImage moves, and the grinder database appears the first time a store is linked.
+    // AppImage moves, and the installer database appears the first time a store is linked.
     desktopDescriptor.publish({
         version: app.getVersion(),
         baseDir,
         libraryDb: dbPath,
-        grinderDb: host.findGrinderDb(baseDir),
+        installerDb: host.findInstallerDb(baseDir),
         selfExecutable: host.selfExecutable(),
     });
 
@@ -306,24 +306,24 @@ app.whenReady().then(() => {
         try { db.prepare("ALTER TABLE games ADD COLUMN Franchise TEXT DEFAULT ''").run(); } catch(e) {}
         try { db.prepare("ALTER TABLE games ADD COLUMN IGDBTrailer TEXT DEFAULT ''").run(); } catch(e) {}
         try { db.prepare("ALTER TABLE games ADD COLUMN Installed INTEGER DEFAULT 1").run(); } catch(e) {}
-        try { db.prepare("ALTER TABLE games ADD COLUMN GrinderGameId TEXT").run(); } catch(e) {}
+        try { db.prepare("ALTER TABLE games ADD COLUMN InstallerGameId TEXT").run(); } catch(e) {}
         try { db.prepare("ALTER TABLE games ADD COLUMN LaunchCommands TEXT DEFAULT NULL").run(); } catch(e) {}
-        // One-time migration: rename the legacy launch scheme heroic://launch/… → grinder://launch/… (Heroic-era leftover)
-        try { db.prepare("UPDATE games SET LaunchCommand = REPLACE(LaunchCommand, 'heroic://launch/', 'grinder://launch/') WHERE LaunchCommand LIKE '%heroic://launch/%'").run(); } catch(e) {}
-        try { db.prepare("UPDATE games SET LaunchCommands = REPLACE(LaunchCommands, 'heroic://launch/', 'grinder://launch/') WHERE LaunchCommands LIKE '%heroic://launch/%'").run(); } catch(e) {}
+        // One-time migration: rename the legacy launch scheme heroic://launch/… → installer://launch/… (Heroic-era leftover)
+        try { db.prepare("UPDATE games SET LaunchCommand = REPLACE(LaunchCommand, 'heroic://launch/', 'installer://launch/') WHERE LaunchCommand LIKE '%heroic://launch/%'").run(); } catch(e) {}
+        try { db.prepare("UPDATE games SET LaunchCommands = REPLACE(LaunchCommands, 'heroic://launch/', 'installer://launch/') WHERE LaunchCommands LIKE '%heroic://launch/%'").run(); } catch(e) {}
         // …and unwrap the external Heroic flatpak that used to carry that URL. The rename above
-        // left `flatpak run com.heroicgameslauncher.hgl "grinder://launch/…"`, which the in-process
+        // left `flatpak run com.heroicgameslauncher.hgl "installer://launch/…"`, which the in-process
         // launcher can't recognise (its match is anchored) and which needs a Heroic install we no
-        // longer depend on — so those rows launched nothing. The bare URL is what GRINDER handles.
+        // longer depend on — so those rows launched nothing. The bare URL is what Installer handles.
         try {
             const unwrap = c => {
-                const m = String(c || '').match(/com\.heroicgameslauncher\.hgl\s+"?(grinder:\/\/launch\/[^"\s]+)"?/i);
+                const m = String(c || '').match(/com\.heroicgameslauncher\.hgl\s+"?(installer:\/\/launch\/[^"\s]+)"?/i);
                 return m ? m[1] : c;
             };
             const rows = db.prepare(
                 "SELECT id, LaunchCommand, LaunchCommands FROM games " +
-                "WHERE LaunchCommand LIKE '%com.heroicgameslauncher.hgl%grinder://launch/%' " +
-                "   OR LaunchCommands LIKE '%com.heroicgameslauncher.hgl%grinder://launch/%'"
+                "WHERE LaunchCommand LIKE '%com.heroicgameslauncher.hgl%installer://launch/%' " +
+                "   OR LaunchCommands LIKE '%com.heroicgameslauncher.hgl%installer://launch/%'"
             ).all();
             for (const r of rows) {
                 const cmd = unwrap(r.LaunchCommand);
@@ -342,7 +342,7 @@ app.whenReady().then(() => {
         try { db.prepare("ALTER TABLE games ADD COLUMN FreeToPlay INTEGER DEFAULT 0").run(); } catch(e) {} // 1 = Steam free-to-play (played-free-games)
         try { db.prepare("ALTER TABLE games ADD COLUMN Hidden INTEGER DEFAULT 0").run(); } catch(e) {}      // 1 = user-hidden from all library views
         try { db.prepare("ALTER TABLE games ADD COLUMN SaveDirOverride TEXT").run(); } catch(e) {}          // GOG save-game manager: user-picked save folder ("Locate saves…")
-        try { db.prepare("ALTER TABLE games ADD COLUMN MacNative INTEGER DEFAULT 0").run(); } catch(e) {}    // 1 = has a native macOS build (Steam platforms.mac, or GOG/Epic via grinder.db)
+        try { db.prepare("ALTER TABLE games ADD COLUMN MacNative INTEGER DEFAULT 0").run(); } catch(e) {}    // 1 = has a native macOS build (Steam platforms.mac, or GOG/Epic via library.db)
         try { db.prepare("ALTER TABLE games ADD COLUMN MacNativeChecked INTEGER DEFAULT 0").run(); } catch(e) {} // 1 = already checked (Steam lookup is a live API call — never re-ask once answered)
         try { db.prepare(`CREATE TABLE IF NOT EXISTS save_backups (
             id INTEGER PRIMARY KEY AUTOINCREMENT, game_id INTEGER, path TEXT, created INTEGER, bytes INTEGER, source TEXT
@@ -358,7 +358,7 @@ app.whenReady().then(() => {
         // match fail, so every Steam re-sync inserted a bare duplicate row. Normalising keeps
         // future syncs matching the existing entry. Idempotent (no ".0" left after first run).
         try { db.prepare("UPDATE games SET SteamAppID = substr(SteamAppID, 1, length(SteamAppID) - 2) WHERE SteamAppID LIKE '%.0'").run(); } catch(e) {}
-        // A blank Store leaves a game uncategorizable; file it under "Others" (same bucket GRINDER games use).
+        // A blank Store leaves a game uncategorizable; file it under "Others" (same bucket Installer games use).
         try { db.prepare("UPDATE games SET Store = 'Others' WHERE Store IS NULL OR TRIM(Store) = ''").run(); } catch(e) {}
         // One-time migration: OpenBOR games were filed as "OpenBOR, Others" while the gallery
         // had no filter of their own and the tag alone would have hidden them from every view.
@@ -382,88 +382,88 @@ app.whenReady().then(() => {
 
 app.on('window-all-closed', () => { if (process.platform !== 'darwin') app.quit(); });
 
-// In the unified suite GRINDER is THIS binary invoked with a leading 'grinder' arg —
-// there is no separate GRINDER.AppImage to locate, so this always resolves.
-function findGrinderPath() {
+// In the unified suite Installer is THIS binary invoked with a leading 'installer' arg —
+// there is no separate Installer.AppImage to locate, so this always resolves.
+function findInstallerPath() {
     return host.selfExecutable();
 }
 
-// Spawn the GRINDER face as a detached process ('grinder' identity, own lock + GUI).
-// Packaged:   <CafeNeurotico.AppImage> grinder <subArgs...>
-// Dev:        <electron> <repoRoot> grinder <subArgs...>
-function spawnGrinder(subArgs) {
+// Spawn the Installer face as a detached process ('installer' identity, own lock + GUI).
+// Packaged:   <Clarity.AppImage> installer <subArgs...>
+// Dev:        <electron> <repoRoot> installer <subArgs...>
+function spawnInstaller(subArgs) {
     const bin  = host.selfExecutable();
-    const args = host.selfSpawnArgs(['grinder', ...subArgs], path.join(__dirname, '..', '..'));
+    const args = host.selfSpawnArgs(['installer', ...subArgs], path.join(__dirname, '..', '..'));
     const child = spawn(bin, args, { detached: true, stdio: 'ignore' });
     child.unref();
     return child;
 }
 
-// Returns a Map<appId, grinderId> from GRINDER's DB for grinder:// launch routing
-function getGrinderMap() {
-    const gdbPath = host.findGrinderDb(baseDir);
+// Returns a Map<appId, installerId> from Installer's DB for installer:// launch routing
+function getInstallerMap() {
+    const gdbPath = host.findInstallerDb(baseDir);
     if (!gdbPath) return new Map();
     try {
         const gdb = new Database(gdbPath, { timeout: 5000, readonly: true });
         const rows = gdb.prepare('SELECT id, app_id FROM games WHERE app_id IS NOT NULL').all();
         gdb.close();
         return new Map(rows.map(r => [String(r.app_id), String(r.id)]));
-    } catch (e) { console.error('[getGrinderMap]', e); return new Map(); }
+    } catch (e) { console.error('[getInstallerMap]', e); return new Map(); }
 }
 
-// In-process GRINDER engine for launching GOG/Epic games WITHOUT spawning a
+// In-process Installer engine for launching GOG/Epic games WITHOUT spawning a
 // second AppImage process (Electron AppImages relaunching themselves is flaky).
-// Points at GRINDER's own data dir (~/.config/grinder) so it reads the same DB,
-// prefixes and Proton settings the grinder face uses.
-const grinderEngine = require('../../packages/core/grinder-engine.js');
-let _grinderEngineDb = null;
-let _grinderProgressCb = null;   // set per install/uninstall to route progress to the renderer
-let _grinderBusy = false;        // serialize install/uninstall (one at a time)
-// createIfMissing: when true (headless sign-in), bootstrap a fresh grinder.db so
-// GOG/Epic can be connected without ever opening the GRINDER GUI. Read-only callers
+// Points at Installer's own data dir (~/.config/installer) so it reads the same DB,
+// prefixes and Proton settings the installer face uses.
+const installerEngine = require('../../packages/core/installer-engine.js');
+let _installerEngineDb = null;
+let _installerProgressCb = null;   // set per install/uninstall to route progress to the renderer
+let _installerBusy = false;        // serialize install/uninstall (one at a time)
+// createIfMissing: when true (headless sign-in), bootstrap a fresh library.db so
+// GOG/Epic can be connected without ever opening the Installer GUI. Read-only callers
 // (status checks, install/refresh) leave it false and simply no-op if there's no db.
-function ensureGrinderEngine(createIfMissing = false) {
-    if (_grinderEngineDb) return true;
+function ensureInstallerEngine(createIfMissing = false) {
+    if (_installerEngineDb) return true;
     const home = os.homedir();
-    let gdbPath = host.findGrinderDb(baseDir);
-    // No grinder.db yet (fresh install, GRINDER GUI never opened). Create one so
-    // GOG/Epic sign-in and library import can happen headlessly — GRINDER stays a
+    let gdbPath = host.findInstallerDb(baseDir);
+    // No library.db yet (fresh install, Installer GUI never opened). Create one so
+    // GOG/Epic sign-in and library import can happen headlessly — Installer stays a
     // power-user tool the average user never has to open. Schema is created below.
     let created = false;
     if (!gdbPath) {
         if (!createIfMissing) return false;
-        gdbPath = host.grinderDbCreatePath(baseDir, app.isPackaged);
+        gdbPath = host.installerDbCreatePath(baseDir, app.isPackaged);
         try { fs.mkdirSync(path.dirname(gdbPath), { recursive: true }); }
-        catch (e) { console.error('[grinder-engine] could not create GRINDER data dir:', e); return false; }
+        catch (e) { console.error('[installer-engine] could not create Installer data dir:', e); return false; }
         created = true;
     }
     const gConfigDir  = path.dirname(gdbPath);
     const engineBinDir = path.join(app.isPackaged ? process.resourcesPath : __dirname, 'assets', 'bin', host.binDirName);
     try {
-        _grinderEngineDb = new Database(gdbPath, { timeout: 5000 });
-        if (created) _grinderEngineDb.pragma('journal_mode = WAL');   // match GRINDER's own initDb
-    } catch (e) { console.error('[grinder-engine] DB open failed:', e); _grinderEngineDb = null; return false; }
-    grinderEngine.init({
+        _installerEngineDb = new Database(gdbPath, { timeout: 5000 });
+        if (created) _installerEngineDb.pragma('journal_mode = WAL');   // match Installer's own initDb
+    } catch (e) { console.error('[installer-engine] DB open failed:', e); _installerEngineDb = null; return false; }
+    installerEngine.init({
         configDir:   gConfigDir,
         prefixesDir: path.join(gConfigDir, 'prefixes'),
         logDir:      path.join(gConfigDir, 'game_logs'),
         binDir:      engineBinDir,
         appImageDir: baseDir,
         homeDir:     home,
-        db:          _grinderEngineDb,
-        onProgress:  (data) => { try { _grinderProgressCb && _grinderProgressCb(data); } catch {} },
+        db:          _installerEngineDb,
+        onProgress:  (data) => { try { _installerProgressCb && _installerProgressCb(data); } catch {} },
         onLaunchIssue: (info) => reportLaunchFailure(info),
         onLaunchProgress: (info) => broadcast('game-launch-progress', info),
         onGameSession: (active) => onGameSession(active),
     });
-    if (created) grinderEngine.ensureSchema(_grinderEngineDb);   // fresh db → create tables (no-op otherwise)
+    if (created) installerEngine.ensureSchema(_installerEngineDb);   // fresh db → create tables (no-op otherwise)
     return true;
 }
 
 // ── While a game is running ──────────────────────────────────────────────────
 // Two things are worth doing for the duration of a game and undoing afterwards.
 //
-// The screen lock is the important one. A gamepad-only CREMA session, a long cutscene or a
+// The screen lock is the important one. A gamepad-only Couch session, a long cutscene or a
 // turn spent staring at a map produces no keyboard or mouse input at all, so the desktop's
 // idea of idle and the player's are completely different — and on Omarchy the lock screen
 // wins. Electron's powerSaveBlocker speaks the Wayland idle-inhibit protocol, which hypridle
@@ -506,7 +506,7 @@ function reportLaunchFailure(info) {
         broadcast('game-launch-failed', {
             // Needed so the dialog can offer to FIX the failure rather than only describe it —
             // a per-game environment variable has to know which game.
-            grinderGameId: info?.gameId ?? null,
+            installerGameId: info?.gameId ?? null,
             title:  info?.title || '',
             code:   info?.reason?.code || 'UNKNOWN',
             message: info?.reason?.message || 'The game could not be started.',
@@ -528,66 +528,66 @@ function reportLaunchFailure(info) {
 // ⚠️ Merges rather than overwrites: custom_env is the user's, and a game may already carry
 // variables that matter. Only the named one is touched.
 // ── Per-game compatibility, in the Manager ────────────────────────────────────
-// These three handlers are what let GRINDER go headless: everything its per-game
-// setup modal offered is reachable here, against the same grinder.db row.
+// These three handlers are what let Installer go headless: everything its per-game
+// setup modal offered is reachable here, against the same library.db row.
 //
 // ⚠️ The writable column list is a hard allowlist. The row is keyed by an id the
 // renderer supplies, so accepting arbitrary column names would let a bad payload
 // rewrite `id`, `store` or `installed` and orphan the game from its library entry —
-// the same class of break as the two-grinder.db split.
+// the same class of break as the two-library.db split.
 const COMPAT_COLUMNS = new Set([
     'prefix_path', 'proton_path', 'launch_args', 'custom_exe', 'custom_env',
     'winetricks', 'use_esync', 'use_fsync', 'use_dxvk_nvapi', 'use_battleye',
     'use_eac', 'notes',
 ]);
 
-ipcMain.handle('grinder-compat-get', async (_, grinderGameId) => {
-    if (!ensureGrinderEngine() || !grinderGameId) return { ok: false, error: 'GRINDER data not available.' };
+ipcMain.handle('installer-compat-get', async (_, installerGameId) => {
+    if (!ensureInstallerEngine() || !installerGameId) return { ok: false, error: 'Installer data not available.' };
     try {
-        const row = _grinderEngineDb.prepare(
+        const row = _installerEngineDb.prepare(
             `SELECT id, title, store, app_id, install_path, executable, platform,
                     prefix_path, proton_path, launch_args, custom_exe, custom_env,
                     winetricks, use_esync, use_fsync, use_dxvk_nvapi, use_battleye,
                     use_eac, launch_target, notes
-             FROM games WHERE id=?`).get(grinderGameId);
-        if (!row) return { ok: false, error: 'Game not found in GRINDER data.' };
+             FROM games WHERE id=?`).get(installerGameId);
+        if (!row) return { ok: false, error: 'Game not found in Installer data.' };
         let protons = [];
-        try { protons = grinderEngine.scanProtonVersions() || []; } catch {}
+        try { protons = installerEngine.scanProtonVersions() || []; } catch {}
         // GOG titles can ship several play tasks (Quake's mission packs are all
         // glquake.exe and differ only by arguments), so they are keyed by index.
         let tasks = [];
-        if (row.store === 'gog') { try { tasks = grinderEngine.gogPlayTasks(grinderGameId) || []; } catch {} }
+        if (row.store === 'gog') { try { tasks = installerEngine.gogPlayTasks(installerGameId) || []; } catch {} }
         return { ok: true, game: row, protons, tasks };
     } catch (e) { return { ok: false, error: e.message }; }
 });
 
-ipcMain.handle('grinder-compat-set', (_, { grinderGameId, patch } = {}) => {
-    if (!ensureGrinderEngine() || !grinderGameId || !patch) return { ok: false, error: 'Nothing to save.' };
+ipcMain.handle('installer-compat-set', (_, { installerGameId, patch } = {}) => {
+    if (!ensureInstallerEngine() || !installerGameId || !patch) return { ok: false, error: 'Nothing to save.' };
     const cols = Object.keys(patch).filter(k => COMPAT_COLUMNS.has(k));
     if (!cols.length) return { ok: false, error: 'No writable fields in that change.' };
     try {
-        _grinderEngineDb.prepare(`UPDATE games SET ${cols.map(c => `${c}=?`).join(', ')} WHERE id=?`)
-            .run(...cols.map(c => patch[c]), grinderGameId);
+        _installerEngineDb.prepare(`UPDATE games SET ${cols.map(c => `${c}=?`).join(', ')} WHERE id=?`)
+            .run(...cols.map(c => patch[c]), installerGameId);
         return { ok: true, saved: cols };
     } catch (e) { return { ok: false, error: e.message }; }
 });
 
 // GOG launch target is not a plain column — the engine rewrites the stored task.
-ipcMain.handle('grinder-set-launch-target', (_, { grinderGameId, taskIndex } = {}) => {
-    if (!ensureGrinderEngine() || !grinderGameId) return { ok: false, error: 'GRINDER data not available.' };
+ipcMain.handle('installer-set-launch-target', (_, { installerGameId, taskIndex } = {}) => {
+    if (!ensureInstallerEngine() || !installerGameId) return { ok: false, error: 'Installer data not available.' };
     try {
-        const tasks = grinderEngine.gogPlayTasks(grinderGameId) || [];
+        const tasks = installerEngine.gogPlayTasks(installerGameId) || [];
         const t = tasks.find(x => String(x.index) === String(taskIndex));
-        grinderEngine.setGogLaunchTarget(grinderGameId, t ? t.path : '', t ? t.index : null);
+        installerEngine.setGogLaunchTarget(installerGameId, t ? t.path : '', t ? t.index : null);
         return { ok: true };
     } catch (e) { return { ok: false, error: e.message }; }
 });
 
 // Manage Storage: installed games with their size on disk, biggest first.
-ipcMain.handle('grinder-storage-list', async () => {
-    if (!ensureGrinderEngine()) return { ok: false, error: 'GRINDER data not available.' };
+ipcMain.handle('installer-storage-list', async () => {
+    if (!ensureInstallerEngine()) return { ok: false, error: 'Installer data not available.' };
     try {
-        const rows = _grinderEngineDb.prepare(
+        const rows = _installerEngineDb.prepare(
             'SELECT id, title, store, install_path FROM games WHERE installed=1 AND install_path IS NOT NULL').all();
         const out = [];
         for (const r of rows) {
@@ -619,23 +619,23 @@ function dirSizeBytes(dir) {
     return total;
 }
 
-ipcMain.handle('grinder-set-env-var', (_, { grinderGameId, name, value } = {}) => {
-    if (!_grinderEngineDb || !grinderGameId || !name) return { ok: false, error: 'Nothing to set.' };
+ipcMain.handle('installer-set-env-var', (_, { installerGameId, name, value } = {}) => {
+    if (!_installerEngineDb || !installerGameId || !name) return { ok: false, error: 'Nothing to set.' };
     try {
-        const row = _grinderEngineDb.prepare('SELECT custom_env FROM games WHERE id=?').get(grinderGameId);
+        const row = _installerEngineDb.prepare('SELECT custom_env FROM games WHERE id=?').get(installerGameId);
         if (!row) return { ok: false, error: 'Game not found.' };
         const lines = String(row.custom_env || '').split('\n').map(l => l.trim()).filter(Boolean)
             .filter(l => l.split('=')[0].trim() !== name);
         lines.push(`${name}=${value}`);
         const merged = lines.join('\n');
-        _grinderEngineDb.prepare('UPDATE games SET custom_env=? WHERE id=?').run(merged, grinderGameId);
+        _installerEngineDb.prepare('UPDATE games SET custom_env=? WHERE id=?').run(merged, installerGameId);
         return { ok: true, env: merged };
     } catch (e) { return { ok: false, error: e.message }; }
 });
 
-function reportLaunchThrow(grinderGameId, err) {
+function reportLaunchThrow(installerGameId, err) {
     let title = '';
-    try { title = _grinderEngineDb?.prepare('SELECT title FROM games WHERE id=?').get(grinderGameId)?.title || ''; } catch {}
+    try { title = _installerEngineDb?.prepare('SELECT title FROM games WHERE id=?').get(installerGameId)?.title || ''; } catch {}
     reportLaunchFailure({
         title,
         reason: { code: err?.code || 'LAUNCH_ERROR', message: err?.message || 'The game could not be started.' },
@@ -645,20 +645,20 @@ function reportLaunchThrow(grinderGameId, err) {
 // Proton builds installed on this machine, newest/best first (shared engine scanner, so this
 // list matches what a launch would actually pick).
 ipcMain.handle('proton-list', () => {
-    ensureGrinderEngine();
+    ensureInstallerEngine();
     try {
-        const list = grinderEngine.scanProtonVersions();
+        const list = installerEngine.scanProtonVersions();
         let current = '';
-        try { current = _grinderEngineDb?.prepare("SELECT value FROM settings WHERE key='default_proton_path'").get()?.value || ''; } catch {}
+        try { current = _installerEngineDb?.prepare("SELECT value FROM settings WHERE key='default_proton_path'").get()?.value || ''; } catch {}
         return { ok: true, protons: list, current };
     } catch (e) { return { ok: false, error: e.message, protons: [], current: '' }; }
 });
 
 ipcMain.handle('proton-set-default', (_, protonPath) => {
-    if (!ensureGrinderEngine(true)) return { ok: false, error: 'GRINDER data not available.' };
+    if (!ensureInstallerEngine(true)) return { ok: false, error: 'Installer data not available.' };
     try {
-        if (protonPath) _grinderEngineDb.prepare("INSERT OR REPLACE INTO settings (key,value) VALUES ('default_proton_path',?)").run(protonPath);
-        else            _grinderEngineDb.prepare("DELETE FROM settings WHERE key='default_proton_path'").run();
+        if (protonPath) _installerEngineDb.prepare("INSERT OR REPLACE INTO settings (key,value) VALUES ('default_proton_path',?)").run(protonPath);
+        else            _installerEngineDb.prepare("DELETE FROM settings WHERE key='default_proton_path'").run();
         return { ok: true };
     } catch (e) { return { ok: false, error: e.message }; }
 });
@@ -679,8 +679,8 @@ ipcMain.handle('proton-install-latest', async (event) => {
     if (!r.ok) return r;
 
     // Confirm the engine can now actually see it — the whole point of the exercise.
-    ensureGrinderEngine();
-    const found = grinderEngine.scanProtonVersions()[0];
+    ensureInstallerEngine();
+    const found = installerEngine.scanProtonVersions()[0];
     if (!found) return { ok: false, error: 'Installed, but no compatibility runtime was found afterwards.' };
     send({ phase: 'done', percent: 100, message: `${found.label} ready.` });
     return { ok: true, proton: found, installBase: r.installBase };
@@ -688,65 +688,65 @@ ipcMain.handle('proton-install-latest', async (event) => {
 
 ipcMain.handle('proton-install-cancel', () => { host.runtime.management.cancel(); return { ok: true }; });
 
-// Split a GrinderGameId like "gog_2049187585" / "epic_<hex>" into { store, appId }.
-function parseGrinderId(gid) {
+// Split a InstallerGameId like "gog_2049187585" / "epic_<hex>" into { store, appId }.
+function parseInstallerId(gid) {
     if (!gid) return null;
     const m = String(gid).match(/^(gog|epic)_(.+)$/i);
     if (!m) return null;            // custom (mp...) ids aren't gogdl/legendary-installable
     return { store: m[1].toLowerCase(), appId: m[2] };
 }
 
-// Where GOG/Epic games get installed. `default_install_dir` in grinder.db is the single source
-// of truth (the GRINDER face reads the same key); when it's unset — fresh machine, GRINDER GUI
+// Where GOG/Epic games get installed. `default_install_dir` in library.db is the single source
+// of truth (the Installer face reads the same key); when it's unset — fresh machine, Installer GUI
 // never opened — fall back to the same built-in base the engine itself installs into, so the
 // install dialog shows a real path instead of an empty box.
-const GRINDER_DEFAULT_DIR = path.join(os.homedir(), 'Games', 'CafeNeurotico');
-function grinderDefaultDir() {
-    try { return _grinderEngineDb?.prepare("SELECT value FROM settings WHERE key='default_install_dir'").get()?.value || GRINDER_DEFAULT_DIR; }
-    catch { return GRINDER_DEFAULT_DIR; }
+const INSTALLER_DEFAULT_DIR = path.join(os.homedir(), 'Games', 'Clarity');
+function installerDefaultDir() {
+    try { return _installerEngineDb?.prepare("SELECT value FROM settings WHERE key='default_install_dir'").get()?.value || INSTALLER_DEFAULT_DIR; }
+    catch { return INSTALLER_DEFAULT_DIR; }
 }
 
 // Pre-install: free disk space at a path + download/disk size for a GOG/Epic title (shared engine).
-ipcMain.handle('get-disk-space', (_, p) => grinderEngine.getDiskSpace(p));
-ipcMain.handle('get-install-size', async (_, grinderGameId, reqPlatform) => {
-    if (!ensureGrinderEngine()) return null;
-    const parsed = parseGrinderId(grinderGameId); if (!parsed) return null;
+ipcMain.handle('get-disk-space', (_, p) => installerEngine.getDiskSpace(p));
+ipcMain.handle('get-install-size', async (_, installerGameId, reqPlatform) => {
+    if (!ensureInstallerEngine()) return null;
+    const parsed = parseInstallerId(installerGameId); if (!parsed) return null;
     if (parsed.store === 'gog') {
         let platform = reqPlatform || null;
-        if (!platform) { try { platform = _grinderEngineDb.prepare("SELECT platform FROM games WHERE app_id=? AND store=?").get(parsed.appId, parsed.store)?.platform; } catch {} }
-        return grinderEngine.gogInstallInfo(parsed.appId, platform || 'linux');
+        if (!platform) { try { platform = _installerEngineDb.prepare("SELECT platform FROM games WHERE app_id=? AND store=?").get(parsed.appId, parsed.store)?.platform; } catch {} }
+        return installerEngine.gogInstallInfo(parsed.appId, platform || 'linux');
     }
-    if (parsed.store === 'epic') return grinderEngine.epicInstallInfo(parsed.appId);
+    if (parsed.store === 'epic') return installerEngine.epicInstallInfo(parsed.appId);
     return null;
 });
 
-// Available install platforms for a GOG/Epic game (from grinder.db) → lets CN offer the same
-// Linux-native / Windows choice GRINDER has. Returns { platform (current default), platforms: [...] }.
-ipcMain.handle('grinder-platforms', (_, grinderGameId) => {
-    if (!ensureGrinderEngine()) return { platform: 'windows', platforms: [] };
-    const parsed = parseGrinderId(grinderGameId);
+// Available install platforms for a GOG/Epic game (from library.db) → lets CN offer the same
+// Linux-native / Windows choice Installer has. Returns { platform (current default), platforms: [...] }.
+ipcMain.handle('installer-platforms', (_, installerGameId) => {
+    if (!ensureInstallerEngine()) return { platform: 'windows', platforms: [] };
+    const parsed = parseInstallerId(installerGameId);
     if (!parsed) return { platform: 'windows', platforms: [] };
     try {
-        const row = _grinderEngineDb.prepare("SELECT platform, platforms FROM games WHERE app_id=? AND store=?").get(parsed.appId, parsed.store);
+        const row = _installerEngineDb.prepare("SELECT platform, platforms FROM games WHERE app_id=? AND store=?").get(parsed.appId, parsed.store);
         const platforms = (row?.platforms || row?.platform || '').split(',').map(s => s.trim()).filter(Boolean);
         return { platform: row?.platform || 'windows', platforms };
     } catch { return { platform: 'windows', platforms: [] }; }
 });
 
 // Headless owned-library refresh: pull newly-purchased GOG/Epic titles from the
-// store APIs into grinder.db (import-only, installed=0). The refresh-library flow
-// runs this before sync-all-grinder-games so the new titles enter CNGM's library.
-ipcMain.handle('grinder-refresh-owned', async () => {
-    if (!ensureGrinderEngine()) return { available: false };
+// store APIs into library.db (import-only, installed=0). The refresh-library flow
+// runs this before sync-all-installer-games so the new titles enter Clarity's library.
+ipcMain.handle('installer-refresh-owned', async () => {
+    if (!ensureInstallerEngine()) return { available: false };
     try {
-        const r = await grinderEngine.syncOwnedLibrary();
-        // Propagate refunds/removals into CNGM's library: syncOwnedLibrary just pruned these ids
-        // from grinder.db, so drop the matching CNGM rows too — or, for a title also on Steam,
+        const r = await installerEngine.syncOwnedLibrary();
+        // Propagate refunds/removals into Clarity's library: syncOwnedLibrary just pruned these ids
+        // from library.db, so drop the matching Clarity rows too — or, for a title also on Steam,
         // strip only the GOG/Epic side. Scoped to THIS run's removed ids (never a broad
-        // grinder.db diff), so pre-existing games.db↔grinder.db drift is never wrongly deleted.
+        // library.db diff), so pre-existing games.db↔library.db drift is never wrongly deleted.
         const removedIds = [...(r.gog?.removedIds || []), ...(r.epic?.removedIds || [])];
         if (db && removedIds.length) {
-            const sel = db.prepare("SELECT id, Store, SteamAppID, LaunchCommand, LaunchCommands, GrinderGameId FROM games WHERE GrinderGameId=?");
+            const sel = db.prepare("SELECT id, Store, SteamAppID, LaunchCommand, LaunchCommands, InstallerGameId FROM games WHERE InstallerGameId=?");
             db.transaction(() => {
                 for (const gid of removedIds) {
                     const row = sel.get(gid);
@@ -762,13 +762,13 @@ ipcMain.handle('grinder-refresh-owned', async () => {
 
 // ── Headless store sign-in ──────────────────────────────────────────────────────
 // Open the GOG/Epic OAuth window ourselves, capture the auth code and let the shared
-// engine finish the exchange (tokens stored in grinder.db). No GRINDER window ever
-// appears — the average user connects their stores without meeting GRINDER at all.
+// engine finish the exchange (tokens stored in library.db). No Installer window ever
+// appears — the average user connects their stores without meeting Installer at all.
 
 ipcMain.handle('gog-login', () => {
-    if (!ensureGrinderEngine(true)) return { ok: false, error: 'GRINDER data not available.' };
-    const AUTH_URL = `https://auth.gog.com/auth?client_id=${grinderEngine.GOG_CLIENT_ID}` +
-        `&layout=client2&redirect_uri=${encodeURIComponent(grinderEngine.GOG_REDIRECT_URI)}&response_type=code`;
+    if (!ensureInstallerEngine(true)) return { ok: false, error: 'Installer data not available.' };
+    const AUTH_URL = `https://auth.gog.com/auth?client_id=${installerEngine.GOG_CLIENT_ID}` +
+        `&layout=client2&redirect_uri=${encodeURIComponent(installerEngine.GOG_REDIRECT_URI)}&response_type=code`;
     const parentWin = BrowserWindow.getFocusedWindow();
     return new Promise(resolve => {
         let resolved = false;
@@ -785,7 +785,7 @@ ipcMain.handle('gog-login', () => {
             if (!m) return;
             resolved = true;
             try { authWin.close(); } catch {}
-            resolve(await grinderEngine.gogExchangeCode(m[1]));
+            resolve(await installerEngine.gogExchangeCode(m[1]));
         }
         authWin.webContents.on('did-navigate',         tryExtract);
         authWin.webContents.on('did-navigate-in-page', tryExtract);
@@ -794,17 +794,17 @@ ipcMain.handle('gog-login', () => {
 });
 
 ipcMain.handle('gog-auth-status', () => {
-    if (!ensureGrinderEngine()) return { loggedIn: false };
-    return grinderEngine.gogStatus();
+    if (!ensureInstallerEngine()) return { loggedIn: false };
+    return installerEngine.gogStatus();
 });
 
 ipcMain.handle('gog-logout', () => {
-    if (!ensureGrinderEngine()) return { ok: false };
-    return grinderEngine.gogLogout();
+    if (!ensureInstallerEngine()) return { ok: false };
+    return installerEngine.gogLogout();
 });
 
 ipcMain.handle('epic-login', () => {
-    if (!ensureGrinderEngine(true)) return { ok: false, error: 'GRINDER data not available.' };
+    if (!ensureInstallerEngine(true)) return { ok: false, error: 'Installer data not available.' };
     // legendary.gl/epiclogin is maintained by the legendary team and always uses the
     // current valid Epic client ID — avoids hardcoding one that can be revoked.
     const AUTH_URL = 'https://legendary.gl/epiclogin';
@@ -830,7 +830,7 @@ ipcMain.handle('epic-login', () => {
                 if (!m) return;
                 resolved = true;
                 try { authWin.close(); } catch {}
-                resolve(await grinderEngine.epicAuthCode(m[1]));
+                resolve(await installerEngine.epicAuthCode(m[1]));
             } catch {}
         }
         authWin.webContents.on('did-finish-load',     tryExtract);
@@ -842,24 +842,24 @@ ipcMain.handle('epic-login', () => {
 });
 
 ipcMain.handle('epic-auth-status', () => {
-    if (!ensureGrinderEngine()) return { loggedIn: false };
-    return grinderEngine.epicStatus();
+    if (!ensureInstallerEngine()) return { loggedIn: false };
+    return installerEngine.epicStatus();
 });
 
 // In-process install of a GOG/Epic game via the shared engine; progress streams
-// to the calling renderer over 'grinder-install-progress'.
-ipcMain.handle('grinder-install', async (event, { gameId, grinderGameId, installDir, dlc, platform: reqPlatform } = {}) => {
-    if (_grinderBusy) return { ok: false, error: 'Another install/uninstall is in progress.' };
-    if (!ensureGrinderEngine()) return { ok: false, error: 'GRINDER data not found.' };
-    const parsed = parseGrinderId(grinderGameId);
+// to the calling renderer over 'installer-install-progress'.
+ipcMain.handle('installer-install', async (event, { gameId, installerGameId, installDir, dlc, platform: reqPlatform } = {}) => {
+    if (_installerBusy) return { ok: false, error: 'Another install/uninstall is in progress.' };
+    if (!ensureInstallerEngine()) return { ok: false, error: 'Installer data not found.' };
+    const parsed = parseInstallerId(installerGameId);
     if (!parsed) return { ok: false, error: 'This game cannot be installed in-process (not a GOG/Epic title).' };
-    // User picked Linux-native vs Windows: persist it in grinder.db so the install AND future
-    // launches (native vs Proton) both use it, matching GRINDER's own behaviour.
+    // User picked Linux-native vs Windows: persist it in library.db so the install AND future
+    // launches (native vs Proton) both use it, matching Installer's own behaviour.
     if (reqPlatform && parsed.store === 'gog') {
-        try { _grinderEngineDb.prepare("UPDATE games SET platform=? WHERE app_id=? AND store=?").run(reqPlatform, parsed.appId, parsed.store); } catch {}
+        try { _installerEngineDb.prepare("UPDATE games SET platform=? WHERE app_id=? AND store=?").run(reqPlatform, parsed.appId, parsed.store); } catch {}
     }
     const platform = reqPlatform || (() => {
-        try { return _grinderEngineDb.prepare("SELECT platform FROM games WHERE app_id=? AND store=?").get(parsed.appId, parsed.store)?.platform; }
+        try { return _installerEngineDb.prepare("SELECT platform FROM games WHERE app_id=? AND store=?").get(parsed.appId, parsed.store)?.platform; }
         catch { return null; }
     })();
     // DLC directives (from the gamepage DLC panel): mode 'all'|'ids' merge DLCs into the installed
@@ -870,41 +870,41 @@ ipcMain.handle('grinder-install', async (event, { gameId, grinderGameId, install
         else if (dlc.mode === 'all') opts.withDlcs = true;
         else if (Array.isArray(dlc.ids) && dlc.ids.length) opts.dlcIds = dlc.ids.map(String);
     }
-    const dir = installDir || grinderDefaultDir() || undefined;
-    _grinderBusy = true;
+    const dir = installDir || installerDefaultDir() || undefined;
+    _installerBusy = true;
     // Watch for an error/cancel event so we don't mark a failed or cancelled download as installed.
     let installErr = null;
-    _grinderProgressCb = (data) => {
+    _installerProgressCb = (data) => {
         if (data && data.step === 'error') installErr = data.message || 'Install failed.';
-        try { event.sender.send('grinder-install-progress', data); } catch {}
+        try { event.sender.send('installer-install-progress', data); } catch {}
     };
     try {
-        await grinderEngine.headlessInstall(parsed.store, parsed.appId, platform, dir, opts);
+        await installerEngine.headlessInstall(parsed.store, parsed.appId, platform, dir, opts);
         if (installErr) return { ok: false, error: installErr };
         // Before the games.db write, so nothing that reads install state in between can
         // answer from a Set that predates this install and undo it.
-        invalidateGrinderInstalledCache();
+        invalidateInstallerInstalledCache();
         if (gameId && db) { try { db.prepare("UPDATE games SET Installed=1 WHERE id=?").run(gameId); } catch {} }
         try { event.sender.send('install-status-updated'); } catch {}
         return { ok: true };
     } catch (e) {
         return { ok: false, error: e.message };
     } finally {
-        _grinderBusy = false; _grinderProgressCb = null;
+        _installerBusy = false; _installerProgressCb = null;
     }
 });
 
 // List a GOG game's owned DLCs (via gogdl info --with-dlcs) with per-DLC installed state
 // (read from gogdl's local manifest). Powers the gamepage DLC panel.
-ipcMain.handle('dlc-list', async (_, grinderGameId, platform) => {
-    if (!ensureGrinderEngine()) return { ok: false, error: 'GRINDER data not found.', dlcs: [] };
-    const parsed = parseGrinderId(grinderGameId);
+ipcMain.handle('dlc-list', async (_, installerGameId, platform) => {
+    if (!ensureInstallerEngine()) return { ok: false, error: 'Installer data not found.', dlcs: [] };
+    const parsed = parseInstallerId(installerGameId);
     if (!parsed || parsed.store !== 'gog') return { ok: false, error: 'DLCs are only supported for GOG games.', dlcs: [] };
     const plat = platform || (() => {
-        try { return _grinderEngineDb.prepare("SELECT platform FROM games WHERE app_id=? AND store='gog'").get(parsed.appId)?.platform; } catch { return null; }
+        try { return _installerEngineDb.prepare("SELECT platform FROM games WHERE app_id=? AND store='gog'").get(parsed.appId)?.platform; } catch { return null; }
     })() || 'windows';
-    const res = await grinderEngine.gogListDlcs(parsed.appId, plat);
-    const installed = new Set(grinderEngine.gogInstalledDlcs(parsed.appId));
+    const res = await installerEngine.gogListDlcs(parsed.appId, plat);
+    const installed = new Set(installerEngine.gogInstalledDlcs(parsed.appId));
     res.dlcs = (res.dlcs || []).map(d => ({ ...d, installed: installed.has(String(d.id)) }));
     return res;
 });
@@ -915,37 +915,37 @@ ipcMain.handle('dlc-list', async (_, grinderGameId, platform) => {
 // GOG ships these alongside a title and expects them installed INTO the prefix. A game that
 // is missing one usually installs cleanly and then dies the moment it starts, with nothing in
 // the log naming the cause — Baldur's Gate: Enhanced Edition needs openAL and does exactly
-// that. GRINDER has always had this action; the Manager did not, so the only repair was a
-// full reinstall. Every install made before installs created their own grinder.db row skipped
+// that. Installer has always had this action; the Manager did not, so the only repair was a
+// full reinstall. Every install made before installs created their own library.db row skipped
 // runRedist along with the bookkeeping, so those games all need this.
-ipcMain.handle('grinder-run-redist', async (event, grinderGameId) => {
-    if (!ensureGrinderEngine()) return { ok: false, error: 'GRINDER data not found.' };
-    const parsed = parseGrinderId(grinderGameId);
+ipcMain.handle('installer-run-redist', async (event, installerGameId) => {
+    if (!ensureInstallerEngine()) return { ok: false, error: 'Installer data not found.' };
+    const parsed = parseInstallerId(installerGameId);
     if (!parsed || parsed.store !== 'gog')
         return { ok: false, error: 'Compatibility files are only shipped for GOG games.' };
     let game = null;
-    try { game = _grinderEngineDb.prepare("SELECT * FROM games WHERE app_id=? AND store='gog'").get(parsed.appId); } catch {}
-    if (!game) return { ok: false, error: 'This game is not in the GRINDER database yet — reinstall it to add it.' };
-    const prefixPath = grinderEngine.prefixPathForGame(game);
+    try { game = _installerEngineDb.prepare("SELECT * FROM games WHERE app_id=? AND store='gog'").get(parsed.appId); } catch {}
+    if (!game) return { ok: false, error: 'This game is not in the Installer database yet — reinstall it to add it.' };
+    const prefixPath = installerEngine.prefixPathForGame(game);
     const protonPath = game.proton_path || (() => {
-        try { return _grinderEngineDb.prepare("SELECT value FROM settings WHERE key='default_proton_path'").get()?.value; }
+        try { return _installerEngineDb.prepare("SELECT value FROM settings WHERE key='default_proton_path'").get()?.value; }
         catch { return null; }
     })();
-    return grinderEngine.runRedist(event.sender, 'redist-progress', parsed.appId,
+    return installerEngine.runRedist(event.sender, 'redist-progress', parsed.appId,
                                    game.platform || 'windows', prefixPath, protonPath);
 });
 
 // The alternate ways a GOG release can be started (goggame-<appId>.info playTasks), and
-// the picker's write-back. grinder.db's games.id *is* the GrinderGameId, so the engine's
+// the picker's write-back. library.db's games.id *is* the InstallerGameId, so the engine's
 // reader takes it unchanged — no lookup by app_id needed here.
-ipcMain.handle('play-tasks', (_, grinderGameId) => {
-    if (!grinderGameId || !ensureGrinderEngine()) return [];
-    try { return grinderEngine.gogPlayTasks(grinderGameId); } catch { return []; }
+ipcMain.handle('play-tasks', (_, installerGameId) => {
+    if (!installerGameId || !ensureInstallerEngine()) return [];
+    try { return installerEngine.gogPlayTasks(installerGameId); } catch { return []; }
 });
 
-ipcMain.handle('set-launch-target', (_, grinderGameId, relPath, taskIndex) => {
-    if (!grinderGameId || !ensureGrinderEngine()) return { ok: false, error: 'GRINDER data not found.' };
-    try { return grinderEngine.setGogLaunchTarget(grinderGameId, relPath, taskIndex); }
+ipcMain.handle('set-launch-target', (_, installerGameId, relPath, taskIndex) => {
+    if (!installerGameId || !ensureInstallerEngine()) return { ok: false, error: 'Installer data not found.' };
+    try { return installerEngine.setGogLaunchTarget(installerGameId, relPath, taskIndex); }
     catch (e) { return { ok: false, error: e.message }; }
 });
 
@@ -1077,7 +1077,7 @@ ipcMain.handle('omarchy-run-installer', (_, key) => {
     return omarchy.runInstaller(String(key || ''));
 });
 
-// ⚠️ 'omarchy-theme' and its live watch are registered in shared-ipc.js, NOT here — CREMA
+// ⚠️ 'omarchy-theme' and its live watch are registered in shared-ipc.js, NOT here — Couch
 // needs them too, and registering the same channel twice throws at startup.
 
 // Paths other games already occupy. Custom installs share a folder with GOG and Epic
@@ -1085,16 +1085,16 @@ ipcMain.handle('omarchy-run-installer', (_, key) => {
 // a recipe called Witchaven wants to go — so a target that lands on one must be renamed,
 // never emptied.
 function _reservedPaths(exceptId) {
-    if (!ensureGrinderEngine()) return [];
+    if (!ensureInstallerEngine()) return [];
     try {
-        return _grinderEngineDb.prepare('SELECT id, install_path FROM games WHERE install_path IS NOT NULL')
+        return _installerEngineDb.prepare('SELECT id, install_path FROM games WHERE install_path IS NOT NULL')
             .all().filter(r => r.id !== exceptId && r.install_path).map(r => r.install_path);
     } catch { return []; }
 }
 
-const _grinderRowsForData = () => {
-    if (!ensureGrinderEngine()) return [];
-    try { return _grinderEngineDb.prepare('SELECT title, install_path, installed FROM games').all(); }
+const _installerRowsForData = () => {
+    if (!ensureInstallerEngine()) return [];
+    try { return _installerEngineDb.prepare('SELECT title, install_path, installed FROM games').all(); }
     catch { return []; }
 };
 
@@ -1102,11 +1102,11 @@ const _grinderRowsForData = () => {
 // (GZDoom or UZDoom) rather than one engine: they are the same 4.x lineage with the same
 // command line, so either satisfies the requirement and the user's existing one is reused.
 function _installedEngines(engineIds) {
-    if (!ensureGrinderEngine()) return [];
+    if (!ensureInstallerEngine()) return [];
     const out = [];
     for (const id of engineIds) {
         try {
-            const row = _grinderEngineDb.prepare('SELECT id,title,install_path,executable FROM games WHERE id=? AND installed=1').get(`cn_${id}`);
+            const row = _installerEngineDb.prepare('SELECT id,title,install_path,executable FROM games WHERE id=? AND installed=1').get(`cn_${id}`);
             if (row && row.install_path && fs.existsSync(row.install_path)) {
                 out.push({ id, title: row.title, root: row.install_path, exe: row.executable });
             }
@@ -1119,11 +1119,11 @@ const _installedEngine = (ids) => {
     return all.length ? { title: all[0].title, install_path: all[0].root, executable: all[0].exe } : null;
 };
 
-// Register an install in both databases. grinder.db owns the launch (so the shared engine
+// Register an install in both databases. library.db owns the launch (so the shared engine
 // supplies Proton and the prefix); games.db points at it exactly as a GOG title does.
 function _registerCustomInstall(r) {
     const gid = `cn_${r.key || r.recipeId}`;
-    _grinderEngineDb.prepare(`INSERT INTO games (id,title,store,installed,install_path,executable,platform,launch_args)
+    _installerEngineDb.prepare(`INSERT INTO games (id,title,store,installed,install_path,executable,platform,launch_args)
                               VALUES (?,?,?,1,?,?,?,?)
                               ON CONFLICT(id) DO UPDATE SET
                                 installed=1, install_path=excluded.install_path,
@@ -1131,15 +1131,15 @@ function _registerCustomInstall(r) {
                                 launch_args=excluded.launch_args`)
         .run(gid, r.title, 'custom', r.installPath, r.executable, r.platform, r.launchArgs || null);
 
-    const cmd = `grinder://launch/${gid}`;
-    const existing = db.prepare('SELECT id FROM games WHERE GrinderGameId=?').get(gid);
+    const cmd = `installer://launch/${gid}`;
+    const existing = db.prepare('SELECT id FROM games WHERE InstallerGameId=?').get(gid);
     if (existing) db.prepare('UPDATE games SET Installed=1, LaunchCommand=? WHERE id=?').run(cmd, existing.id);
     // OpenBOR is its own category rather than a member of Others — one engine with one
     // rigid layout, the same argument that earned PICO-8 its own place in the library.
     // It stands alone now that the gallery has a filter for it: a game filed under both
     // would be counted twice and turn up under Others, which is where it was never meant
     // to be. Anything without a category of its own still lands in Others.
-    else db.prepare(`INSERT INTO games (Game, Store, LaunchCommand, GrinderGameId, Installed, FAV, WANT_TO_PLAY)
+    else db.prepare(`INSERT INTO games (Game, Store, LaunchCommand, InstallerGameId, Installed, FAV, WANT_TO_PLAY)
                      VALUES (?,?,?,?,1,'NO','NO')`)
             .run(r.title, r.category || 'Others', cmd, gid);
     return gid;
@@ -1148,16 +1148,16 @@ function _registerCustomInstall(r) {
 // The catalogue, each entry carrying what this machine can currently do with it: whether
 // the required game data is already resolvable, and whether it is installed already.
 ipcMain.handle('custom-recipe-list', () => {
-    const rows = _grinderRowsForData();
+    const rows = _installerRowsForData();
     return customInstallers.listRecipes().map(r => {
         const out = { ...r, installed: false, installedCount: 0, data: r.data ? { ...r.data } : null };
         try {
             if (r.dynamic) {
                 // One recipe, many installs (every OpenBOR game shares it) — so report a
                 // count rather than a yes/no, and never offer to "reinstall" a shape.
-                out.installedCount = _grinderEngineDb?.prepare("SELECT COUNT(*) n FROM games WHERE id LIKE ?").get(`cn_${r.id}_%`)?.n || 0;
+                out.installedCount = _installerEngineDb?.prepare("SELECT COUNT(*) n FROM games WHERE id LIKE ?").get(`cn_${r.id}_%`)?.n || 0;
             } else {
-                out.installed = !!_grinderEngineDb?.prepare('SELECT 1 FROM games WHERE id=?').get(`cn_${r.id}`);
+                out.installed = !!_installerEngineDb?.prepare('SELECT 1 FROM games WHERE id=?').get(`cn_${r.id}`);
             }
         } catch {}
         if (r.data) {
@@ -1197,7 +1197,7 @@ ipcMain.handle('custom-install-pick', async (_, recipeId) => {
 });
 
 ipcMain.handle('custom-install', async (_, { recipeId, archivePath, engineArchivePath, selected, iwad, dataPath, overwrite } = {}) => {
-    if (!ensureGrinderEngine(true)) return { ok: false, error: 'GRINDER data could not be created.' };
+    if (!ensureInstallerEngine(true)) return { ok: false, error: 'Installer data could not be created.' };
     const recipe = customInstallers.getRecipe(recipeId);
     if (!recipe) return { ok: false, error: `Unknown recipe "${recipeId}".` };
 
@@ -1219,7 +1219,7 @@ ipcMain.handle('custom-install', async (_, { recipeId, archivePath, engineArchiv
             }
             const er = customInstallers.installFromArchive({
                 recipeId: engineId, archivePath: engineArchivePath, dataPath, overwrite: true, reserved: _reservedPaths(`cn_${engineId}`),
-                installRoot: grinderDefaultDir(), dataRows: _grinderRowsForData(),
+                installRoot: installerDefaultDir(), dataRows: _installerRowsForData(),
             });
             if (!er.ok) return er;
             try { _registerCustomInstall(er); } catch (e) { return { ok: false, error: `Engine installed, but could not register it: ${e.message}` }; }
@@ -1234,33 +1234,33 @@ ipcMain.handle('custom-install', async (_, { recipeId, archivePath, engineArchiv
                 recipeId, archivePath, dataPath, overwrite: !!overwrite, reserved: _reservedPaths(`cn_${recipeId}`),
                 engineRoot: engine.install_path, engineExe: engine.executable,
                 engines: _installedEngines(recipe.engine),
-                installRoot: grinderDefaultDir(), dataRows: _grinderRowsForData(),
+                installRoot: installerDefaultDir(), dataRows: _installerRowsForData(),
               })
             : customInstallers.installMod({
                 recipeId, archivePath, selected, iwad,
                 engineRoot: engine.install_path, engineExe: engine.executable,
-                dataRows: _grinderRowsForData(),
+                dataRows: _installerRowsForData(),
               });
         // Several loadable files inside — the renderer asks which, then calls back with
         // `selected`. Carries the engine title so the second pass can report it.
         if (!mr.ok) return (mr.choose || mr.needsData) ? { ...mr, engineTitle: engine.title } : mr;
         try { _registerCustomInstall(mr); } catch (e) { return { ok: false, error: `Installed, but could not add it to the library: ${e.message}` }; }
         if (recipe.onEngine) _refreshEngineSearchPaths(recipe.engine);
-        invalidateGrinderInstalledCache();
+        invalidateInstallerInstalledCache();
         return { ...mr, engineTitle: engine.title };
     }
 
     const r = customInstallers.installFromArchive({
         recipeId, archivePath, dataPath, overwrite: !!overwrite, reserved: _reservedPaths(`cn_${recipeId}`),
-        installRoot: grinderDefaultDir(),
-        dataRows: _grinderRowsForData(),
+        installRoot: installerDefaultDir(),
+        dataRows: _installerRowsForData(),
     });
     if (!r.ok) return r;
 
     try { _registerCustomInstall(r); }
     catch (e) { return { ok: false, error: `Installed, but could not add it to the library: ${e.message}` }; }
 
-    invalidateGrinderInstalledCache();
+    invalidateInstallerInstalledCache();
     return r;
 });
 
@@ -1284,12 +1284,12 @@ ipcMain.handle('custom-folder-scan', (_, folder) => {
 });
 
 ipcMain.handle('custom-folder-add', (_, { folder, executable, title } = {}) => {
-    if (!ensureGrinderEngine(true)) return { ok: false, error: 'GRINDER data could not be created.' };
+    if (!ensureInstallerEngine(true)) return { ok: false, error: 'Installer data could not be created.' };
     const r = customInstallers.addFromFolder({ folder, executable, title });
     if (!r.ok) return r;
     try { _registerCustomInstall(r); }
     catch (e) { return { ok: false, error: `Could not add it to the library: ${e.message}` }; }
-    invalidateGrinderInstalledCache();
+    invalidateInstallerInstalledCache();
     return r;
 });
 
@@ -1297,10 +1297,10 @@ ipcMain.handle('custom-folder-add', (_, { folder, executable, title } = {}) => {
 // is a per-session decision, the way you would pick a disc off a shelf. Returns null when
 // there is nothing to ask — not a mod, or only one IWAD available — so the launch goes
 // straight through and nothing is put in the way of games that have no choice to make.
-ipcMain.handle('custom-iwad-options', (_, grinderGameId) => {
-    if (!grinderGameId || !ensureGrinderEngine()) return null;
+ipcMain.handle('custom-iwad-options', (_, installerGameId) => {
+    if (!installerGameId || !ensureInstallerEngine()) return null;
     try {
-        const row = _grinderEngineDb.prepare('SELECT install_path, launch_args FROM games WHERE id=?').get(grinderGameId);
+        const row = _installerEngineDb.prepare('SELECT install_path, launch_args FROM games WHERE id=?').get(installerGameId);
         if (!row || !row.install_path || !/-file\b/i.test(row.launch_args || '')) return null;
         const iwads = customInstallers.listIwads(row.install_path);
         if (iwads.length < 2) return null;
@@ -1323,13 +1323,13 @@ ipcMain.handle('custom-iwad-options', (_, grinderGameId) => {
 // C:\cn\<name> and handed that instead. Done before every launch rather than at install,
 // because a rebuilt prefix would otherwise silently lose the mapping.
 function _ensureGdxDriveMapping(gid) {
-    if (!_grinderEngineDb) return;
+    if (!_installerEngineDb) return;
     let row;
-    try { row = _grinderEngineDb.prepare('SELECT * FROM games WHERE id=?').get(gid); } catch { return; }
+    try { row = _installerEngineDb.prepare('SELECT * FROM games WHERE id=?').get(gid); } catch { return; }
     const m = row && row.launch_args && row.launch_args.match(/C:\\cn\\([^"\\]+)/i);
     if (!m || !row.install_path) return;
     try {
-        const driveC = path.join(grinderEngine.prefixPathForGame(row), 'pfx', 'drive_c', 'cn');
+        const driveC = path.join(installerEngine.prefixPathForGame(row), 'pfx', 'drive_c', 'cn');
         fs.mkdirSync(driveC, { recursive: true });
         const link = path.join(driveC, m[1]);
         try { if (fs.realpathSync(link) === fs.realpathSync(row.install_path)) return; } catch {}
@@ -1345,7 +1345,7 @@ function _refreshEngineSearchPaths(engineIds) {
     for (const e of _installedEngines(engineIds || [])) {
         let folders = [];
         try {
-            folders = _grinderEngineDb.prepare(
+            folders = _installerEngineDb.prepare(
                 // Tolerates the pre-rename `cn_raze-*` ids as well as the current ones.
                 "SELECT install_path FROM games WHERE (id LIKE 'cn_build-game-%' OR id LIKE 'cn_raze-%') AND installed=1"
             ).all().map(r => r.install_path).filter(p => p && fs.existsSync(p));
@@ -1356,10 +1356,10 @@ function _refreshEngineSearchPaths(engineIds) {
 
 // Which engine to run this on, asked at Play time. Null unless the game folder really
 // holds more than one — a game with a single engine must never be slowed by a question.
-ipcMain.handle('custom-engine-options', (_, grinderGameId) => {
-    if (!grinderGameId || !ensureGrinderEngine()) return null;
+ipcMain.handle('custom-engine-options', (_, installerGameId) => {
+    if (!installerGameId || !ensureInstallerEngine()) return null;
     try {
-        const row = _grinderEngineDb.prepare('SELECT install_path, executable FROM games WHERE id=?').get(grinderGameId);
+        const row = _installerEngineDb.prepare('SELECT install_path, executable FROM games WHERE id=?').get(installerGameId);
         if (!row || !row.install_path) return null;
         const engines = customInstallers.readEngines(row.install_path)
             .filter(e => fs.existsSync(path.join(row.install_path, e.exe)));
@@ -1367,87 +1367,87 @@ ipcMain.handle('custom-engine-options', (_, grinderGameId) => {
     } catch { return null; }
 });
 
-ipcMain.handle('custom-set-engine', (_, grinderGameId, exe) => {
-    if (!grinderGameId || !ensureGrinderEngine() || !exe) return { ok: false };
+ipcMain.handle('custom-set-engine', (_, installerGameId, exe) => {
+    if (!installerGameId || !ensureInstallerEngine() || !exe) return { ok: false };
     try {
-        _grinderEngineDb.prepare('UPDATE games SET executable=? WHERE id=?').run(exe, grinderGameId);
+        _installerEngineDb.prepare('UPDATE games SET executable=? WHERE id=?').run(exe, installerGameId);
         return { ok: true };
     } catch (e) { return { ok: false, error: e.message }; }
 });
 
 // Remember the choice as the new default, so the dialog opens on what you picked last.
-ipcMain.handle('custom-set-iwad', (_, grinderGameId, iwad) => {
-    if (!grinderGameId || !ensureGrinderEngine()) return { ok: false, error: 'GRINDER data not found.' };
+ipcMain.handle('custom-set-iwad', (_, installerGameId, iwad) => {
+    if (!installerGameId || !ensureInstallerEngine()) return { ok: false, error: 'Installer data not found.' };
     try {
-        const row = _grinderEngineDb.prepare('SELECT launch_args FROM games WHERE id=?').get(grinderGameId);
+        const row = _installerEngineDb.prepare('SELECT launch_args FROM games WHERE id=?').get(installerGameId);
         if (!row) return { ok: false, error: 'That game is no longer registered.' };
         const next = customInstallers.withIwad(row.launch_args, iwad || '');
-        _grinderEngineDb.prepare('UPDATE games SET launch_args=? WHERE id=?').run(next || null, grinderGameId);
+        _installerEngineDb.prepare('UPDATE games SET launch_args=? WHERE id=?').run(next || null, installerGameId);
         return { ok: true, launchArgs: next };
     } catch (e) { return { ok: false, error: e.message }; }
 });
 
 // Cancel the in-flight in-process download (kills gogdl/legendary). The install
 // promise then resolves as failed and the renderer's queue advances to the next.
-ipcMain.handle('grinder-install-cancel', () => {
-    if (!_grinderEngineDb) return { ok: false };
-    return { ok: grinderEngine.cancelActiveInstall() };
+ipcMain.handle('installer-install-cancel', () => {
+    if (!_installerEngineDb) return { ok: false };
+    return { ok: installerEngine.cancelActiveInstall() };
 });
 
-ipcMain.handle('grinder-uninstall', async (event, { gameId, grinderGameId } = {}) => {
-    if (_grinderBusy) return { ok: false, error: 'Another install/uninstall is in progress.' };
-    if (!ensureGrinderEngine()) return { ok: false, error: 'GRINDER data not found.' };
-    const parsed = parseGrinderId(grinderGameId);
+ipcMain.handle('installer-uninstall', async (event, { gameId, installerGameId } = {}) => {
+    if (_installerBusy) return { ok: false, error: 'Another install/uninstall is in progress.' };
+    if (!ensureInstallerEngine()) return { ok: false, error: 'Installer data not found.' };
+    const parsed = parseInstallerId(installerGameId);
     if (!parsed) return { ok: false, error: 'This game cannot be uninstalled in-process (not a GOG/Epic title).' };
-    _grinderBusy = true;
-    _grinderProgressCb = (data) => { try { event.sender.send('grinder-install-progress', data); } catch {} };
+    _installerBusy = true;
+    _installerProgressCb = (data) => { try { event.sender.send('installer-install-progress', data); } catch {} };
     try {
-        await grinderEngine.headlessUninstall(parsed.store, parsed.appId);
+        await installerEngine.headlessUninstall(parsed.store, parsed.appId);
         // Mirror of the install case: a Set that still lists this game would make
         // resolveInstallState() answer 1 and put Installed back, undoing the uninstall.
-        invalidateGrinderInstalledCache();
+        invalidateInstallerInstalledCache();
         if (gameId && db) { try { db.prepare("UPDATE games SET Installed=0 WHERE id=?").run(gameId); } catch {} }
         try { event.sender.send('install-status-updated'); } catch {}
         return { ok: true };
     } catch (e) {
         return { ok: false, error: e.message };
     } finally {
-        _grinderBusy = false; _grinderProgressCb = null;
+        _installerBusy = false; _installerProgressCb = null;
     }
 });
 
 // Default install dir + a native folder picker for the install dialog.
-ipcMain.handle('grinder-default-dir', () => { ensureGrinderEngine(); return grinderDefaultDir(); });
-ipcMain.handle('grinder-pick-dir', async (_, current) => {
+ipcMain.handle('installer-default-dir', () => { ensureInstallerEngine(); return installerDefaultDir(); });
+ipcMain.handle('installer-pick-dir', async (_, current) => {
     // NOTE: `win` is local to createWindow() — referencing it here threw a ReferenceError that
     // rejected the invoke, so the install dialog's "Change" button silently did nothing.
     const parent = BrowserWindow.getFocusedWindow();
     const opts = { properties: ['openDirectory', 'createDirectory'] };
-    const start = expandTilde(current || grinderDefaultDir());
+    const start = expandTilde(current || installerDefaultDir());
     if (start && fs.existsSync(start)) opts.defaultPath = start;
     const r = parent ? await dialog.showOpenDialog(parent, opts) : await dialog.showOpenDialog(opts);
     return (!r.canceled && r.filePaths[0]) ? r.filePaths[0] : null;
 });
 
-// Persist the global default install folder (shared with the GRINDER face, which reads the
-// same grinder.db setting). Passing an empty value restores the built-in default.
-ipcMain.handle('grinder-set-default-dir', (_, dir) => {
-    if (!ensureGrinderEngine(true)) return { ok: false, error: 'GRINDER data not available.' };
+// Persist the global default install folder (shared with the Installer face, which reads the
+// same library.db setting). Passing an empty value restores the built-in default.
+ipcMain.handle('installer-set-default-dir', (_, dir) => {
+    if (!ensureInstallerEngine(true)) return { ok: false, error: 'Installer data not available.' };
     const clean = String(dir || '').trim();
     try {
         if (clean) {
             try { fs.mkdirSync(expandTilde(clean), { recursive: true }); }
             catch (e) { return { ok: false, error: `Cannot create "${clean}": ${e.message}` }; }
-            _grinderEngineDb.prepare("INSERT OR REPLACE INTO settings (key,value) VALUES ('default_install_dir',?)").run(clean);
+            _installerEngineDb.prepare("INSERT OR REPLACE INTO settings (key,value) VALUES ('default_install_dir',?)").run(clean);
         } else {
-            _grinderEngineDb.prepare("DELETE FROM settings WHERE key='default_install_dir'").run();
+            _installerEngineDb.prepare("DELETE FROM settings WHERE key='default_install_dir'").run();
         }
-        return { ok: true, dir: grinderDefaultDir() };
+        return { ok: true, dir: installerDefaultDir() };
     } catch (e) { return { ok: false, error: e.message }; }
 });
 
-// CREMA is now a face of this same binary (launched with --crema), so it's always available.
-ipcMain.handle('check-crema', () => true);
+// Couch is now a face of this same binary (launched with --couch), so it's always available.
+ipcMain.handle('check-couch', () => true);
 
 function findEmuLattePath() {
     try {
@@ -1463,20 +1463,20 @@ const getSteamLibraryPaths = () => host.steamLibraryPaths();
 function guessLauncherLabel(cmd) {
     if (!cmd) return 'Custom';
     if (/steam:\/\/rungameid/i.test(cmd))         return 'Steam';
-    if (/grinder:\/\/launch\/gog/i.test(cmd))      return 'GOG via GRINDER';
-    if (/grinder:\/\/launch\/epic/i.test(cmd))     return 'Epic via GRINDER';
+    if (/installer:\/\/launch\/gog/i.test(cmd))      return 'GOG via Installer';
+    if (/installer:\/\/launch\/epic/i.test(cmd))     return 'Epic via Installer';
     if (cmd.startsWith('itch://'))                return 'itch.io';
     if (cmd.startsWith('pico8-cart:'))            return 'PICO-8';
     if (/^flatpak run/i.test(cmd))               return 'Flatpak';
-    if (cmd.startsWith('grinder://'))             return 'GRINDER';
+    if (cmd.startsWith('installer://'))             return 'Installer';
     return 'Custom';
 }
 
 // Which store a single launch command belongs to (null = manual/custom/emulator/etc.).
 function launcherStore(cmd) {
     if (/steam:\/\/rungameid/i.test(cmd))        return 'steam';
-    if (/grinder:\/\/launch\/gog\//i.test(cmd))  return 'gog';
-    if (/grinder:\/\/launch\/epic\//i.test(cmd)) return 'epic';
+    if (/installer:\/\/launch\/gog\//i.test(cmd))  return 'gog';
+    if (/installer:\/\/launch\/epic\//i.test(cmd)) return 'epic';
     return null;
 }
 
@@ -1492,7 +1492,7 @@ function pruneStoreEntry(row, which) {
     const launchers = expandLaunchers(row);
     const remaining = launchers.filter(l => launcherStore(l.cmd || '') !== which);
     // Keep the row only if a DIFFERENT recognised store launcher survives; a leftover
-    // unrecognised/dangling launcher (e.g. a bare grinder://<id> fallback) still deletes.
+    // unrecognised/dangling launcher (e.g. a bare installer://<id> fallback) still deletes.
     const survives = remaining.some(l => launcherStore(l.cmd || ''));
 
     if (survives) {
@@ -1502,7 +1502,7 @@ function pruneStoreEntry(row, which) {
             const tag = { steam: 'Steam', gog: 'GOG', epic: 'EPIC' };
             storeArr = [...new Set(remaining.map(l => tag[launcherStore(l.cmd || '')]).filter(Boolean))];
         }
-        const clearField = which === 'steam' ? 'SteamAppID' : 'GrinderGameId';
+        const clearField = which === 'steam' ? 'SteamAppID' : 'InstallerGameId';
         db.prepare(`UPDATE games SET Store=?, LaunchCommand=?, LaunchCommands=?, ${clearField}=NULL WHERE id=?`)
           .run(storeArr.join(', '), remaining[0].cmd, JSON.stringify(remaining), row.id);
         return 'stripped';
@@ -1518,11 +1518,11 @@ function isSteamGameInstalled(appId) {
 }
 
 // ── Locate a game's on-disk install folder (Browse Local Files) ───────────────
-// Steam → appmanifest "installdir" under steamapps/common; GOG/Epic → grinder.db
+// Steam → appmanifest "installdir" under steamapps/common; GOG/Epic → library.db
 // install_path; everything else (custom / emulator / others) → an absolute path
 // pulled out of its launch command(s). Returns an existing directory, or null.
-function grinderDbPath() {
-    return host.findGrinderDb(baseDir);
+function installerDbPath() {
+    return host.findInstallerDb(baseDir);
 }
 function expandTilde(p) {
     return (p && p.startsWith('~')) ? path.join(os.homedir(), p.slice(1)) : p;
@@ -1530,10 +1530,10 @@ function expandTilde(p) {
 // Best-effort: pull a real folder out of a custom / emulator launch command.
 function folderFromLaunchCommand(cmd) {
     if (!cmd) return null;
-    // URL-scheme launchers (steam://, grinder://, itch://, pico8-cart:) carry no local
+    // URL-scheme launchers (steam://, installer://, itch://, pico8-cart:) carry no local
     // path. `flatpak run …` is NOT excluded: an emulator command such as
     // `flatpak run org.libretro.RetroArch -L core rom` still yields the ROM's folder,
-    // while `flatpak run …hgl "grinder://…"` has no path token and falls through to null.
+    // while `flatpak run …hgl "installer://…"` has no path token and falls through to null.
     if (/^[a-z][a-z0-9+.-]*:\/\//i.test(cmd) || /^pico8-cart:/i.test(cmd)) return null;
     const tokens = cmd.match(/"[^"]+"|'[^']+'|\S+/g) || [];
     let best = null;
@@ -1559,13 +1559,13 @@ function resolveGameFolder(game) {
             } catch {}
         }
     }
-    // 2. GOG / Epic — grinder.db install_path (only when actually installed)
-    if (game.GrinderGameId) {
-        const gpath = grinderDbPath();
+    // 2. GOG / Epic — library.db install_path (only when actually installed)
+    if (game.InstallerGameId) {
+        const gpath = installerDbPath();
         if (gpath) {
             try {
                 const gdb = new Database(gpath, { readonly: true, timeout: 5000 });
-                const row = gdb.prepare("SELECT install_path FROM games WHERE id=? AND installed=1").get(String(game.GrinderGameId));
+                const row = gdb.prepare("SELECT install_path FROM games WHERE id=? AND installed=1").get(String(game.InstallerGameId));
                 gdb.close();
                 const ip = expandTilde((row && row.install_path) || '');
                 if (ip && fs.existsSync(ip)) return ip;
@@ -1582,13 +1582,13 @@ function resolveGameFolder(game) {
 // Renderer asks whether a browsable folder exists (to show/hide the hero button).
 ipcMain.handle('resolve-game-folder', (e, gameId) => {
     if (!db) return null;
-    try { return resolveGameFolder(db.prepare("SELECT Store, SteamAppID, GrinderGameId, LaunchCommand, LaunchCommands FROM games WHERE id=?").get(gameId)); }
+    try { return resolveGameFolder(db.prepare("SELECT Store, SteamAppID, InstallerGameId, LaunchCommand, LaunchCommands FROM games WHERE id=?").get(gameId)); }
     catch { return null; }
 });
 // Open the game's install folder in the system file manager.
 ipcMain.handle('open-game-folder', (e, gameId) => {
     if (!db) return { ok: false };
-    let game; try { game = db.prepare("SELECT Store, SteamAppID, GrinderGameId, LaunchCommand, LaunchCommands FROM games WHERE id=?").get(gameId); } catch { return { ok: false }; }
+    let game; try { game = db.prepare("SELECT Store, SteamAppID, InstallerGameId, LaunchCommand, LaunchCommands FROM games WHERE id=?").get(gameId); } catch { return { ok: false }; }
     const folder = resolveGameFolder(game);
     if (!folder) return { ok: false };
     shell.openPath(folder);
@@ -1654,7 +1654,7 @@ function scriptSavePaths(installDir) {
 }
 
 // ── Epic (legendary) authoritative source: CloudSaveFolder from the game metadata ──
-// legendary uses the standard ~/.config/legendary (confirmed against GRINDER).
+// legendary uses the standard ~/.config/legendary (confirmed against Installer).
 const legendaryDir = () => host.legendaryConfigDir();
 function epicAccountId() {
     try { const u = JSON.parse(fs.readFileSync(path.join(legendaryDir(), 'user.json'), 'utf8')); return u.account_id || u.accountId || ''; } catch { return ''; }
@@ -1835,14 +1835,14 @@ function resolveSaveDirs(ctx) {
 // Load both DB rows + resolve prefix/install/platform for a GOG game. null ⇒ not a GOG game.
 function saveGameContext(gameId) {
     if (!db) return null;
-    let row; try { row = db.prepare("SELECT id, Game, Store, GrinderGameId, SaveDirOverride, SteamAppID, LaunchCommand, LaunchCommands FROM games WHERE id=?").get(gameId); } catch { return null; }
-    const gid = String(row?.GrinderGameId || '');
+    let row; try { row = db.prepare("SELECT id, Game, Store, InstallerGameId, SaveDirOverride, SteamAppID, LaunchCommand, LaunchCommands FROM games WHERE id=?").get(gameId); } catch { return null; }
+    const gid = String(row?.InstallerGameId || '');
     if (!row || !/^(gog|epic)_/i.test(gid)) return { supported: false };
-    if (!ensureGrinderEngine()) return { supported: false };
-    let grow; try { grow = _grinderEngineDb.prepare("SELECT id, title, prefix_path, install_path, platform, store, app_id FROM games WHERE id=?").get(gid); } catch {}
+    if (!ensureInstallerEngine()) return { supported: false };
+    let grow; try { grow = _installerEngineDb.prepare("SELECT id, title, prefix_path, install_path, platform, store, app_id FROM games WHERE id=?").get(gid); } catch {}
     if (!grow) return { supported: false };
     const store   = /^epic_/i.test(gid) ? 'epic' : 'gog';
-    const prefix  = grinderEngine.prefixPathForGame(grow);
+    const prefix  = installerEngine.prefixPathForGame(grow);
     const install = expandTilde(grow.install_path || '') || resolveGameFolder(row) || '';
     // Epic on Linux is always Proton (no native builds) — treat blank platform as 'windows'.
     return { supported: true, store, row, grow, ctx: {
@@ -1875,13 +1875,13 @@ ipcMain.handle('gog-backup-saves', async (_, gameId, dirs) => {
     if (!chosen.length) return { ok: false, error: 'No save folders selected.' };
     const { canceled, filePath } = await dialog.showSaveDialog({
         title: `Back Up Saves — ${c.ctx.title}`,
-        defaultPath: `CafeNeurotico Saves - ${saveSafeName(c.ctx.title)} - ${saveDateStamp()}.zip`,
+        defaultPath: `Clarity Saves - ${saveSafeName(c.ctx.title)} - ${saveDateStamp()}.zip`,
         filters: [{ name: 'Zip archive', extensions: ['zip'] }],
     });
     if (canceled || !filePath) return { ok: false, canceled: true };
     try {
         const zip = new AdmZip();
-        const manifest = { kind: 'gog-saves', app: 'CafeNeurotico', created: Date.now(), title: c.ctx.title, grinderGameId: c.grow.id, appId: c.ctx.appId, dirs: [] };
+        const manifest = { kind: 'gog-saves', app: 'Clarity', created: Date.now(), title: c.ctx.title, installerGameId: c.grow.id, appId: c.ctx.appId, dirs: [] };
         chosen.forEach((dir, i) => {
             const { root, rel } = classifySaveDir(dir, win, c.ctx.install);
             zip.addLocalFolder(dir, `dir_${i}`);
@@ -1898,7 +1898,7 @@ ipcMain.handle('gog-backup-saves', async (_, gameId, dirs) => {
 // Open a backup .zip, validate it, and re-home each backed-up dir onto THIS machine.
 function saveRestoreTargets(zipPath, c) {
     let zip, manifest;
-    try { zip = new AdmZip(zipPath); manifest = JSON.parse(zip.readAsText('cn-gog-saves.json') || '{}'); } catch { return { error: 'Not a CafeNeurotico saves backup.' }; }
+    try { zip = new AdmZip(zipPath); manifest = JSON.parse(zip.readAsText('cn-gog-saves.json') || '{}'); } catch { return { error: 'Not a Clarity saves backup.' }; }
     if (manifest.kind !== 'gog-saves' || !Array.isArray(manifest.dirs)) return { error: 'Unrecognized backup file.' };
     const win = c.ctx.platform === 'windows' ? winUserHome(c.ctx.prefix) : null;
     const targets = manifest.dirs.map(d =>
@@ -2074,7 +2074,7 @@ function upsertSteamGame(appid, rawName) {
     }
 
     // Fallback: title match against a non-Steam entry with no SteamAppID yet
-    // (covers the case where GOG/Epic was imported via GRINDER before Steam sync)
+    // (covers the case where GOG/Epic was imported via Installer before Steam sync)
     const titleMatch = db.prepare(
         "SELECT * FROM games WHERE LOWER(TRIM(Game))=LOWER(TRIM(?)) AND Store NOT LIKE '%Steam%' AND (SteamAppID IS NULL OR SteamAppID='' OR SteamAppID='None')"
     ).get(name);
@@ -2127,12 +2127,12 @@ function _diskStoreBucket(s) {
     if (s.includes('others')) return 'Others'; return 'Other';
 }
 // Which games have a native macOS build — Steam via its public store API (platforms.mac),
-// GOG/Epic via grinder.db's platform/platforms (already correctly tagged 'osx' there — see
-// darwin.js and the GOG_CATALOG_OS_ALIAS fix in grinder-engine.js). Only meaningful on macOS;
+// GOG/Epic via library.db's platform/platforms (already correctly tagged 'osx' there — see
+// darwin.js and the GOG_CATALOG_OS_ALIAS fix in installer-engine.js). Only meaningful on macOS;
 // gated by host.id so a Linux run of this same shared file never touches it.
 //
 // Steam's endpoint needs a live call per game with no bulk form, so results are cached in
-// MacNativeChecked and only re-asked with force. GOG/Epic reads are free (local grinder.db),
+// MacNativeChecked and only re-asked with force. GOG/Epic reads are free (local library.db),
 // so those always refresh.
 let _macNativeScanRunning = false;
 ipcMain.handle('scan-mac-native', async (evt, opts) => {
@@ -2144,23 +2144,23 @@ ipcMain.handle('scan-mac-native', async (evt, opts) => {
     const send = (scanned, total, label) => { try { evt.sender.send('mac-native-scan-progress', { scanned, total, label }); } catch {} };
     try {
         // GOG/Epic — free, local, always refreshed.
-        const gpath = host.findGrinderDb(baseDir);
-        const grinderPlatforms = new Map();
+        const gpath = host.findInstallerDb(baseDir);
+        const installerPlatforms = new Map();
         if (gpath) {
             try {
                 const gdb = new Database(gpath, { readonly: true, timeout: 5000 });
                 for (const r of gdb.prepare("SELECT id, platform, platforms FROM games").all())
-                    grinderPlatforms.set(String(r.id), `${r.platform || ''},${r.platforms || ''}`);
+                    installerPlatforms.set(String(r.id), `${r.platform || ''},${r.platforms || ''}`);
                 gdb.close();
             } catch {}
         }
-        const grinderRows = db.prepare("SELECT id, GrinderGameId FROM games WHERE GrinderGameId IS NOT NULL AND GrinderGameId != ''").all();
+        const installerRows = db.prepare("SELECT id, InstallerGameId FROM games WHERE InstallerGameId IS NOT NULL AND InstallerGameId != ''").all();
         let updated = 0;
-        for (const g of grinderRows) {
-            // grinder.db's own `id` column already carries the store_appid form ("gog_123…"),
-            // same as GrinderGameId itself — key on that directly, not the split appId (see
-            // disk-scan's grinderPaths for the same lookup done right).
-            const blob = grinderPlatforms.get(String(g.GrinderGameId)) || '';
+        for (const g of installerRows) {
+            // library.db's own `id` column already carries the store_appid form ("gog_123…"),
+            // same as InstallerGameId itself — key on that directly, not the split appId (see
+            // disk-scan's installerPaths for the same lookup done right).
+            const blob = installerPlatforms.get(String(g.InstallerGameId)) || '';
             const isMac = blob.split(',').map(s => s.trim()).includes('osx');
             db.prepare("UPDATE games SET MacNative=?, MacNativeChecked=1 WHERE id=?").run(isMac ? 1 : 0, g.id);
             updated++;
@@ -2212,17 +2212,17 @@ ipcMain.handle('disk-scan', async () => {
             try { const sm = fs.readFileSync(path.join(dir, f), 'utf8').match(/"SizeOnDisk"\s+"(\d+)"/i); if (sm) steamSizes.set(idm[1], parseInt(sm[1], 10)); } catch {}
         }
     }
-    // GRINDER (GOG/Epic): install_path → directory size.
-    const grinderPaths = new Map();
-    const gpath = host.findGrinderDb(baseDir);
-    if (gpath) { try { const gdb = new Database(gpath, { readonly: true, timeout: 5000 }); for (const r of gdb.prepare("SELECT id, install_path FROM games WHERE installed=1 AND install_path IS NOT NULL AND install_path != ''").all()) grinderPaths.set(String(r.id), r.install_path); gdb.close(); } catch {} }
+    // Installer (GOG/Epic): install_path → directory size.
+    const installerPaths = new Map();
+    const gpath = host.findInstallerDb(baseDir);
+    if (gpath) { try { const gdb = new Database(gpath, { readonly: true, timeout: 5000 }); for (const r of gdb.prepare("SELECT id, install_path FROM games WHERE installed=1 AND install_path IS NOT NULL AND install_path != ''").all()) installerPaths.set(String(r.id), r.install_path); gdb.close(); } catch {} }
 
     const expand = p => (p && p.startsWith('~')) ? path.join(home, p.slice(1)) : p;
-    for (const g of db.prepare("SELECT id, SteamAppID, GrinderGameId FROM games").all()) {
+    for (const g of db.prepare("SELECT id, SteamAppID, InstallerGameId FROM games").all()) {
         let size = 0;
         const appid = g.SteamAppID ? String(g.SteamAppID).replace(/\.0+$/, '') : '';
         if (appid && steamSizes.has(appid)) size = steamSizes.get(appid);
-        else if (g.GrinderGameId && grinderPaths.has(String(g.GrinderGameId))) { const ip = expand(grinderPaths.get(String(g.GrinderGameId))); if (ip && fs.existsSync(ip)) size = _dirSizeBytes(ip); }
+        else if (g.InstallerGameId && installerPaths.has(String(g.InstallerGameId))) { const ip = expand(installerPaths.get(String(g.InstallerGameId))); if (ip && fs.existsSync(ip)) size = _dirSizeBytes(ip); }
         try { db.prepare("UPDATE games SET DiskSize=? WHERE id=?").run(size, g.id); } catch {}
     }
     const rows = db.prepare("SELECT Game, Store, DiskSize FROM games WHERE DiskSize > 0").all();
@@ -2267,13 +2267,13 @@ ipcMain.handle('ach-scan', async () => {
 //
 // LaunchCommands is the source of truth when it is populated, but plenty of genuinely
 // multi-store rows have never had it — cross-store merges predating the column only wrote
-// the Store tag, and until the edit dialog stopped hiding GRINDER launchers a plain Save
+// the Store tag, and until the edit dialog stopped hiding Installer launchers a plain Save
 // collapsed the list back down to the primary. Those rows silently lost their second store:
 // no picker, and install state keyed off whichever launcher survived. So anything the row's
 // own store fields prove exists is filled back in (Steam tag + SteamAppID, GOG/Epic tag +
-// GrinderGameId), which is enough for both the picker and the install-state OR.
+// InstallerGameId), which is enough for both the picker and the install-state OR.
 //
-// Needs Store + GrinderGameId on the row; a SELECT without them just skips the synthesis.
+// Needs Store + InstallerGameId on the row; a SELECT without them just skips the synthesis.
 function expandLaunchers(game) {
     const out = [], seen = new Set();
     const add = (label, cmd) => {
@@ -2293,11 +2293,11 @@ function expandLaunchers(game) {
     if (stores.includes('steam') && appId && appId !== 'None' && !has('steam')) {
         add('Steam', host.steamLaunchCommand(appId));
     }
-    const gg = String(game.GrinderGameId || '').match(/^(gog|epic)_(.+)$/i);
+    const gg = String(game.InstallerGameId || '').match(/^(gog|epic)_(.+)$/i);
     if (gg) {
         const store = gg[1].toLowerCase();
         if (stores.includes(store) && !has(store)) {
-            add(store === 'gog' ? 'GOG via GRINDER' : 'Epic via GRINDER', `grinder://launch/${store}/${gg[2]}`);
+            add(store === 'gog' ? 'GOG via Installer' : 'Epic via Installer', `installer://launch/${store}/${gg[2]}`);
         }
     }
     return out;
@@ -2309,11 +2309,11 @@ function launchCmdsOf(game) {
     return expandLaunchers(game).map(l => l.cmd);
 }
 
-// grinder.db's installed-id set (gog_* / epic_*), cached so the watcher and batch scans
+// library.db's installed-id set (gog_* / epic_*), cached so the watcher and batch scans
 // don't reopen the DB once per row.
 //
-// The key has to account for WAL. grinder.db runs in WAL mode, so an install's
-// `UPDATE games SET installed=1` lands in grinder.db-wal and leaves the main file's
+// The key has to account for WAL. library.db runs in WAL mode, so an install's
+// `UPDATE games SET installed=1` lands in library.db-wal and leaves the main file's
 // mtime untouched — keying on that alone pinned this Set to whatever it held at boot,
 // for the whole session. The damage was not just a stale read: for a row fronting both
 // Steam and GOG, resolveInstallState() sees the Steam copy absent and the GOG copy
@@ -2324,52 +2324,52 @@ function launchCmdsOf(game) {
 // Both files, mtime and size: a checkpoint drains the WAL back to 0 bytes without
 // necessarily moving mtime, and that is a change too. Reading the files rather than
 // hooking our own writes also keeps it correct when the writer is another process —
-// standalone GRINDER, or CREMA.
-let _grinderInstalledCache = { key: '', set: new Set() };
-function grinderInstalledStamp(p) {
+// standalone Installer, or Couch.
+let _installerInstalledCache = { key: '', set: new Set() };
+function installerInstalledStamp(p) {
     let key = p;
     for (const f of [p, p + '-wal']) {
         try { const s = fs.statSync(f); key += `:${s.mtimeMs}:${s.size}`; } catch { key += ':-'; }
     }
     return key;
 }
-function grinderInstalledSet() {
-    const p = grinderDbPath();
-    if (!p) { _grinderInstalledCache = { key: '', set: new Set() }; return _grinderInstalledCache.set; }
-    const key = grinderInstalledStamp(p);
-    if (key === _grinderInstalledCache.key) return _grinderInstalledCache.set;
+function installerInstalledSet() {
+    const p = installerDbPath();
+    if (!p) { _installerInstalledCache = { key: '', set: new Set() }; return _installerInstalledCache.set; }
+    const key = installerInstalledStamp(p);
+    if (key === _installerInstalledCache.key) return _installerInstalledCache.set;
     const set = new Set();
     try {
         const gdb = new Database(p, { readonly: true, timeout: 5000 });
         for (const r of gdb.prepare("SELECT id FROM games WHERE installed=1").all()) set.add(String(r.id));
         gdb.close();
     } catch {}
-    _grinderInstalledCache = { key, set };
+    _installerInstalledCache = { key, set };
     return set;
 }
 
 // Belt and braces for the in-process case: after our own install/uninstall we know the
 // set changed, so drop it outright rather than trusting a filesystem stamp to have moved
 // within the same tick.
-function invalidateGrinderInstalledCache() {
-    _grinderInstalledCache = { key: '', set: new Set() };
+function invalidateInstallerInstalledCache() {
+    _installerInstalledCache = { key: '', set: new Set() };
 }
 
 // Is one launch command's store copy installed on disk? Returns true/false for a
-// recognised store (Steam via appmanifest, GOG/Epic via grinder.db), or null otherwise
+// recognised store (Steam via appmanifest, GOG/Epic via library.db), or null otherwise
 // (custom / emulator / manual — those key off "has a launch command" elsewhere).
 function launcherInstalled(cmd, steamAppId) {
     const c = cmd || '';
     const sm = c.match(/steam:\/\/rungameid\/(\d+)/i);
     if (sm) return isSteamGameInstalled(sm[1] || steamAppId);
-    const gm = c.match(/grinder:\/\/launch\/(gog|epic)\/([^"\s]+)/i);
-    if (gm) return grinderInstalledSet().has(`${gm[1].toLowerCase()}_${gm[2]}`);
+    const gm = c.match(/installer:\/\/launch\/(gog|epic)\/([^"\s]+)/i);
+    if (gm) return installerInstalledSet().has(`${gm[1].toLowerCase()}_${gm[2]}`);
     return null;
 }
 
 // Install state for a Steam-fronting row, OR-ed across every store it fronts. Returns
 // 1/0 when the row has a Steam launcher, else null so pure GOG/Epic/manual rows keep
-// relying on their own source of truth (grinder push-sync / launch command presence).
+// relying on their own source of truth (installer push-sync / launch command presence).
 // Scoping to Steam-fronting rows keeps the blast radius to exactly the mixed-store
 // class this fixes and never overrides the GOG/Epic reconciler.
 function resolveInstallState(game) {
@@ -2399,13 +2399,13 @@ function launcherStatesForGame(game) {
 
 ipcMain.handle('launcher-states', (e, gameId) => {
     if (!db) return [];
-    const game = db.prepare("SELECT Store, SteamAppID, GrinderGameId, LaunchCommand, LaunchCommands FROM games WHERE id=?").get(gameId);
+    const game = db.prepare("SELECT Store, SteamAppID, InstallerGameId, LaunchCommand, LaunchCommands FROM games WHERE id=?").get(gameId);
     return game ? launcherStatesForGame(game) : [];
 });
 
 ipcMain.handle('verify-install-status', (e, gameId) => {
     if (!db) return { installed: 1 };
-    const game = db.prepare("SELECT id, Store, SteamAppID, GrinderGameId, LaunchCommand, LaunchCommands, Installed FROM games WHERE id=?").get(gameId);
+    const game = db.prepare("SELECT id, Store, SteamAppID, InstallerGameId, LaunchCommand, LaunchCommands, Installed FROM games WHERE id=?").get(gameId);
     if (!game) return { installed: 1 };
     const installed = resolveInstallState(game);
     if (installed !== null) db.prepare("UPDATE games SET Installed=? WHERE id=?").run(installed, gameId);
@@ -2425,7 +2425,7 @@ function reconcileSteamInstalls() {
     if (!db) return 0;
     let changed = 0;
     const games = db.prepare(
-        "SELECT id, Store, SteamAppID, GrinderGameId, LaunchCommand, LaunchCommands, Installed FROM games " +
+        "SELECT id, Store, SteamAppID, InstallerGameId, LaunchCommand, LaunchCommands, Installed FROM games " +
         `WHERE ${STEAM_FRONTING_SQL}`
     ).all();
     for (const g of games) {
@@ -2451,7 +2451,7 @@ function reconcileSteamInstalls() {
 //     someone else's business, and `flatpak run …` is not a path at all.
 //   • EVERY launcher on the row must be an absolute path, or the row is skipped entirely.
 //     That scoping matters: such rows are owned by no other reconciler, so this cannot fight
-//     with the Steam or GRINDER ones.
+//     with the Steam or Installer ones.
 //
 // ⚠️ Bidirectional on purpose. One-directional was the obvious first instinct and it is a
 // trap: a game on an external drive is genuinely installed, just not mounted, and clearing
@@ -2467,10 +2467,10 @@ function reconcileSteamInstalls() {
 //   • pico8-cart: carries an absolute path to the cart, and a restored config points at the
 //     OTHER machine's config directory — the carts are simply not here.
 //   • flatpak run <id> is verifiable from the exports directory without shelling out.
-//   • grinder://launch/<store>/<id> already has a source of truth in GRINDER's own database;
+//   • installer://launch/<store>/<id> already has a source of truth in Installer's own database;
 //     resolveInstallState() just never reached it, because it returns early unless the row
 //     also has a steam:// launcher. A library with 26 GOG/Epic rows marked installed against
-//     GRINDER's actual 2 is the result.
+//     Installer's actual 2 is the result.
 const FLATPAK_EXPORT_DIRS = [
     path.join(os.homedir(), '.local', 'share', 'flatpak', 'exports', 'bin'),
     '/var/lib/flatpak/exports/bin',
@@ -2499,11 +2499,11 @@ function launcherSchemeInstalled(cmd) {
         return FLATPAK_EXPORT_DIRS.some(d => { try { return fs.existsSync(path.join(d, id)); } catch { return false; } });
     }
 
-    // Every grinder:// form, not just the store ones. GRINDER's database is the single source
+    // Every installer:// form, not just the store ones. Installer's database is the single source
     // of truth for all of them:
-    //   grinder://launch/gog/1234   → key "gog_1234"
-    //   grinder://launch/cn_vkquake → key "cn_vkquake"   (custom installs, source ports, mods)
-    //   grinder://mpiz1xxacr1d      → key "mpiz1xxacr1d" (manually added entries)
+    //   installer://launch/gog/1234   → key "gog_1234"
+    //   installer://launch/cn_vkquake → key "cn_vkquake"   (custom installs, source ports, mods)
+    //   installer://mpiz1xxacr1d      → key "mpiz1xxacr1d" (manually added entries)
     //
     // ⚠️ The cn_* case is the bulk of a restored library's false Play buttons and the earlier
     // version missed it entirely, because it only matched gog|epic. A machine that never
@@ -2528,15 +2528,15 @@ function launcherSchemeInstalled(cmd) {
         return present ? null : false;
     }
 
-    const gm = c.match(/^grinder:\/\/(?:launch\/)?(.+)$/i);
+    const gm = c.match(/^installer:\/\/(?:launch\/)?(.+)$/i);
     if (gm) {
-        // ⚠️ No GRINDER database means "cannot judge", NOT "nothing is installed". Without
-        // this guard, a machine where grinder.db has not been created yet would have every
-        // GRINDER-launched game in the library marked uninstalled in one pass.
-        try { if (!grinderDbPath()) return null; } catch { return null; }
+        // ⚠️ No Installer database means "cannot judge", NOT "nothing is installed". Without
+        // this guard, a machine where library.db has not been created yet would have every
+        // Installer-launched game in the library marked uninstalled in one pass.
+        try { if (!installerDbPath()) return null; } catch { return null; }
         const key = String(gm[1]).trim().replace(/\/+$/, '')
             .replace(/^(gog|epic)\//i, (_m, st) => st.toLowerCase() + '_');
-        try { return grinderInstalledSet().has(key); } catch { return null; }
+        try { return installerInstalledSet().has(key); } catch { return null; }
     }
 
     return null;
@@ -2545,7 +2545,7 @@ function launcherSchemeInstalled(cmd) {
 function launcherLocalPath(cmd) {
     let c = String(cmd || '').trim();
     if (!c) return '';
-    if (/^[a-z][a-z0-9+.-]*:\/\//i.test(c)) return '';        // steam://, grinder://, http://…
+    if (/^[a-z][a-z0-9+.-]*:\/\//i.test(c)) return '';        // steam://, installer://, http://…
     while (/^[A-Za-z_][A-Za-z0-9_]*=/.test(c)) {                // strip leading VAR=value
         const sp = c.indexOf(' ');
         if (sp < 0) return '';
@@ -2569,7 +2569,7 @@ function reconcileLocalPathInstalls() {
     let rows;
     try {
         rows = db.prepare(
-            "SELECT id, Store, SteamAppID, GrinderGameId, LaunchCommand, LaunchCommands, Installed FROM games"
+            "SELECT id, Store, SteamAppID, InstallerGameId, LaunchCommand, LaunchCommands, Installed FROM games"
         ).all();
     } catch { return 0; }
 
@@ -2633,7 +2633,7 @@ ipcMain.handle('check-all-install-status', async () => {
     // Include mixed-store rows whose Steam launcher sits in LaunchCommands (not the
     // primary) so a game installed on Steam but fronted by GOG/Epic still resolves.
     const steamGames = db.prepare(
-        "SELECT id, Store, SteamAppID, GrinderGameId, LaunchCommand, LaunchCommands FROM games " +
+        "SELECT id, Store, SteamAppID, InstallerGameId, LaunchCommand, LaunchCommands FROM games " +
         `WHERE ${STEAM_FRONTING_SQL}`
     ).all();
     for (const g of steamGames) {
@@ -2641,8 +2641,8 @@ ipcMain.handle('check-all-install-status', async () => {
         if (s !== null) { db.prepare("UPDATE games SET Installed=? WHERE id=?").run(s, g.id); updated++; }
     }
 
-    // GOG/Epic (grinder://) install state is reconciled from GRINDER's DB via
-    // sync-grinder-installed / sync-all-grinder-games — not detected here.
+    // GOG/Epic (installer://) install state is reconciled from Installer's DB via
+    // sync-installer-installed / sync-all-installer-games — not detected here.
 
     // ── PHYSICAL / OTHERS / EMULATION / APPS: installed = has launch command ──
     const manualResult = db.prepare(`
@@ -2682,11 +2682,11 @@ function steamUpdatePending(appId) {
     return false;
 }
 
-// Map an engine grinder.db row → a scan result keyed to the shared games.db row.
+// Map an engine library.db row → a scan result keyed to the shared games.db row.
 function cnUpdateRow(g, current, latest, store) {
     const gid = `${store}_${g.app_id}`;
     let cn = null;
-    try { cn = db && db.prepare("SELECT id, Game FROM games WHERE GrinderGameId=?").get(gid); } catch {}
+    try { cn = db && db.prepare("SELECT id, Game FROM games WHERE InstallerGameId=?").get(gid); } catch {}
     return { id: cn ? cn.id : null, name: (cn && cn.Game) || g.title, store, current: current || '', latest: latest || '', gid };
 }
 
@@ -2694,21 +2694,21 @@ function cnUpdateRow(g, current, latest, store) {
 // GOG's DOS games ship a Windows DOSBox 0.74 from 2010 that we run through Proton — an
 // emulator inside a translation layer. A native DOSBox reads the very same GOG .conf, so
 // the game keeps every tweak GOG made for it and only the emulator changes. Stored in
-// GRINDER's settings because the engine is what acts on it.
+// Installer's settings because the engine is what acts on it.
 ipcMain.handle('dosbox-status', () => {
-    if (!ensureGrinderEngine()) return { mode: 'auto', native: null, hint: {} };
-    const native = grinderEngine.findNativeDosbox();
+    if (!ensureInstallerEngine()) return { mode: 'auto', native: null, hint: {} };
+    const native = installerEngine.findNativeDosbox();
     return {
-        mode: String(grinderEngine.engineSetting('dosbox_mode', 'auto') || 'auto'),
+        mode: String(installerEngine.engineSetting('dosbox_mode', 'auto') || 'auto'),
         native: native ? { label: native.label, flatpak: native.args.length > 0 } : null,
-        hint: grinderEngine.dosboxInstallHint(),
+        hint: installerEngine.dosboxInstallHint(),
     };
 });
 ipcMain.handle('set-dosbox-mode', (_, mode) => {
-    if (!ensureGrinderEngine() || !_grinderEngineDb) return false;
+    if (!ensureInstallerEngine() || !_installerEngineDb) return false;
     const v = ['auto', 'native', 'bundled'].includes(String(mode)) ? String(mode) : 'auto';
     try {
-        _grinderEngineDb.prepare("INSERT OR REPLACE INTO settings (key, value) VALUES ('dosbox_mode', ?)").run(v);
+        _installerEngineDb.prepare("INSERT OR REPLACE INTO settings (key, value) VALUES ('dosbox_mode', ?)").run(v);
         return true;
     } catch { return false; }
 });
@@ -2726,11 +2726,11 @@ const manualsDir = path.join(baseDir, 'GameManagerConfig', 'manuals');
 const gameManualDir = gameId => path.join(manualsDir, String(gameId));
 
 function _gameRow(gameId) {
-    try { return db.prepare("SELECT id, Game, Store, SteamAppID, GrinderGameId, LaunchCommand, LaunchCommands FROM games WHERE id=?").get(gameId); }
+    try { return db.prepare("SELECT id, Game, Store, SteamAppID, InstallerGameId, LaunchCommand, LaunchCommands FROM games WHERE id=?").get(gameId); }
     catch { return null; }
 }
 function _gogAppId(row) {
-    const m = String(row?.GrinderGameId || '').match(/^gog_(.+)$/i);
+    const m = String(row?.InstallerGameId || '').match(/^gog_(.+)$/i);
     return m ? m[1] : null;
 }
 
@@ -2781,18 +2781,18 @@ ipcMain.handle('remove-manual', (_, manualId, gameId) =>
     ({ ok: _manuals.removeManual(db, fs, manualId, gameManualDir(gameId)) }));
 
 ipcMain.handle('gog-manual-list', async (_, gameId) => {
-    if (!ensureGrinderEngine()) return { ok: false, error: 'GRINDER engine unavailable.' };
+    if (!ensureInstallerEngine()) return { ok: false, error: 'Installer engine unavailable.' };
     const appId = _gogAppId(_gameRow(gameId));
     if (!appId) return { ok: false, error: 'Not a GOG game.' };
-    return grinderEngine.gogListManuals(appId);
+    return installerEngine.gogListManuals(appId);
 });
 
 ipcMain.handle('gog-manual-download', async (evt, gameId, bonusId) => {
-    if (!ensureGrinderEngine()) return { ok: false, error: 'GRINDER engine unavailable.' };
+    if (!ensureInstallerEngine()) return { ok: false, error: 'Installer engine unavailable.' };
     const appId = _gogAppId(_gameRow(gameId));
     if (!appId) return { ok: false, error: 'Not a GOG game.' };
     const dest = gameManualDir(gameId);
-    const res = await grinderEngine.gogDownloadManual(appId, bonusId, dest, (got, total) => {
+    const res = await installerEngine.gogDownloadManual(appId, bonusId, dest, (got, total) => {
         try { evt.sender.send('manual-download-progress', { gameId, got, total }); } catch {}
     });
     if (!res.ok) return res;
@@ -2913,10 +2913,10 @@ ipcMain.handle('scan-updates', async (evt) => {
     const out = [];
     const send = (scanned, total, label) => { try { evt.sender.send('update-scan-progress', { scanned, total, label }); } catch {} };
 
-    // 1) GOG / Epic — via the in-process GRINDER engine.
-    if (ensureGrinderEngine() && _grinderEngineDb) {
+    // 1) GOG / Epic — via the in-process Installer engine.
+    if (ensureInstallerEngine() && _installerEngineDb) {
         let installed = [];
-        try { installed = _grinderEngineDb.prepare(
+        try { installed = _installerEngineDb.prepare(
             "SELECT id, title, store, app_id, version, platform FROM games WHERE installed=1 AND (is_dlc IS NULL OR is_dlc=0)"
         ).all(); } catch {}
         const gog  = installed.filter(g => g.store === 'gog'  && g.app_id);
@@ -2928,7 +2928,7 @@ ipcMain.handle('scan-updates', async (evt) => {
         if (epic.length) {
             send(scanned, total, 'Checking Epic games…');
             let updMap = new Map();
-            try { updMap = await grinderEngine.epicListUpdates(); } catch {}
+            try { updMap = await installerEngine.epicListUpdates(); } catch {}
             for (const g of epic) {
                 scanned++;
                 const info = updMap.get(g.app_id);
@@ -2943,7 +2943,7 @@ ipcMain.handle('scan-updates', async (evt) => {
             const platform = (g.platform === 'linux') ? 'linux' : 'windows';
             if (platform === 'linux') continue;
             let latest = '';
-            try { latest = (await grinderEngine.gogInstallInfo(g.app_id, platform))?.version || ''; } catch {}
+            try { latest = (await installerEngine.gogInstallInfo(g.app_id, platform))?.version || ''; } catch {}
             if (latest && g.version && String(latest) !== String(g.version)) out.push(cnUpdateRow(g, g.version, latest, 'gog'));
         }
         send(total, total, '');
@@ -2974,117 +2974,117 @@ ipcMain.handle('set-launch-command', (e, gameId, cmd) => {
 });
 
 
-// Auto-sync GRINDER installed status into CNGM library.
-// installedIds = array of GRINDER game IDs that are installed (from grinderStatus).
-// Sets GrinderGameId + Installed=1 for matching GOG/Epic games.
-ipcMain.handle('sync-grinder-installed', (_, installedIds) => {
+// Auto-sync Installer installed status into Clarity library.
+// installedIds = array of Installer game IDs that are installed (from installerStatus).
+// Sets InstallerGameId + Installed=1 for matching GOG/Epic games.
+ipcMain.handle('sync-installer-installed', (_, installedIds) => {
     if (!db || !Array.isArray(installedIds)) return { synced: 0 };
     const idSet = new Set(installedIds);
     let synced = 0;
     const games = db.prepare(
-        "SELECT id, LaunchCommand, GrinderGameId FROM games WHERE LaunchCommand LIKE '%grinder://launch/%'"
+        "SELECT id, LaunchCommand, InstallerGameId FROM games WHERE LaunchCommand LIKE '%installer://launch/%'"
     ).all();
     for (const g of games) {
-        const epicMatch = (g.LaunchCommand || '').match(/grinder:\/\/launch\/epic\/([^"\s]+)/i);
-        const gogMatch  = (g.LaunchCommand || '').match(/grinder:\/\/launch\/gog\/([^"\s]+)/i);
+        const epicMatch = (g.LaunchCommand || '').match(/installer:\/\/launch\/epic\/([^"\s]+)/i);
+        const gogMatch  = (g.LaunchCommand || '').match(/installer:\/\/launch\/gog\/([^"\s]+)/i);
         const m = epicMatch || gogMatch;
         if (!m) continue;
         const gid = epicMatch ? `epic_${epicMatch[1]}` : `gog_${gogMatch[1]}`;
         if (idSet.has(gid)) {
-            db.prepare("UPDATE games SET GrinderGameId=?, Installed=1 WHERE id=?").run(gid, g.id);
+            db.prepare("UPDATE games SET InstallerGameId=?, Installed=1 WHERE id=?").run(gid, g.id);
             synced++;
-        } else if (g.GrinderGameId) {
-            // No longer installed in GRINDER — clear the auto-set override
-            db.prepare("UPDATE games SET GrinderGameId=NULL WHERE id=?").run(g.id);
+        } else if (g.InstallerGameId) {
+            // No longer installed in Installer — clear the auto-set override
+            db.prepare("UPDATE games SET InstallerGameId=NULL WHERE id=?").run(g.id);
         }
     }
     return { synced };
 });
 
-ipcMain.handle('grinder-status', () => {
-    const grinderPath = findGrinderPath();
-    if (!grinderPath) return { found: false, installedGames: [] };
+ipcMain.handle('installer-status', () => {
+    const installerPath = findInstallerPath();
+    if (!installerPath) return { found: false, installedGames: [] };
 
-    const grinderDb = host.findGrinderDb(baseDir);
-    if (!grinderDb) return { found: true, path: grinderPath, installedGames: [], error: 'Launch GRINDER once to create its database.' };
+    const installerDb = host.findInstallerDb(baseDir);
+    if (!installerDb) return { found: true, path: installerPath, installedGames: [], error: 'Launch Installer once to create its database.' };
 
     try {
-        const gdb = new Database(grinderDb, { readonly: true });
+        const gdb = new Database(installerDb, { readonly: true });
         const installed = gdb.prepare("SELECT id FROM games WHERE installed=1").all();
         const allGames  = gdb.prepare("SELECT id, title, store, app_id, installed, platform, is_dlc FROM games").all();
         gdb.close();
-        return { found: true, path: grinderPath,
+        return { found: true, path: installerPath,
                  installedGames: installed.map(r => r.id),
                  allGames };
     } catch (e) {
-        return { found: true, path: grinderPath, installedGames: [], allGames: [], error: `Could not read GRINDER DB: ${e.message}` };
+        return { found: true, path: installerPath, installedGames: [], allGames: [], error: `Could not read Installer DB: ${e.message}` };
     }
 });
 
-// Sync ALL GRINDER games into CNGM (installed and not installed).
+// Sync ALL Installer games into Clarity (installed and not installed).
 // Matches by app_id for GOG/Epic; inserts new entries for unmatched games.
-ipcMain.handle('sync-all-grinder-games', (_, allGrinderGames, grinderPath) => {
-    if (!allGrinderGames?.length) return { synced: 0 };
+ipcMain.handle('sync-all-installer-games', (_, allInstallerGames, installerPath) => {
+    if (!allInstallerGames?.length) return { synced: 0 };
     let synced = 0;
 
-    // Build set of DLC grinder IDs so we can clean up any previously-synced entries
-    const dlcIds = new Set(allGrinderGames.filter(g => g.is_dlc).map(g => g.id));
+    // Build set of DLC installer IDs so we can clean up any previously-synced entries
+    const dlcIds = new Set(allInstallerGames.filter(g => g.is_dlc).map(g => g.id));
 
-    // Remove any CNGM entries that were auto-synced from GRINDER but are DLC/non-game content
+    // Remove any Clarity entries that were auto-synced from Installer but are DLC/non-game content
     if (dlcIds.size) {
         const placeholders = Array.from(dlcIds).map(() => '?').join(',');
-        db.prepare(`DELETE FROM games WHERE GrinderGameId IN (${placeholders})`).run(...dlcIds);
+        db.prepare(`DELETE FROM games WHERE InstallerGameId IN (${placeholders})`).run(...dlcIds);
     }
 
-    // NOTE: refund/removal of GOG/Epic titles is handled in the grinder-refresh-owned handler,
-    // which drops from games.db exactly the ids syncOwnedLibrary just pruned from grinder.db —
-    // scoped to this run so pre-existing games.db↔grinder.db drift is never mistaken for a refund.
+    // NOTE: refund/removal of GOG/Epic titles is handled in the installer-refresh-owned handler,
+    // which drops from games.db exactly the ids syncOwnedLibrary just pruned from library.db —
+    // scoped to this run so pre-existing games.db↔library.db drift is never mistaken for a refund.
 
-    for (const gg of allGrinderGames) {
-        // Never bring DLC/soundtrack/extras into CNGM's library
+    for (const gg of allInstallerGames) {
+        // Never bring DLC/soundtrack/extras into Clarity's library
         if (gg.is_dlc) continue;
 
-        // Authoritative install state: any CNGM game already linked to this GRINDER game reflects
-        // GRINDER's real installed flag, regardless of CNGM's stored value (e.g. after restoring an
-        // older backup, or after a GRINDER-side install/uninstall CNGM never saw). GRINDER keeps this
+        // Authoritative install state: any Clarity game already linked to this Installer game reflects
+        // Installer's real installed flag, regardless of Clarity's stored value (e.g. after restoring an
+        // older backup, or after a Installer-side install/uninstall Clarity never saw). Installer keeps this
         // flag accurate via its own verify-installs (checks the files on disk).
         try {
-            db.prepare("UPDATE games SET Installed=? WHERE GrinderGameId=?").run(gg.installed ? 1 : 0, gg.id);
+            db.prepare("UPDATE games SET Installed=? WHERE InstallerGameId=?").run(gg.installed ? 1 : 0, gg.id);
             // ...and make sure GOG/Epic games have a launch command, otherwise the UI shows "Install"
             // (button needs LaunchCommand) even though they're installed — and they couldn't launch.
             if (gg.app_id && (gg.store === 'gog' || gg.store === 'epic')) {
-                db.prepare("UPDATE games SET LaunchCommand=? WHERE GrinderGameId=? AND (LaunchCommand IS NULL OR TRIM(LaunchCommand)='')")
-                  .run(`grinder://launch/${gg.store}/${gg.app_id}`, gg.id);
+                db.prepare("UPDATE games SET LaunchCommand=? WHERE InstallerGameId=? AND (LaunchCommand IS NULL OR TRIM(LaunchCommand)='')")
+                  .run(`installer://launch/${gg.store}/${gg.app_id}`, gg.id);
             }
         } catch {}
 
-        // Try to find a matching CNGM game by app_id embedded in the GRINDER LaunchCommand
+        // Try to find a matching Clarity game by app_id embedded in the Installer LaunchCommand
         let existing = null;
         if (gg.app_id) {
             existing = db.prepare(
-                "SELECT id, GrinderGameId FROM games WHERE LaunchCommand LIKE ? AND (GrinderGameId IS NULL OR GrinderGameId=?)"
+                "SELECT id, InstallerGameId FROM games WHERE LaunchCommand LIKE ? AND (InstallerGameId IS NULL OR InstallerGameId=?)"
             ).get(`%${gg.app_id}%`, gg.id);
         }
 
         if (existing) {
-            // Matched — update GrinderGameId and install status
-            db.prepare("UPDATE games SET GrinderGameId=?, Installed=? WHERE id=?")
+            // Matched — update InstallerGameId and install status
+            db.prepare("UPDATE games SET InstallerGameId=?, Installed=? WHERE id=?")
               .run(gg.id, gg.installed ? 1 : 0, existing.id);
             synced++;
         } else {
-            // No CNGM equivalent — insert as new entry if not already imported
-            const alreadyIn = db.prepare("SELECT id FROM games WHERE GrinderGameId=?").get(gg.id);
+            // No Clarity equivalent — insert as new entry if not already imported
+            const alreadyIn = db.prepare("SELECT id FROM games WHERE InstallerGameId=?").get(gg.id);
             if (!alreadyIn) {
                 let launchCmd = '';
-                if (gg.store === 'gog' && gg.app_id)   launchCmd = `grinder://launch/gog/${gg.app_id}`;
-                if (gg.store === 'epic' && gg.app_id)  launchCmd = `grinder://launch/epic/${gg.app_id}`;
+                if (gg.store === 'gog' && gg.app_id)   launchCmd = `installer://launch/gog/${gg.app_id}`;
+                if (gg.store === 'epic' && gg.app_id)  launchCmd = `installer://launch/epic/${gg.app_id}`;
                 const store = gg.store === 'gog' ? 'GOG' : gg.store === 'epic' ? 'EPIC' : 'Others';
-                if (!launchCmd) launchCmd = `grinder://${gg.id}`;
+                if (!launchCmd) launchCmd = `installer://${gg.id}`;
 
                 // Before inserting, check if a Steam game with the same title already exists — merge instead
                 const steamMatch = (gg.store === 'gog' || gg.store === 'epic') && gg.title
                     ? db.prepare(
-                        "SELECT * FROM games WHERE LOWER(TRIM(Game))=LOWER(TRIM(?)) AND Store LIKE '%Steam%' AND (GrinderGameId IS NULL OR GrinderGameId='')"
+                        "SELECT * FROM games WHERE LOWER(TRIM(Game))=LOWER(TRIM(?)) AND Store LIKE '%Steam%' AND (InstallerGameId IS NULL OR InstallerGameId='')"
                       ).get(gg.title)
                     : null;
 
@@ -3095,39 +3095,39 @@ ipcMain.handle('sync-all-grinder-games', (_, allGrinderGames, grinderPath) => {
                         launchers.push({ label: guessLauncherLabel(steamMatch.LaunchCommand), cmd: steamMatch.LaunchCommand });
                     }
                     if (!launchers.some(l => l.cmd === launchCmd)) {
-                        launchers.push({ label: store + ' via GRINDER', cmd: launchCmd });
+                        launchers.push({ label: store + ' via Installer', cmd: launchCmd });
                     }
                     const storeArr = (steamMatch.Store || '').split(',').map(s => s.trim()).filter(Boolean);
                     if (!storeArr.some(s => s.toLowerCase() === store.toLowerCase())) storeArr.push(store);
-                    db.prepare("UPDATE games SET Store=?, GrinderGameId=?, Installed=?, LaunchCommands=? WHERE id=?")
+                    db.prepare("UPDATE games SET Store=?, InstallerGameId=?, Installed=?, LaunchCommands=? WHERE id=?")
                       .run(storeArr.join(', '), gg.id,
                            Math.max(gg.installed ? 1 : 0, steamMatch.Installed || 0),
                            JSON.stringify(launchers), steamMatch.id);
                 } else {
                     db.prepare(
-                        "INSERT INTO games (Game, LaunchCommand, Store, Installed, GrinderGameId) VALUES (?, ?, ?, ?, ?)"
+                        "INSERT INTO games (Game, LaunchCommand, Store, Installed, InstallerGameId) VALUES (?, ?, ?, ?, ?)"
                     ).run(gg.title || gg.id, launchCmd, store, gg.installed ? 1 : 0, gg.id);
                 }
                 synced++;
             }
         }
     }
-    // GRINDER only knows the GOG/Epic side, so the writes above set Installed purely from
+    // Installer only knows the GOG/Epic side, so the writes above set Installed purely from
     // that store — which zeroes a mixed-store row (e.g. Steam+GOG) whose Steam copy is the
     // one actually installed. Re-assert the Steam OR so those rows aren't wrongly downgraded.
     reconcileSteamInstalls();
     return { synced };
 });
 
-ipcMain.on('launch-crema', () => {
-    // Launch the CREMA face of THIS binary (separate 'crema' process), not an external AppImage.
+ipcMain.on('launch-couch', () => {
+    // Launch the Couch face of THIS binary (separate 'couch' process), not an external AppImage.
     const bin  = host.selfExecutable();
-    const args = host.selfSpawnArgs(['--crema'], path.join(__dirname, '..', '..'));
+    const args = host.selfSpawnArgs(['--couch'], path.join(__dirname, '..', '..'));
     const child = spawn(bin, args, { detached: true, stdio: 'ignore' });
     child.unref();
     const win = BrowserWindow.getAllWindows()[0];
     if (win) win.minimize();
-    // Restore the Manager window when the CREMA face exits.
+    // Restore the Manager window when the Couch face exits.
     child.on('exit', () => { const w = BrowserWindow.getAllWindows()[0]; if (w) { if (w.isMinimized()) w.restore(); w.focus(); } });
 });
 
@@ -3146,9 +3146,9 @@ ipcMain.handle('install-to-menu', () => {
         const appsDir  = host.desktop.appsDir();
         const iconsDir = path.join(baseDir, 'icons');
         if (!fs.existsSync(iconsDir)) fs.mkdirSync(iconsDir, { recursive: true });
-        fs.writeFileSync(path.join(iconsDir, 'CNGM.svg'),     Buffer.from(CNGM_SVG_B64,     'base64'));
-        fs.writeFileSync(path.join(iconsDir, 'CREMA.svg'),    Buffer.from(CREMA_SVG_B64,    'base64'));
-        fs.writeFileSync(path.join(iconsDir, 'GRINDER.svg'),  Buffer.from(GRINDER_SVG_B64,  'base64'));
+        fs.writeFileSync(path.join(iconsDir, 'Clarity.svg'),     Buffer.from(Clarity_SVG_B64,     'base64'));
+        fs.writeFileSync(path.join(iconsDir, 'Couch.svg'),    Buffer.from(Couch_SVG_B64,    'base64'));
+        fs.writeFileSync(path.join(iconsDir, 'Installer.svg'),  Buffer.from(Installer_SVG_B64,  'base64'));
         fs.writeFileSync(path.join(iconsDir, 'EmuLatte.svg'), Buffer.from(EMULATTE_SVG_B64, 'base64'));
         const files = fs.readdirSync(baseDir);
         // One answer to "which binary is the suite?", shared with the desktop descriptor so
@@ -3156,49 +3156,45 @@ ipcMain.handle('install-to-menu', () => {
         const suitePath    = desktopDescriptor.suiteExecutable(baseDir, host.selfExecutable());
         const emulatteFile = files.find(f => /^EmuLatte.*\.AppImage$/i.test(f));
 
-        // Remove stale pre-merge launchers (separate CNGM/GRINDER AppImages are gone).
-        for (const stale of ['cafe-neurotico-game-manager', 'cafe-neurotico-grinder'])
-            host.desktop.removeLauncher(appsDir, stale);
-
         const installed = [];
         if (suitePath) {
             try { fs.chmodSync(suitePath, '755'); } catch {}
             host.desktop.writeLauncher(appsDir, {
-                id: 'cafe-neurotico', name: 'Cafe Neurotico',
-                comment: 'Your game library — Manager, GRINDER and CREMA in one.',
-                exec: suitePath, icon: path.join(iconsDir, 'CNGM.svg'),
-                categories: ['Game', 'Utility'], wmClass: 'cafeneurotico',
+                id: 'clarity', name: 'Clarity',
+                comment: 'Your game library — Manager, Installer and Couch in one.',
+                exec: suitePath, icon: path.join(iconsDir, 'Clarity.svg'),
+                categories: ['Game', 'Utility'], wmClass: 'clarity',
             });
             host.desktop.writeLauncher(appsDir, {
-                id: 'cafe-neurotico-crema', name: 'CREMA (Fullscreen)',
-                comment: 'Cafe Neurotico in fullscreen, gamepad-first mode — made for the living room / TV.',
-                exec: suitePath, args: ['--crema'], icon: path.join(iconsDir, 'CREMA.svg'),
-                categories: ['Game'], wmClass: 'crema',
+                id: 'clarity-couch', name: 'Couch (Fullscreen)',
+                comment: 'Clarity in fullscreen, gamepad-first mode — made for the living room / TV.',
+                exec: suitePath, args: ['--couch'], icon: path.join(iconsDir, 'Couch.svg'),
+                categories: ['Game'], wmClass: 'couch',
                 keywords: ['couch', 'tv', 'living room', 'gamepad', 'controller', 'fullscreen',
-                           'big picture', 'bigpicture', 'cafe neurotico', 'crema'],
+                           'big picture', 'bigpicture', 'clarity'],
             });
-            installed.push('Cafe Neurotico', 'CREMA');
+            installed.push('Clarity', 'Couch');
         }
         if (emulatteFile) {
             const p = path.join(baseDir, emulatteFile);
             try { fs.chmodSync(p, '755'); } catch {}
             host.desktop.writeLauncher(appsDir, {
-                id: 'cafe-neurotico-emulatte', name: 'EmuLatte',
-                comment: 'Cafe Neurotico EmuLatte — ROM library manager.',
+                id: 'clarity-emulatte', name: 'EmuLatte',
+                comment: 'Clarity EmuLatte — ROM library manager.',
                 exec: p, icon: path.join(iconsDir, 'EmuLatte.svg'),
                 categories: ['Game', 'Emulator'],
             });
             installed.push('EmuLatte');
         }
         host.desktop.refreshMenu(appsDir);
-        if (installed.length === 0) return { success: false, message: 'CafeNeurotico.AppImage not found in the app folder.' };
+        if (installed.length === 0) return { success: false, message: 'Clarity.AppImage not found in the app folder.' };
         return { success: true, message: `Installed to menu: ${installed.join(' + ')}` };
     } catch(err) { return { success: false, message: err.message }; }
 });
 
 // Where a desktop shortcut goes is the host's business (see the platform backend).
 
-// Add a per-game launcher that opens the game straight through Cafe Neurotico (via the
+// Add a per-game launcher that opens the game straight through Clarity (via the
 // --game=<id> deeplink). targets = { menu, desktop }. Works on any XDG desktop (KDE/GNOME/…).
 ipcMain.handle('add-game-shortcut', (_, gameId, targets) => {
     try {
@@ -3223,18 +3219,18 @@ ipcMain.handle('add-game-shortcut', (_, gameId, targets) => {
         if (!iconPath) {
             try {
                 fs.mkdirSync(iconsDir, { recursive: true });
-                const f = path.join(iconsDir, 'CNGM.svg');
-                if (!fs.existsSync(f)) fs.writeFileSync(f, Buffer.from(CNGM_SVG_B64, 'base64'));
+                const f = path.join(iconsDir, 'Clarity.svg');
+                if (!fs.existsSync(f)) fs.writeFileSync(f, Buffer.from(Clarity_SVG_B64, 'base64'));
                 iconPath = f;
             } catch {}
         }
 
         const entry = {
-            id: `cafe-neurotico-game-${game.id}`,
+            id: `clarity-game-${game.id}`,
             name: String(game.Game || 'Game'),
-            comment: `Launch ${String(game.Game || 'Game')} via Cafe Neurotico`,
+            comment: `Launch ${String(game.Game || 'Game')} via Clarity`,
             exec: suitePath, args: [`--game=${game.id}`], icon: iconPath,
-            categories: ['Game'], wmClass: 'cafeneurotico',
+            categories: ['Game'], wmClass: 'clarity',
         };
 
         const wrote = [];
@@ -3253,21 +3249,21 @@ ipcMain.handle('add-game-shortcut', (_, gameId, targets) => {
     } catch (e) { return { ok: false, message: e.message }; }
 });
 
-// Opt-in: auto-start the CREMA (fullscreen) face on login (living-room / HTPC). Off by default.
+// Opt-in: auto-start the Couch (fullscreen) face on login (living-room / HTPC). Off by default.
 // State = presence of the XDG autostart entry; no separate setting to drift.
-const CREMA_AUTOSTART_ID = 'cafe-neurotico-crema';
-ipcMain.handle('get-crema-autostart', () => host.desktop.getAutostart(CREMA_AUTOSTART_ID));
-ipcMain.handle('set-crema-autostart', (_, enabled) => {
+const COUCH_AUTOSTART_ID = 'clarity-couch';
+ipcMain.handle('get-couch-autostart', () => host.desktop.getAutostart(COUCH_AUTOSTART_ID));
+ipcMain.handle('set-couch-autostart', (_, enabled) => {
     try {
-        if (!enabled) return host.desktop.setAutostart(CREMA_AUTOSTART_ID, false);
+        if (!enabled) return host.desktop.setAutostart(COUCH_AUTOSTART_ID, false);
         const suitePath = desktopDescriptor.suiteExecutable(baseDir, host.selfExecutable());
         const iconsDir = path.join(baseDir, 'icons');
-        try { fs.mkdirSync(iconsDir, { recursive: true }); fs.writeFileSync(path.join(iconsDir, 'CREMA.svg'), Buffer.from(CREMA_SVG_B64, 'base64')); } catch {}
-        return host.desktop.setAutostart(CREMA_AUTOSTART_ID, true, {
-            name: 'CREMA (Fullscreen)',
-            comment: 'Cafe Neurotico — auto-start in fullscreen / gamepad mode on login.',
-            exec: suitePath, args: ['--crema'], icon: path.join(iconsDir, 'CREMA.svg'),
-            categories: ['Game'], wmClass: 'crema',
+        try { fs.mkdirSync(iconsDir, { recursive: true }); fs.writeFileSync(path.join(iconsDir, 'Couch.svg'), Buffer.from(Couch_SVG_B64, 'base64')); } catch {}
+        return host.desktop.setAutostart(COUCH_AUTOSTART_ID, true, {
+            name: 'Couch (Fullscreen)',
+            comment: 'Clarity — auto-start in fullscreen / gamepad mode on login.',
+            exec: suitePath, args: ['--couch'], icon: path.join(iconsDir, 'Couch.svg'),
+            categories: ['Game'], wmClass: 'couch',
         });
     } catch (e) { return { ok: false, error: e.message }; }
 });
@@ -3393,8 +3389,8 @@ const GOG_CLIENT_ID     = '46899977096215655';
 const GOG_CLIENT_SECRET = '9d85c43b1482497dbbce61f6e4aa173a433796eeae2ca8c5f6129f2dc4de46d9';
 
 ipcMain.handle('fetch-achievements-now', async (_, appId) => {
-    const gdbPath = host.findGrinderDb(baseDir);
-    if (!gdbPath) return { ok: false, error: 'grinder_not_found' };
+    const gdbPath = host.findInstallerDb(baseDir);
+    if (!gdbPath) return { ok: false, error: 'installer_not_found' };
 
     let token, userId;
     try {
@@ -3431,7 +3427,7 @@ ipcMain.handle('fetch-achievements-now', async (_, appId) => {
     try {
         const res = await fetch(
             `https://gameplay.gog.com/clients/${appId}/users/${userId}/achievements`,
-            { headers: { 'Authorization': `Bearer ${token}`, 'User-Agent': 'CNGM/1.0' } }
+            { headers: { 'Authorization': `Bearer ${token}`, 'User-Agent': 'Clarity/1.0' } }
         );
         if (!res.ok) return { ok: false, error: `GOG API ${res.status}` };
         const data = await res.json();
@@ -3611,7 +3607,7 @@ ipcMain.handle('backup-zip', async (event) => {
     const win = BrowserWindow.getFocusedWindow();
     const { filePath } = await dialog.showSaveDialog(win, {
         title: 'Save ZIP Backup',
-        defaultPath: 'CafeNeurotico Suite.zip',
+        defaultPath: 'Clarity Suite.zip',
             filters: [{ name: 'ZIP Archives', extensions: ['zip'] }]
     });
     if (!filePath) return { success: false, canceled: true };
@@ -3700,7 +3696,7 @@ ipcMain.handle('notify', (_, { title, body, icon } = {}) => {
             const p = path.isAbsolute(icon) ? icon : path.join(baseDir, icon);
             if (fs.existsSync(p)) { const ni = nativeImage.createFromPath(p); if (!ni.isEmpty()) img = ni; }
         }
-        new Notification({ title: String(title || 'Cafe Neurotico'), body: String(body || ''), icon: img }).show();
+        new Notification({ title: String(title || 'Clarity'), body: String(body || ''), icon: img }).show();
         return { ok: true };
     } catch (e) { return { ok: false, error: e.message }; }
 });
@@ -3731,38 +3727,38 @@ ipcMain.handle('delete-game', (event, id) => {
 ipcMain.on('launch-game', (event, cmd, launchArgs, executable) => {
     if (!cmd) return;
 
-    // GOG/Epic via GRINDER, launched IN-PROCESS (cmd carries GRINDER's game id).
-    // This is the path used by games with a GrinderGameId (the common case).
+    // GOG/Epic via Installer, launched IN-PROCESS (cmd carries Installer's game id).
+    // This is the path used by games with a InstallerGameId (the common case).
     // launchArgs, when present, is a one-off override chosen at the moment of pressing
     // Play — the Doom a mod runs on — and is deliberately not written back.
-    const gLaunch = cmd.match(/^grinder:\/\/(?:launch\/)?(.+)$/);
+    const gLaunch = cmd.match(/^installer:\/\/(?:launch\/)?(.+)$/);
     if (gLaunch) {
         const gid = gLaunch[1];
-        if (ensureGrinderEngine()) {
+        if (ensureInstallerEngine()) {
             _ensureGdxDriveMapping(gid);
-            grinderEngine.launchGame(gid, { ...(launchArgs !== undefined ? { launchArgs } : {}), ...(executable ? { executable } : {}) })
+            installerEngine.launchGame(gid, { ...(launchArgs !== undefined ? { launchArgs } : {}), ...(executable ? { executable } : {}) })
                 .then(r => console.log('[launch-game] launched via', r?.method))
-                .catch(e => { console.error('[launch-game] grinder launch failed:', e.message); reportLaunchThrow(gid, e); });
+                .catch(e => { console.error('[launch-game] installer launch failed:', e.message); reportLaunchThrow(gid, e); });
         } else {
-            spawnGrinder(['launch', gid]); // fallback if grinder DB not found
+            spawnInstaller(['launch', gid]); // fallback if installer DB not found
         }
         return;
     }
 
-    // GOG/Epic via GRINDER (grinder:// cmd → resolve id via getGrinderMap), in-process
-    const grinderMatch = cmd.match(/grinder:\/\/launch\/(epic|gog)\/([^"\s]+)/i);
-    if (grinderMatch) {
-        const appId = grinderMatch[2];
-        const gMap  = getGrinderMap();
+    // GOG/Epic via Installer (installer:// cmd → resolve id via getInstallerMap), in-process
+    const installerMatch = cmd.match(/installer:\/\/launch\/(epic|gog)\/([^"\s]+)/i);
+    if (installerMatch) {
+        const appId = installerMatch[2];
+        const gMap  = getInstallerMap();
         const gId   = gMap.get(appId);
         if (gId) {
             // Launch in-process via the shared engine (no AppImage self-spawn).
-            if (ensureGrinderEngine()) {
-                grinderEngine.launchGame(gId)
+            if (ensureInstallerEngine()) {
+                installerEngine.launchGame(gId)
                     .then(r => console.log('[launch-game] launched via', r?.method))
-                    .catch(e => { console.error('[launch-game] grinder launch failed:', e.message); reportLaunchThrow(gId, e); });
+                    .catch(e => { console.error('[launch-game] installer launch failed:', e.message); reportLaunchThrow(gId, e); });
             } else {
-                spawnGrinder(['launch', gId]); // fallback if grinder DB not found
+                spawnInstaller(['launch', gId]); // fallback if installer DB not found
             }
             return;
         }
@@ -3927,29 +3923,29 @@ ipcMain.handle('launch-pico8-bbs', (e, accent = '#ff77a8') => {
     const injectUI = () => {
         _bbsWin.webContents.executeJavaScript(`
         (function(){
-            if (document.getElementById('cngm-p8-style')) return;
+            if (document.getElementById('clarity-p8-style')) return;
             const s = document.createElement('style');
-            s.id = 'cngm-p8-style';
+            s.id = 'clarity-p8-style';
             s.textContent = \`
                 ::-webkit-scrollbar{width:8px;height:8px}
                 ::-webkit-scrollbar-track{background:#0d0d0d}
                 ::-webkit-scrollbar-thumb{background:${a}55;border-radius:4px}
                 ::-webkit-scrollbar-thumb:hover{background:${a}aa}
-                #cngm-titlebar{position:fixed;top:0;left:0;right:0;height:38px;background:#0d0d0d;border-bottom:1px solid ${a}33;z-index:99999;display:flex;align-items:center;-webkit-app-region:drag;user-select:none}
-                #cngm-titlebar .cngm-tb-brand{padding:0 14px;font-family:monospace;font-size:13px;font-weight:900;letter-spacing:3px;color:${a};flex-shrink:0}
-                #cngm-titlebar .cngm-tb-hint{font-family:monospace;font-size:10px;color:#444;flex:1;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
-                #cngm-titlebar .cngm-tb-btns{display:flex;-webkit-app-region:no-drag;flex-shrink:0}
-                #cngm-titlebar .cngm-tb-btns button{width:46px;height:38px;border:none;background:transparent;color:#666;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background 0.15s,color 0.15s}
-                #cngm-titlebar .cngm-tb-btns button:hover{background:rgba(255,255,255,0.08);color:#ccc}
-                #cngm-titlebar .cngm-tb-btns .tb-close:hover{background:#c0392b;color:#fff}
+                #clarity-titlebar{position:fixed;top:0;left:0;right:0;height:38px;background:#0d0d0d;border-bottom:1px solid ${a}33;z-index:99999;display:flex;align-items:center;-webkit-app-region:drag;user-select:none}
+                #clarity-titlebar .clarity-tb-brand{padding:0 14px;font-family:monospace;font-size:13px;font-weight:900;letter-spacing:3px;color:${a};flex-shrink:0}
+                #clarity-titlebar .clarity-tb-hint{font-family:monospace;font-size:10px;color:#444;flex:1;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+                #clarity-titlebar .clarity-tb-btns{display:flex;-webkit-app-region:no-drag;flex-shrink:0}
+                #clarity-titlebar .clarity-tb-btns button{width:46px;height:38px;border:none;background:transparent;color:#666;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background 0.15s,color 0.15s}
+                #clarity-titlebar .clarity-tb-btns button:hover{background:rgba(255,255,255,0.08);color:#ccc}
+                #clarity-titlebar .clarity-tb-btns .tb-close:hover{background:#c0392b;color:#fff}
             \`;
             document.head.appendChild(s);
             const bar = document.createElement('div');
-            bar.id = 'cngm-titlebar';
+            bar.id = 'clarity-titlebar';
             bar.innerHTML = \`
-                <div class="cngm-tb-brand">CNGM — PICO-8 BBS</div>
-                <div class="cngm-tb-hint">Right-click a cart image · click CART · or click any .p8.png link to save to your library</div>
-                <div class="cngm-tb-btns">
+                <div class="clarity-tb-brand">Clarity — PICO-8 BBS</div>
+                <div class="clarity-tb-hint">Right-click a cart image · click CART · or click any .p8.png link to save to your library</div>
+                <div class="clarity-tb-btns">
                     <button class="tb-close" onclick="window.close()" title="Close">&#x2715;</button>
                 </div>
             \`;
@@ -4141,7 +4137,7 @@ async function doItchSync() {
         for (const { url, gameId } of coverTasks) {
             (async () => {
                 try {
-                    const res = await session.defaultSession.fetch(url, { headers: { 'User-Agent': 'CNGM/1.0' } });
+                    const res = await session.defaultSession.fetch(url, { headers: { 'User-Agent': 'Clarity/1.0' } });
                     const buf = Buffer.from(await res.arrayBuffer());
                     const file = `${gameId}_itch_cover.png`;
                     fs.writeFileSync(path.join(imDir, file), buf);
@@ -4185,13 +4181,13 @@ ipcMain.handle('open-store-browser', (e, store, colors) => {
 
     const injectTitlebar = () => {
         const script = `(function(){
-            if(document.getElementById('cngm-sb'))return;
+            if(document.getElementById('clarity-sb'))return;
             var bg=${JSON.stringify(bg)},bgMenu=${JSON.stringify(bgMenu)},accent=${JSON.stringify(accent)},textDim=${JSON.stringify(textDim)},borderSolid=${JSON.stringify(borderSolid)},label=${JSON.stringify(cfg.label)};
             var st=document.createElement('style');
             st.textContent='::-webkit-scrollbar{width:8px;height:8px}::-webkit-scrollbar-track{background:'+bg+'}::-webkit-scrollbar-thumb{background:'+accent+';border-radius:4px}::-webkit-scrollbar-thumb:hover{opacity:.8}body{margin-top:38px!important}html{padding-top:0!important}';
             document.head.appendChild(st);
             var tb=document.createElement('div');
-            tb.id='cngm-sb';
+            tb.id='clarity-sb';
             tb.style.cssText='position:fixed;top:0;left:0;right:0;height:38px;background:'+bgMenu+';border-bottom:1px solid '+borderSolid+';display:flex;align-items:center;justify-content:space-between;z-index:2147483647;-webkit-app-region:drag;font-family:Raleway,sans-serif;box-sizing:border-box;';
             var brand=document.createElement('div');
             brand.style.cssText='padding:0 16px;font-size:10px;font-weight:900;color:'+textDim+';letter-spacing:3px;';
@@ -4212,7 +4208,7 @@ ipcMain.handle('open-store-browser', (e, store, colors) => {
                 var sels=['header','nav','[role="banner"]','[class*="header"]','[class*="Header"]','[class*="navbar"]','[class*="topbar"]','[class*="top-bar"]','[class*="nav-bar"]','[class*="navigation"]'];
                 sels.forEach(function(sel){
                     try{document.querySelectorAll(sel).forEach(function(el){
-                        if(el.id==='cngm-sb')return;
+                        if(el.id==='clarity-sb')return;
                         var s=window.getComputedStyle(el);
                         if(s.position==='fixed'){var t=parseFloat(s.top)||0;if(t<38)el.style.setProperty('top',(t+38)+'px','important');}
                     });}catch(e){}
@@ -4357,7 +4353,7 @@ ipcMain.handle('sync-steam', async (event, steamId, apiKey) => {
             // Only rows that are genuinely Steam-launched games — never a manual/physical
             // entry that merely borrows a SteamAppID for artwork scraping.
             const steamRows = db.prepare(
-                "SELECT id, Store, LaunchCommand, LaunchCommands, SteamAppID, GrinderGameId FROM games WHERE LaunchCommand LIKE '%steam://rungameid%' OR LaunchCommands LIKE '%steam://rungameid%'"
+                "SELECT id, Store, LaunchCommand, LaunchCommands, SteamAppID, InstallerGameId FROM games WHERE LaunchCommand LIKE '%steam://rungameid%' OR LaunchCommands LIKE '%steam://rungameid%'"
             ).all();
             db.transaction(() => {
                 for (const row of steamRows) {
@@ -4391,10 +4387,10 @@ ipcMain.handle('sync-gog', async () => {
         gogWin.loadURL('https://www.gog.com/');
         gogWin.webContents.on('did-finish-load', () => {
             gogWin.webContents.executeJavaScript(`
-            if (!document.getElementById('cngm-gog-banner')) {
+            if (!document.getElementById('clarity-gog-banner')) {
                 const banner = document.createElement('div');
-                banner.id = 'cngm-gog-banner';
-                banner.innerHTML = "<strong style='font-size:16px;'>Cafe Neurotico:</strong> Log in to your GOG account using the menu at the top, then <u>CLOSE THIS WINDOW</u> to fetch your games!";
+                banner.id = 'clarity-gog-banner';
+                banner.innerHTML = "<strong style='font-size:16px;'>Clarity:</strong> Log in to your GOG account using the menu at the top, then <u>CLOSE THIS WINDOW</u> to fetch your games!";
                 banner.style.cssText = "position: fixed; bottom: 0; left: 0; width: 100%; background: #673ab7; color: white; text-align: center; padding: 15px; z-index: 9999999; box-shadow: 0 -4px 6px rgba(0,0,0,0.3); font-family: sans-serif;";
                 document.body.appendChild(banner);
             }

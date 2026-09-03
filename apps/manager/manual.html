@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CNGM System Manual</title>
+    <title>Clarity System Manual</title>
     <style>
         /* Raleway bundled locally (assets/fonts/) — no network dependency. Italic is synthesized. */
         @font-face { font-family: 'Raleway'; src: url('assets/fonts/Raleway-Regular.ttf') format('truetype'); font-weight: 400; }
@@ -13,7 +13,7 @@
     <script>
         (function() {
             try {
-                const cached = JSON.parse(localStorage.getItem('cngm_theme_cache') || '{}');
+                const cached = JSON.parse(localStorage.getItem('clarity_theme_cache') || '{}');
                 if (Object.keys(cached).length) {
                     const root = document.documentElement;
                     for (const [key, val] of Object.entries(cached)) {
@@ -113,7 +113,7 @@
 </head>
 <body>
     <div id="manual-titlebar">
-        <div class="titlebar-brand">CAFE NEUROTICO SYSTEM MANUAL</div>
+        <div class="titlebar-brand">CLARITY SYSTEM MANUAL</div>
         <div class="titlebar-controls">
             <button class="win-btn win-close" onclick="window.close()" title="Close">&#x2715;</button>
         </div>
@@ -141,7 +141,7 @@
             <button class="manual-nav-btn" data-target="man-10">10. Genres, Playlists &amp; Hidden</button>
             <button class="manual-nav-btn" data-target="man-11">11. Control Panel</button>
 
-            <div class="nav-group-label">CREMA</div>
+            <div class="nav-group-label">Couch</div>
             <button class="manual-nav-btn" data-target="man-12">12. Overview &amp; Setup</button>
             <button class="manual-nav-btn" data-target="man-13">13. The Home Screen</button>
             <button class="manual-nav-btn" data-target="man-14">14. Browsing the Library</button>
@@ -151,7 +151,7 @@
             <button class="manual-nav-btn" data-target="man-18">18. Menus &amp; Settings</button>
 
             <div class="nav-group-label">Engine &amp; Data</div>
-            <button class="manual-nav-btn" data-target="man-19">19. GRINDER</button>
+            <button class="manual-nav-btn" data-target="man-19">19. Installer</button>
             <button class="manual-nav-btn" data-target="man-19b">19b. Fan Games &amp; Ports</button>
             <button class="manual-nav-btn" data-target="man-20">20. Save Games</button>
             <button class="manual-nav-btn" data-target="man-21">21. Your Data &amp; Backups</button>
@@ -172,28 +172,28 @@
                 <p>And most importantly, I wanted it to be completely <strong>PORTABLE</strong> and <strong>BACKUPABLE</strong>.</p>
 
                 <p class="manual-box-title" style="margin-top: 18px;">The Local-Only Philosophy</p>
-                <p>CNGM is built with a strict <strong>Offline-First, Local-Only</strong> philosophy for your media. Once you fetch artwork, covers, logos, or download a trailer, it is saved securely into your local <code>GameManagerConfig</code> folder.</p>
+                <p>Clarity is built with a strict <strong>Offline-First, Local-Only</strong> philosophy for your media. Once you fetch artwork, covers, logos, or download a trailer, it is saved securely into your local <code>GameManagerConfig</code> folder.</p>
                 <p>This means your library will never suffer from &ldquo;link rot&rdquo; or broken web images if a storefront changes its API. It also means you can pack up the entire folder, put it on a thumb drive, and take your flawlessly curated library to another PC entirely.</p>
 
                 <p class="manual-box-title" style="margin-top: 18px;">The Launch Command</p>
                 <p>The crucial feature. Inside the Edit Details screen, there is a field where you can put a command to launch any game. Anything goes &mdash; if you can run it on Linux, you can run it from here.</p>
-                <p><strong>If you imported your games from Steam, or from GOG and Epic through GRINDER, the launch commands are filled in automatically, even if the game is not installed.</strong> Clicking PLAY will prompt you to install if needed.</p>
+                <p><strong>If you imported your games from Steam, or from GOG and Epic through Installer, the launch commands are filled in automatically, even if the game is not installed.</strong> Clicking PLAY will prompt you to install if needed.</p>
             </div>
 
             <!-- ====== SECTION 2 ====== -->
             <h2 id="man-2">2. The Suite at a Glance</h2>
-            <p>Cafe Neurotico is <strong>one AppImage with three faces</strong>. There is nothing to install and nothing extra to download &mdash; every part of the suite ships inside the single file.</p>
+            <p>Clarity is <strong>one AppImage with three faces</strong>. There is nothing to install and nothing extra to download &mdash; every part of the suite ships inside the single file.</p>
             <div class="manual-box">
                 <p class="manual-box-title">The Three Faces</p>
                 <ul style="margin:0;">
                     <li><strong>The Manager</strong> &mdash; the desktop face. Import, organize, scrape, edit and launch your library with a mouse and keyboard. This is where you are right now.</li>
-                    <li><strong>CREMA</strong> &mdash; the fullscreen, gamepad-first face for the living room. Same library, same artwork, same playlists &mdash; zero configuration, always in sync. Launch it with the coffee-cup button in the titlebar or run the AppImage with <code>--crema</code>.</li>
-                    <li><strong>GRINDER</strong> &mdash; the GOG &amp; Epic engine. It signs in to your accounts, downloads games, configures Proton and launches them. It works silently inside the other two faces and has <strong>no window of its own</strong>: everything it used to show is in the Manager.</li>
+                    <li><strong>Couch</strong> &mdash; the fullscreen, gamepad-first face for the living room. Same library, same artwork, same playlists &mdash; zero configuration, always in sync. Launch it with the Couch button in the titlebar or run the AppImage with <code>--couch</code>.</li>
+                    <li><strong>Installer</strong> &mdash; the GOG &amp; Epic engine. It signs in to your accounts, downloads games, configures Proton and launches them. It works silently inside the other two faces and has <strong>no window of its own</strong>: everything it used to show is in the Manager.</li>
                 </ul>
             </div>
             <p><strong>EmuLatte</strong>, the ROM library manager, is a separate app &mdash; but the suite detects <code>EmuLatte.AppImage</code> sitting in the same folder and integrates it into your app menu and sidebar.</p>
-            <p>Your ROM library stays in EmuLatte; the suite does not swallow it. You decide which games cross over by <strong>exporting them to Cafe Neurotico from inside EmuLatte</strong> &mdash; only those appear here, as ordinary library entries filed under <strong>Emulation</strong>, which play, scrape and join playlists like any other game. Keep the whole collection in EmuLatte and promote just the ones you want on the shelf.</p>
-            <p>All three faces read and write the <strong>same library database</strong>. Mark a favourite on the couch and it is a favourite on the desktop. Install a game from CREMA and the Manager knows immediately.</p>
+            <p>Your ROM library stays in EmuLatte; the suite does not swallow it. You decide which games cross over by <strong>exporting them to Clarity from inside EmuLatte</strong> &mdash; only those appear here, as ordinary library entries filed under <strong>Emulation</strong>, which play, scrape and join playlists like any other game. Keep the whole collection in EmuLatte and promote just the ones you want on the shelf.</p>
+            <p>All three faces read and write the <strong>same library database</strong>. Mark a favourite on the couch and it is a favourite on the desktop. Install a game from Couch and the Manager knows immediately.</p>
 
             <!-- ====== SECTION 3 ====== -->
             <h2 id="man-3">3. Quick Start</h2>
@@ -201,7 +201,7 @@
             <ol>
                 <li><strong>Import your games.</strong> Steam: paste your free API key and SteamID64, hit <em>Fetch Steam Library</em>. GOG &amp; Epic: press <em>Sign in</em> right here &mdash; a store login window opens, you log in, and it closes itself. After that, new purchases import automatically every time you press <em>Refresh Library</em>. Flatpak, PICO-8 and itch.io games are picked up automatically when you open their filters.</li>
                 <li><strong>Fetch artwork &amp; metadata.</strong> One button scrapes covers, hero art, logos, descriptions, HowLongToBeat and ProtonDB data for everything you just imported.</li>
-                <li><strong>Add to your app menu.</strong> One click registers Cafe Neurotico and CREMA (and EmuLatte, if detected) in GNOME, KDE or any desktop launcher, with proper icons.</li>
+                <li><strong>Add to your app menu.</strong> One click registers Clarity and Couch (and EmuLatte, if detected) in GNOME, KDE or any desktop launcher, with proper icons.</li>
             </ol>
             <div class="tip-box">
                 <p><strong>Bring it back anytime:</strong> the Welcome screen lives in <strong>Menu &rarr; System</strong>. Nothing in it is exclusive &mdash; every action also exists in Connect and the Control Panel.</p>
@@ -213,7 +213,7 @@
                 <li><code>images/</code> &mdash; covers, hero art, logos, icons, screenshots</li>
                 <li><code>trailers/</code> &mdash; locally downloaded MP4 trailers</li>
             </ul>
-            <p>GRINDER keeps its own data (store logins, install records) in <code>~/.config/grinder/</code> &mdash; per-machine on purpose, since installed games differ between computers.</p>
+            <p>Installer keeps its own data (store logins, install records) in <code>~/.config/installer/</code> &mdash; per-machine on purpose, since installed games differ between computers.</p>
 
             <!-- ====== SECTION 4 ====== -->
             <h2 id="man-4">4. The Manager &mdash; Importing Your Games</h2>
@@ -228,7 +228,7 @@
             </ul>
             <h3>GOG &amp; Epic</h3>
             <ul>
-                <li><strong>Sign in without leaving the Manager.</strong> The Welcome screen and Connect both have GOG and Epic sign-in buttons: press one, the store&rsquo;s own login page opens in a window, and it closes itself the moment you&rsquo;re authenticated. You never have to open GRINDER for this &mdash; it&rsquo;s tucked away behind <em>Advanced</em> now.</li>
+                <li><strong>Sign in without leaving the Manager.</strong> The Welcome screen and Connect both have GOG and Epic sign-in buttons: press one, the store&rsquo;s own login page opens in a window, and it closes itself the moment you&rsquo;re authenticated. You never have to open Installer for this &mdash; it&rsquo;s tucked away behind <em>Advanced</em> now.</li>
                 <li>From then on, <strong>Refresh Library</strong> pulls your full owned list from both stores automatically &mdash; buy a game, hit refresh, it appears (as &ldquo;not installed&rdquo;, ready to install in one click).</li>
                 <li>DLC and soundtracks are filtered out automatically; a GOG/Epic copy of a game you also own on Steam merges into one entry with a launcher picker.</li>
             </ul>
@@ -272,7 +272,7 @@
             <ul>
                 <li><strong>Hero art</strong> with the game&rsquo;s logo, store icons and the store/category logo in the corner.</li>
                 <li><strong>Action row:</strong> Favourite, Want to Play, Add to Playlist (and Remove, when it&rsquo;s in one), <strong>Hide</strong> (eye icon &mdash; removes the game from every view; manage hidden games in the Control Panel), Open in Steam, Uninstall, SPLORE (PICO-8), Watch Trailer, and Edit Details.</li>
-                <li><strong>Manuals</strong> (book icon) &mdash; some games, RPGs especially, still expect you to read something, and the file is usually already on your disk. Press the button and Cafe Neurotico shows what it found:
+                <li><strong>Manuals</strong> (book icon) &mdash; some games, RPGs especially, still expect you to read something, and the file is usually already on your disk. Press the button and Clarity shows what it found:
                   <ul>
                     <li><strong>In the game&rsquo;s own folder.</strong> GOG ships manuals, cluebooks and reference cards inside the game and never mentions them. Better still, its manifest <em>names</em> them &mdash; so Realms of Arkania offers you &ldquo;Manual&rdquo;, &ldquo;Cluebook&rdquo; and &ldquo;Password reference card&rdquo;, not three filenames to guess between. One press adds any of them.</li>
                     <li><strong>From GOG.</strong> For GOG games it also asks the store what it has: the scanned originals, sold alongside the game. Downloading unpacks the archive and adds every document inside &mdash; often more than one.</li>
@@ -281,7 +281,7 @@
                   A game can hold <strong>as many manuals as it needs</strong>. With one attached the button just opens it; with several it lets you choose. Reading happens in its own window you can drag to a second monitor and keep open while you play, and the icon turns accent-coloured for games that have something to read.
                   <br><strong>Remove</strong> only unlinks a manual &mdash; a file of yours, or one GOG installed, is never deleted. The single exception is a manual this app downloaded itself, which it does own and does clean up.</li>
                 <li><strong>Browse Local Files</strong> (folder icon) &mdash; opens the game&rsquo;s install folder in your file manager. It works out where the game actually lives for Steam, GOG, Epic and even emulator entries (following the ROM path out of the launch command), and simply doesn&rsquo;t appear for games that aren&rsquo;t installed.</li>
-                <li><strong>Add to Desktop</strong> &mdash; writes a launcher for that one game, using its own artwork as the icon. Double-click it and Cafe Neurotico opens straight on that game (or launches it, if you press Play). You&rsquo;re asked each time whether it should go in the <strong>app menu</strong>, on the <strong>desktop</strong>, or both.</li>
+                <li><strong>Add to Desktop</strong> &mdash; writes a launcher for that one game, using its own artwork as the icon. Double-click it and Clarity opens straight on that game (or launches it, if you press Play). You&rsquo;re asked each time whether it should go in the <strong>app menu</strong>, on the <strong>desktop</strong>, or both.</li>
                 <li><strong>DLC panel</strong> &mdash; installed GOG games list their owned DLC, with badges for what&rsquo;s already on disk and a one-press <em>Install all DLCs</em>.</li>
                 <li><strong>Save Manager</strong> &mdash; finds, backs up and restores your save games. See section 20.</li>
                 <li><strong>Floating Play/Install button</strong>, always visible at the bottom right.</li>
@@ -297,15 +297,15 @@
             <h3>How Installing Works</h3>
             <ul>
                 <li><strong>Steam games</strong> install through the Steam client (<code>steam://install</code>) &mdash; Steam opens and takes over.</li>
-                <li><strong>GOG &amp; Epic games</strong> install <strong>in-process</strong> through the built-in GRINDER engine: pick a folder, see the download size and your free disk space up front, and watch live progress. No external window.</li>
+                <li><strong>GOG &amp; Epic games</strong> install <strong>in-process</strong> through the built-in Installer engine: pick a folder, see the download size and your free disk space up front, and watch live progress. No external window.</li>
                 <li><strong>Linux or Windows build?</strong> For the GOG games that ship both, the install dialog lets you choose &mdash; native Linux, or the Windows build run through Proton. Your choice is remembered per game.</li>
                 <li><strong>Cancel</strong> really cancels: the whole download process tree is stopped, not just the parent, so a cancelled install doesn&rsquo;t sit there half-finished.</li>
                 <li><strong>Uninstall</strong> (gamepage action row) removes the game files and its Wine prefix.</li>
                 <li><strong>Games you own on more than one store</strong> keep one entry with several launchers. Installing it anywhere counts as installed, and pressing Play asks which one you meant &mdash; the copies already on disk offer <em>Play</em>, the others offer to install first, so you never get a silent failure.</li>
-                <li><strong>Where games land:</strong> the install dialog starts at your <strong>Game Install Folder</strong> &mdash; <code>~/Games/CafeNeurotico</code> unless you change it (Control Panel &rarr; Library). <strong>Change&hellip;</strong> picks a different folder for that one game without touching the default.</li>
+                <li><strong>Where games land:</strong> the install dialog starts at your <strong>Game Install Folder</strong> &mdash; <code>~/Games/Clarity</code> unless you change it (Control Panel &rarr; Library). <strong>Change&hellip;</strong> picks a different folder for that one game without touching the default.</li>
             </ul>
             <h3>Windows Games &amp; Proton</h3>
-            <p>GOG and Epic games built for Windows run through <strong>Proton</strong>, a compatibility layer. Cafe Neurotico finds Proton on your machine by itself &mdash; Steam&rsquo;s own builds, GE-Proton, anything installed by ProtonUp-Qt &mdash; no matter what the folder is called, and picks the best one available.</p>
+            <p>GOG and Epic games built for Windows run through <strong>Proton</strong>, a compatibility layer. Clarity finds Proton on your machine by itself &mdash; Steam&rsquo;s own builds, GE-Proton, anything installed by ProtonUp-Qt &mdash; no matter what the folder is called, and picks the best one available.</p>
             <p>If you have none, the first Windows game you launch says so and offers to <strong>install GE-Proton for you</strong>: one click, a progress bar, roughly a 400&nbsp;MB one-time download that every Windows game then shares. If you already have several builds, the same dialog lets you choose which one to use.</p>
             <div class="tip-box"><p><strong>The first Windows game takes a few minutes to appear.</strong> Before it can start, a compatibility runtime is downloaded once for the whole machine, and each game gets its own small Windows environment built the first time you play it. The Now Playing card shows what stage it&rsquo;s at, with the download counting up &mdash; it isn&rsquo;t stuck. Every launch after that is immediate.</p></div>
             <h3>The Download Manager</h3>
@@ -325,7 +325,7 @@
                 <li><strong>Batch Fetch</strong> (Control Panel &rarr; Library, or the Welcome screen) &mdash; sweeps every game that&rsquo;s missing data. After a Refresh Library, you&rsquo;re offered a scrape of just the new arrivals.</li>
                 <li><strong>SteamGridDB</strong> (free key at <code>steamgriddb.com</code>) &mdash; browse fan-made grids, heroes and logos and pick your favourite per game.</li>
                 <li><strong>IGDB</strong> (free Twitch dev credentials) &mdash; richer metadata and the fallback for non-Steam games.</li>
-                <li><strong>Trailers</strong> &mdash; search YouTube from inside the app and download a local MP4; it plays on the gamepage and in CREMA.</li>
+                <li><strong>Trailers</strong> &mdash; search YouTube from inside the app and download a local MP4; it plays on the gamepage and in Couch.</li>
             </ul>
             <div class="warn-box"><p><strong>Your art is safe:</strong> re-scraping never overwrites artwork you set manually.</p></div>
 
@@ -346,7 +346,7 @@
             <!-- ====== SECTION 10 ====== -->
             <h2 id="man-10">10. Genres, Playlists, Hidden Games &amp; Free-to-Play</h2>
             <h3>Genres</h3>
-            <p>Stores tell you where a game came from; genres tell you what it <em>is</em>. Cafe Neurotico sorts your library into real genres &mdash; not &ldquo;Action, Adventure, Indie&rdquo; but <strong>ARPG</strong>, <strong>CRPG</strong>, <strong>FPS</strong>, <strong>Metroidvania</strong>, <strong>Soulslike</strong>, <strong>Shmup</strong>, <strong>Survival Horror</strong>, <strong>Point &amp; Click</strong> and forty more.</p>
+            <p>Stores tell you where a game came from; genres tell you what it <em>is</em>. Clarity sorts your library into real genres &mdash; not &ldquo;Action, Adventure, Indie&rdquo; but <strong>ARPG</strong>, <strong>CRPG</strong>, <strong>FPS</strong>, <strong>Metroidvania</strong>, <strong>Soulslike</strong>, <strong>Shmup</strong>, <strong>Survival Horror</strong>, <strong>Point &amp; Click</strong> and forty more.</p>
             <ul>
                 <li><strong>Detect Genres</strong> (Control Panel &rarr; Tools) reads the tags <em>players</em> voted on for each game, which is the only source that can tell a Diablo-like from a Baldur&rsquo;s Gate-like. Games your stores don&rsquo;t know are looked up on IGDB instead. The card shows how much of your library is sorted.</li>
                 <li>It works through your games about one a second, so a large library takes a few minutes. <strong>You can close the window and keep playing</strong> &mdash; progress carries on in the corner toast &mdash; and stopping it keeps everything already sorted.</li>
@@ -360,10 +360,10 @@
                 <li>Create from the rail, the search-row dropdown, or any game&rsquo;s + Playlist button &mdash; that picker has a <strong>&ldquo;+ New playlist&hellip;&rdquo;</strong> box built in, so you can invent a playlist and drop the game into it in one go, even if you had none to begin with. Order is yours; games can live in many playlists.</li>
                 <li><strong>Playlists that fill themselves.</strong> When you create one, pick a genre under <em>Fill it automatically</em> and the playlist maintains its own membership &mdash; it tells you how many games it collects before you commit, and every future game that fits simply appears in it. These are marked <span class="key">&#10022;</span>; the games are decided by the rule, so there is no hand-editing to do.</li>
                 <li><strong>Recently Imported</strong> is an automatic feed of your newest arrivals (size configurable in Behavior; newest always on top).</li>
-                <li>Playlists appear in CREMA as first-class categories, marked with <code>&#8801;</code>. Changes sync both ways instantly.</li>
+                <li>Playlists appear in Couch as first-class categories, marked with <code>&#8801;</code>. Changes sync both ways instantly.</li>
             </ul>
             <h3>Hidden Games</h3>
-            <p>Hide anything via the Manager gamepage&rsquo;s eye button &mdash; it vanishes from every view in both faces, instantly. Unhide from <strong>Control Panel &rarr; Behavior &rarr; Hidden Games</strong>. <strong>Hiding and unhiding are the Manager&rsquo;s job:</strong> CREMA can neither hide a game nor bring one back, because a couch face that could hide a game without being able to recover it is a one-way door. (Older builds let CREMA&rsquo;s menu), each game individually.</p>
+            <p>Hide anything via the Manager gamepage&rsquo;s eye button &mdash; it vanishes from every view in both faces, instantly. Unhide from <strong>Control Panel &rarr; Behavior &rarr; Hidden Games</strong>. <strong>Hiding and unhiding are the Manager&rsquo;s job:</strong> Couch can neither hide a game nor bring one back, because a couch face that could hide a game without being able to recover it is a one-way door. (Older builds let Couch&rsquo;s menu), each game individually.</p>
             <h3>Free-to-Play</h3>
             <p>Steam free-to-play titles you&rsquo;ve played are imported and tagged with a green <span class="key">FREE</span> pill (gallery, list and gamepage). Click any pill &mdash; or use Control Panel &rarr; Behavior &mdash; to show or hide them all, or hide just that one game.</p>
 
@@ -374,28 +374,28 @@
                 <li><strong>Appearance</strong> &mdash; Theme Selection (<strong>93 themes in 10 families</strong>, from Catppuccin to Game Boy to a shelf of retro operating systems), <strong>Interface Font</strong> (Poppins, Sora, Inter, Fraunces, Chicago or PxPlus IBM VGA8 &mdash; all bundled, nothing fetched from the web), UI scale (50&ndash;150%), Sharp/Round corners, Ken Burns on/off.</li>
                 <li><strong>Library</strong> &mdash; Update Library (full store re-sync), Add Custom Game, batch scraping, <strong>Game Install Folder</strong>, <strong>Manage Storage</strong> and <strong>Scan for Updates</strong> (all below).</li>
                 <li><strong>Behavior</strong> &mdash; Gaming History, Recently Imported size, PICO-8 / Free-to-Play visibility, Hidden Games manager, desktop &amp; phone Notifications.</li>
-                <li><strong>Connections</strong> &mdash; Steam, GRINDER (GOG/Epic), itch.io, SteamGridDB, IGDB, PICO-8 binary.</li>
-                <li><strong>System</strong> &mdash; full <strong>Backup ZIP</strong> (library + artwork + trailers <em>+ your RetroArch save states</em>), Add to Application Menu, CREMA autostart on login, the Welcome screen.</li>
+                <li><strong>Connections</strong> &mdash; Steam, Installer (GOG/Epic), itch.io, SteamGridDB, IGDB, PICO-8 binary.</li>
+                <li><strong>System</strong> &mdash; full <strong>Backup ZIP</strong> (library + artwork + trailers <em>+ your RetroArch save states</em>), Add to Application Menu, Couch autostart on login, the Welcome screen.</li>
                 <li><strong>Cleanup</strong> &mdash; clear orphaned images, gaming history, or the nuclear options. Read twice, click once.</li>
             </ul>
             <h3>Themes &amp; the Interface Font</h3>
-            <p>All <strong>93 themes are shared by all three faces</strong> &mdash; the Manager, CREMA and GRINDER draw from the same set, so a look you like on the desktop is the same look on the TV. The families are Originals &amp; System, BrewBalance, Light &amp; Minimal, Gaming Legends, Aesthetics, Linux Ricing, Sci-Fi Universes, Horror Realm, PSIII Colors and <strong>Systems</strong> &mdash; twenty faithful retro-OS palettes (MS-DOS, Commodore 64, Windows 3.1 / 95 / XP, Amiga Workbench, BeOS, NeXTSTEP, ZX Spectrum, Atari ST, classic Mac OS, OS/2 Warp, IBM 3270, Solaris CDE, RISC OS, GEOS, amber and green CRT, Teletext). Each Systems theme brings its own era typeface along for the ride.</p>
+            <p>All <strong>93 themes are shared by all three faces</strong> &mdash; the Manager, Couch and Installer draw from the same set, so a look you like on the desktop is the same look on the TV. The families are Originals &amp; System, BrewBalance, Light &amp; Minimal, Gaming Legends, Aesthetics, Linux Ricing, Sci-Fi Universes, Horror Realm, PSIII Colors and <strong>Systems</strong> &mdash; twenty faithful retro-OS palettes (MS-DOS, Commodore 64, Windows 3.1 / 95 / XP, Amiga Workbench, BeOS, NeXTSTEP, ZX Spectrum, Atari ST, classic Mac OS, OS/2 Warp, IBM 3270, Solaris CDE, RISC OS, GEOS, amber and green CRT, Teletext). Each Systems theme brings its own era typeface along for the ride.</p>
             <p>The <strong>Interface Font</strong> setting changes the type across the whole suite independently of colour. New installs start on <strong>Poppins</strong> with the <strong>BrewBalance &middot; Mocha</strong> colour scheme.</p>
             <h3>Game Install Folder</h3>
-            <p>Control Panel &rarr; Library &rarr; <strong>Game Install Folder</strong> is where GOG and Epic downloads go. New installs use <code>~/Games/CafeNeurotico</code>; <strong>Change Folder</strong> points everything somewhere else (a second drive, say) and <strong>Reset</strong> puts it back. Each game still gets its own sub-folder, and you can always override the folder for a single game while installing it.</p>
+            <p>Control Panel &rarr; Library &rarr; <strong>Game Install Folder</strong> is where GOG and Epic downloads go. New installs use <code>~/Games/Clarity</code>; <strong>Change Folder</strong> points everything somewhere else (a second drive, say) and <strong>Reset</strong> puts it back. Each game still gets its own sub-folder, and you can always override the folder for a single game while installing it.</p>
             <p>Changing this only affects <em>future</em> installs &mdash; nothing already on disk moves. Games installed under a previous folder stay perfectly playable and can still be uninstalled normally.</p>
 
             <h3>Manage Storage</h3>
-            <p>Control Panel &rarr; Library &rarr; <strong>Manage Storage</strong> answers &ldquo;what is eating my disk?&rdquo;. The <strong>GOG &amp; Epic</strong> button opens GRINDER showing only installed games, sorted biggest-first, so the space hogs are at the top and one click uninstalls them. The <strong>Steam</strong> button hands you over to Steam&rsquo;s own storage manager.</p>
+            <p>Control Panel &rarr; Library &rarr; <strong>Manage Storage</strong> answers &ldquo;what is eating my disk?&rdquo;. The <strong>GOG &amp; Epic</strong> button opens Installer showing only installed games, sorted biggest-first, so the space hogs are at the top and one click uninstalls them. The <strong>Steam</strong> button hands you over to Steam&rsquo;s own storage manager.</p>
 
             <h3>When a Download Stops Moving</h3>
             <p>A download can keep its connection open and its speed up while making no actual progress &mdash; usually because one of GOG&rsquo;s content servers is handing out a damaged copy of a single file. On the surface that looks identical to a slow download, which is why it can go unnoticed for a long time.</p>
-            <p>Cafe Neurotico watches the percentage itself. If it hasn&rsquo;t moved for a few minutes, the Download Manager <strong>says so</strong>: the bar turns red and a note explains what is happening. It never cancels anything on your behalf &mdash; it cannot know whether a pause is fatal, and throwing away a part-finished download on a guess would be worse than telling you and letting you decide.</p>
-            <p>If you see it: <strong>cancel and start the download again</strong>. Nothing is lost &mdash; downloads resume from where they stopped &mdash; and the retry normally reaches a different server and carries on. Cafe Neurotico also switches servers automatically when a file arrives damaged, so this should be rare.</p>
+            <p>Clarity watches the percentage itself. If it hasn&rsquo;t moved for a few minutes, the Download Manager <strong>says so</strong>: the bar turns red and a note explains what is happening. It never cancels anything on your behalf &mdash; it cannot know whether a pause is fatal, and throwing away a part-finished download on a guess would be worse than telling you and letting you decide.</p>
+            <p>If you see it: <strong>cancel and start the download again</strong>. Nothing is lost &mdash; downloads resume from where they stopped &mdash; and the retry normally reaches a different server and carries on. Clarity also switches servers automatically when a file arrives damaged, so this should be rare.</p>
 
             <h3>DOS Games &mdash; which DOSBox runs them</h3>
-            <p>GOG&rsquo;s DOS games come with a Windows build of DOSBox from 2010, which on Linux has to run through Proton &mdash; an emulator inside a translation layer. It works, and it is what Cafe Neurotico uses out of the box: <strong>you need install nothing</strong>.</p>
-            <p>A <strong>native DOSBox</strong> is better: faster, sound and fullscreen without Proton in the way, and still maintained. Cafe Neurotico can use one, and crucially it reads <em>the very same configuration file GOG wrote for that game</em> &mdash; every tweak GOG made (CPU cycles, machine type, sound cards, the startup commands) is kept exactly. Only the emulator changes; nothing on disk is rewritten.</p>
+            <p>GOG&rsquo;s DOS games come with a Windows build of DOSBox from 2010, which on Linux has to run through Proton &mdash; an emulator inside a translation layer. It works, and it is what Clarity uses out of the box: <strong>you need install nothing</strong>.</p>
+            <p>A <strong>native DOSBox</strong> is better: faster, sound and fullscreen without Proton in the way, and still maintained. Clarity can use one, and crucially it reads <em>the very same configuration file GOG wrote for that game</em> &mdash; every tweak GOG made (CPU cycles, machine type, sound cards, the startup commands) is kept exactly. Only the emulator changes; nothing on disk is rewritten.</p>
             <p>Control Panel &rarr; Tools &rarr; <strong>DOS Games</strong>:</p>
             <ul>
                 <li><strong>Automatic</strong> (default) &mdash; use a native DOSBox if you have one, GOG&rsquo;s if you don&rsquo;t. Nothing to decide.</li>
@@ -416,24 +416,24 @@
             <p>Control Panel &rarr; Library &rarr; <strong>Scan for Updates</strong> checks the games you have <em>installed</em> for newer versions. Nothing is ever downloaded behind your back: the scan only ever hands you a list, and updating is one deliberate press per game.</p>
             <ul>
                 <li><strong>GOG &amp; Epic</strong> &mdash; a real check against the store. Each game shows <em>installed version &rarr; latest version</em>, and <strong>Update</strong> re-runs the normal install, which brings it up to date and shows up in the Download Manager like any other download.</li>
-                <li><strong>Steam</strong> &mdash; flagged only. Cafe Neurotico reads Steam&rsquo;s own local files to see that an update is pending and hands you over with <strong>Open in Steam</strong>; it never pretends to update Steam games itself.</li>
+                <li><strong>Steam</strong> &mdash; flagged only. Clarity reads Steam&rsquo;s own local files to see that an update is pending and hands you over with <strong>Open in Steam</strong>; it never pretends to update Steam games itself.</li>
             </ul>
             <p>The GOG side is checked one game at a time (the store&rsquo;s tooling doesn&rsquo;t like being asked in parallel), so a big installed library takes a moment &mdash; there&rsquo;s a progress bar, and &ldquo;Everything is up to date&rdquo; is a perfectly good result.</p>
 
             <h3>Your Version &amp; App Updates</h3>
             <p>The Control Panel&rsquo;s opening splash carries the version you are running, and next to it a <strong>Check for Updates</strong> button. It opens the <strong>releases page</strong> in your browser &mdash; that&rsquo;s the whole mechanism.</p>
-            <p>Cafe Neurotico has <strong>no auto-updater and no phone-home</strong>: nothing is checked in the background, and the app never contacts anyone to ask about itself. Compare the version on the splash with the newest release on the page; if it&rsquo;s higher, read what changed and download the new AppImage yourself. Replacing the file is the entire update &mdash; your <code>GameManagerConfig</code> folder (library, artwork, settings, save backups) sits beside it and is untouched.</p>
+            <p>Clarity has <strong>no auto-updater and no phone-home</strong>: nothing is checked in the background, and the app never contacts anyone to ask about itself. Compare the version on the splash with the newest release on the page; if it&rsquo;s higher, read what changed and download the new AppImage yourself. Replacing the file is the entire update &mdash; your <code>GameManagerConfig</code> folder (library, artwork, settings, save backups) sits beside it and is untouched.</p>
 
             <!-- ====== SECTION 12 ====== -->
-            <h2 id="man-12">12. CREMA &mdash; Overview &amp; Setup</h2>
-            <p>CREMA is the suite&rsquo;s living-room face: fullscreen, gamepad-first, TV-sized type. It reads the same library as the Manager &mdash; nothing to configure, nothing to copy.</p>
-            <p>Launch it from the Manager&rsquo;s titlebar coffee-cup button, the app menu entry (&ldquo;CREMA (Fullscreen)&rdquo;), or <code>CafeNeurotico.AppImage --crema</code>. It can also autostart on login for HTPC builds (Control Panel &rarr; System).</p>
+            <h2 id="man-12">12. Couch &mdash; Overview &amp; Setup</h2>
+            <p>Couch is the suite&rsquo;s living-room face: fullscreen, gamepad-first, TV-sized type. It reads the same library as the Manager &mdash; nothing to configure, nothing to copy.</p>
+            <p>Launch it from the Manager&rsquo;s titlebar Couch button, the app menu entry (&ldquo;Couch (Fullscreen)&rdquo;), or <code>Clarity.AppImage --couch</code>. It can also autostart on login for HTPC builds (Control Panel &rarr; System).</p>
             <h3>First Run</h3>
             <p>A two-step setup asks how you want your <strong>start screen</strong> (Carousel or Grid of categories) and how you like to <strong>browse</strong> (List with a live media panel, or a cover Gallery). Both are changeable anytime in the menu. After that you land on the Home screen.</p>
-            <div class="tip-box"><p><strong>Waking up:</strong> while a game runs, CREMA sleeps behind it. Press <span class="key">START</span> + <span class="key">SELECT</span> (configurable) to bring it back.</p></div>
+            <div class="tip-box"><p><strong>Waking up:</strong> while a game runs, Couch sleeps behind it. Press <span class="key">START</span> + <span class="key">SELECT</span> (configurable) to bring it back.</p></div>
 
             <!-- ====== SECTION 13 ====== -->
-            <h2 id="man-13">13. CREMA &mdash; The Home Screen</h2>
+            <h2 id="man-13">13. Couch &mdash; The Home Screen</h2>
             <p>A TV-style hub that greets you on boot (toggleable in the menu): library stats up top, <strong>Today&rsquo;s Pick</strong> as a full-bleed banner (always a scraped game from your main stores), then rows you navigate with the d-pad &mdash; wrap around from bottom to top.</p>
             <h3>The Actions Row</h3>
             <ul>
@@ -446,7 +446,7 @@
             <p>Press <span class="key">Y</span> anywhere on Home to jump straight into library search. Opening a game from Home and pressing <span class="key">B</span> brings you back to Home &mdash; not the library.</p>
 
             <!-- ====== SECTION 14 ====== -->
-            <h2 id="man-14">14. CREMA &mdash; Browsing the Library</h2>
+            <h2 id="man-14">14. Couch &mdash; Browsing the Library</h2>
             <h3>Start Screen</h3>
             <p>Your categories &mdash; stores, filters and every playlist &mdash; as a horizontal carousel or a grid, each with a live art mosaic. <span class="key">A</span> enters, <span class="key">Y</span> searches within the highlighted category, <span class="key">B</span> returns to Home.</p>
             <h3>Gallery Browsing</h3>
@@ -462,7 +462,7 @@
             <p>A vertical list with a live media panel: trailer or screenshots on the right, metadata below. <span class="key">X</span> swaps trailer and screenshots; <span class="key">L1</span>/<span class="key">R1</span> jump ten games; <span class="key">L2</span>/<span class="key">R2</span> jump to the ends.</p>
 
             <!-- ====== SECTION 15 ====== -->
-            <h2 id="man-15">15. CREMA &mdash; The Gamepages</h2>
+            <h2 id="man-15">15. Couch &mdash; The Gamepages</h2>
             <p>Two styles, switchable live from the menu (Immersive is the default): <strong>Classic</strong> &mdash; hero art on top, scrolling page below with stats, achievements, description and screenshots. <strong>Immersive</strong> &mdash; your screenshots (or the trailer) fill the screen behind a tilted, glowing box art and glass info chips.</p>
             <h3>Both Pages Offer</h3>
             <ul>
@@ -474,10 +474,10 @@
             </ul>
             <h3>Immersive Extras</h3>
             <p><span class="key">X</span> opens the <strong>details modal</strong>: a large screenshot pane (flip with left/right) above the short summary and the complete Steam description. On the classic page the same content lives on the page itself, with the screenshot banner opening a fullscreen slideshow.</p>
-            <p><span class="key">SELECT</span> opens the game options menu on either page: trailers (download/delete), rename, mark played, playlists, the <strong>Scraping Engine</strong> (fix art and metadata from the couch) and GRINDER install/uninstall.</p>
+            <p><span class="key">SELECT</span> opens the game options menu on either page: trailers (download/delete), rename, mark played, playlists, the <strong>Scraping Engine</strong> (fix art and metadata from the couch) and Installer install/uninstall.</p>
 
             <!-- ====== SECTION 16 ====== -->
-            <h2 id="man-16">16. CREMA &mdash; Controls Reference</h2>
+            <h2 id="man-16">16. Couch &mdash; Controls Reference</h2>
             <p>Defaults for the Xbox layout &mdash; PlayStation and Nintendo glyphs adapt automatically (menu &rarr; Gamepad Icons), and every footer shows the live hints for wherever you are.</p>
             <table class="controls-table">
                 <tr><th>Input</th><th>Everywhere</th></tr>
@@ -497,31 +497,31 @@
             <p>Full keyboard support mirrors everything: arrows, <span class="key">Enter</span>, <span class="key">Esc</span>, <span class="key">Y</span>/<span class="key">X</span>/<span class="key">O</span>/<span class="key">M</span>, <span class="key">PgUp</span>/<span class="key">PgDn</span>, <span class="key">[</span>/<span class="key">]</span> for music. Keys are rebindable in menu &rarr; Keybindings.</p>
 
             <!-- ====== SECTION 17 ====== -->
-            <h2 id="man-17">17. CREMA &mdash; Jukebox &amp; Atmosphere</h2>
+            <h2 id="man-17">17. Couch &mdash; Jukebox &amp; Atmosphere</h2>
             <h3>Music</h3>
-            <p>Three background modes (menu &rarr; Jukebox Mode): <strong>Ambient</strong> (built-in loops), <strong>Custom</strong> (your own music &mdash; drop MP3/OGG/FLAC/WAV files into the <code>CREMA_CUSTOM_MUSIC</code> folder next to the AppImage), or <strong>Off</strong>. In Custom mode, <span class="key">L3</span>/<span class="key">R3</span> restart or skip tracks from anywhere, and the Home screen&rsquo;s Jukebox tile shows what&rsquo;s playing.</p>
+            <p>Three background modes (menu &rarr; Jukebox Mode): <strong>Ambient</strong> (built-in loops), <strong>Custom</strong> (your own music &mdash; drop MP3/OGG/FLAC/WAV files into the <code>CUSTOM_MUSIC</code> folder next to the AppImage), or <strong>Off</strong>. In Custom mode, <span class="key">L3</span>/<span class="key">R3</span> restart or skip tracks from anywhere, and the Home screen&rsquo;s Jukebox tile shows what&rsquo;s playing.</p>
             <h3>The Jukebox</h3>
             <p>A full player: browse your tracks and music playlists, search, queue, see embedded cover art, go fullscreen for a now-playing view with a progress bar. Music playlists are separate from game playlists.</p>
             <h3>Screensaver &amp; Sleep</h3>
-            <p>After a configurable idle delay, the screensaver takes over &mdash; a slideshow of your own game screenshots, with a clock (turn it off in the menu if you prefer). While a game runs, CREMA sleeps and shows the running game&rsquo;s cover; wake it with <span class="key">START</span>+<span class="key">SELECT</span>.</p>
+            <p>After a configurable idle delay, the screensaver takes over &mdash; a slideshow of your own game screenshots, with a clock (turn it off in the menu if you prefer). While a game runs, Couch sleeps and shows the running game&rsquo;s cover; wake it with <span class="key">START</span>+<span class="key">SELECT</span>.</p>
 
             <!-- ====== SECTION 18 ====== -->
-            <h2 id="man-18">18. CREMA &mdash; Menus &amp; Settings</h2>
+            <h2 id="man-18">18. Couch &mdash; Menus &amp; Settings</h2>
             <p>Press <span class="key">START</span> anywhere:</p>
             <ul>
                 <li><strong>Audio</strong> &mdash; Jukebox mode, sound settings (volumes, SFX).</li>
-                <li><strong>Appearance</strong> &mdash; Color Scheme (all 93 suite themes, in the same ten categories as the desktop; <em>&#9733; Follow The Manager</em> keeps CREMA matched to your desktop theme automatically), <strong>Interface Font</strong> (the same six faces, each shown in itself so you can judge it at TV distance &mdash; and its own <em>&#9733; Follow The Manager</em>, which is how it starts out), Home Screen (startup toggle + row selection), Start Screen mode, Browse mode, Gamepage style (applies live, even inside a gamepage), Screensaver.</li>
+                <li><strong>Appearance</strong> &mdash; Color Scheme (all 93 suite themes, in the same ten categories as the desktop; <em>&#9733; Follow The Manager</em> keeps Couch matched to your desktop theme automatically), <strong>Interface Font</strong> (the same six faces, each shown in itself so you can judge it at TV distance &mdash; and its own <em>&#9733; Follow The Manager</em>, which is how it starts out), Home Screen (startup toggle + row selection), Start Screen mode, Browse mode, Gamepage style (applies live, even inside a gamepage), Screensaver.</li>
                 <li><strong>Controls</strong> &mdash; Keybindings, Gamepad icon set (Xbox / PlayStation / Nintendo), Wake method.</li>
                 <li><strong>Library</strong> &mdash; <strong>Filter by Genre</strong>, Gaming History, PICO-8 / Free-to-Play visibility.</li>
                 <li><strong>System</strong> &mdash; About, Quit.</li>
             </ul>
 
             <!-- ====== SECTION 19 ====== -->
-            <div class="tip-box"><p><strong>CREMA plays; the Manager manages.</strong> The menu on a game (SELECT) holds opinions about it &mdash; Favourite, Want to Play, Played, Add to Playlist, achievements &mdash; and installing what you own. Renaming, scraping, downloading trailers, editing a launch command and uninstalling all live in the Manager, where a keyboard is.</p></div>
+            <div class="tip-box"><p><strong>Couch plays; the Manager manages.</strong> The menu on a game (SELECT) holds opinions about it &mdash; Favourite, Want to Play, Played, Add to Playlist, achievements &mdash; and installing what you own. Renaming, scraping, downloading trailers, editing a launch command and uninstalling all live in the Manager, where a keyboard is.</p></div>
 
-            <h2 id="man-19">19. GRINDER &mdash; the GOG &amp; Epic Engine</h2>
-            <p>GRINDER does the heavy lifting for DRM-free stores: authentication, downloads, Proton/Wine setup, redistributables, launching and uninstalling. Most of the time you never see it &mdash; the Manager and CREMA drive it silently.</p>
-            <div class="tip-box"><p><strong>You no longer sign in here.</strong> GOG and Epic logins happen directly in the Manager&rsquo;s Welcome and Connect screens. GRINDER&rsquo;s window is for tuning, not setup.</p></div>
+            <h2 id="man-19">19. Installer &mdash; the GOG &amp; Epic Engine</h2>
+            <p>Installer does the heavy lifting for DRM-free stores: authentication, downloads, Proton/Wine setup, redistributables, launching and uninstalling. Most of the time you never see it &mdash; the Manager and Couch drive it silently.</p>
+            <div class="tip-box"><p><strong>You no longer sign in here.</strong> GOG and Epic logins happen directly in the Manager&rsquo;s Welcome and Connect screens. Installer&rsquo;s window is for tuning, not setup.</p></div>
             <h3>It Has No Window</h3>
             <ul>
                 <li><strong>Per-game tuning</strong> &mdash; now in the Manager&rsquo;s <strong>Compatibility</strong> panel: Proton version, Wine prefix, winetricks, environment variables, esync/fsync, DXVK-NVAPI, launch arguments, custom executables. You don&rsquo;t have to set a Proton here &mdash; the suite finds one by itself (&sect;7) &mdash; but this is where you pin a specific build for an awkward game.</li>
@@ -531,7 +531,7 @@
                 <li>Its download manager, install log and repair tools are reached from the Manager too.</li>
             </ul>
             <div class="warn-box"><p><strong>GOG DLC is installed as a set.</strong> GOG&rsquo;s downloader cannot safely add one DLC on its own &mdash; asking it to will delete the base game. So the DLC panel always reinstalls the game together with all the DLC you own, which is slower but never destroys anything.</p></div>
-            <p>GRINDER&rsquo;s data lives in <code>~/.config/grinder/</code> &mdash; logins and install records are per-machine, which is why a fresh copy of the suite still knows your GOG library on the same computer.</p>
+            <p>Installer&rsquo;s data lives in <code>~/.config/installer/</code> &mdash; logins and install records are per-machine, which is why a fresh copy of the suite still knows your GOG library on the same computer.</p>
 
             <!-- ====== SECTION 19b ====== -->
             <h2 id="man-19b">19b. Fan Games, Source Ports &amp; Mods</h2>
@@ -552,7 +552,7 @@
             <!-- ====== SECTION 20 ====== -->
             <h2 id="man-20">20. Save Games &mdash; Backup &amp; Restore</h2>
             <p>Installed GOG and Epic games get a <strong>Save Manager</strong> panel on their gamepage. GOG and Epic have no save-sync worth the name on Linux, so the suite gives you the honest version: find the saves, zip them up, put them back.</p>
-            <div class="tip-box"><p>This is a desktop-face feature &mdash; it lives on the Manager&rsquo;s gamepage, not in CREMA.</p></div>
+            <div class="tip-box"><p>This is a desktop-face feature &mdash; it lives on the Manager&rsquo;s gamepage, not in Couch.</p></div>
             <h3>Finding Your Saves</h3>
             <p>Save files hide in genuinely awful places &mdash; somewhere inside a Wine prefix, under a numeric account folder, or right next to the game. The Save Manager tries three things in order:</p>
             <ol>
@@ -578,8 +578,8 @@
                 <tr><th>What</th><th>Where</th><th>Travels with you?</th></tr>
                 <tr><td>Library, metadata, playlists, settings</td><td><code>GameManagerConfig/games.db</code></td><td>Yes &mdash; copy the folder</td></tr>
                 <tr><td>Artwork &amp; trailers</td><td><code>GameManagerConfig/images &amp; trailers</code></td><td>Yes</td></tr>
-                <tr><td>CREMA preferences</td><td><code>GameManagerConfig/audio.json</code></td><td>Yes</td></tr>
-                <tr><td>GOG/Epic logins &amp; installs</td><td><code>~/.config/grinder/</code></td><td>No &mdash; per machine, by design</td></tr>
+                <tr><td>Couch preferences</td><td><code>GameManagerConfig/audio.json</code></td><td>Yes</td></tr>
+                <tr><td>GOG/Epic logins &amp; installs</td><td><code>~/.config/installer/</code></td><td>No &mdash; per machine, by design</td></tr>
                 <tr><td>Save-game backup ZIPs</td><td><code>GameManagerConfig/save_backups/</code></td><td>Yes &mdash; and portable between PCs</td></tr>
                 <tr><td>The games themselves</td><td>Wherever you install them</td><td>No</td></tr>
             </table>
@@ -588,7 +588,7 @@
             <!-- ====== SECTION 22 ====== -->
             <!-- ====== SECTION 21b ====== -->
             <h2 id="man-omarchy">21b. On Omarchy</h2>
-            <p>Cafe Neurotico runs on any Linux desktop. It is <strong>built and tested on Omarchy</strong>, and there it does a handful of things it cannot do anywhere else.</p>
+            <p>Clarity runs on any Linux desktop. It is <strong>built and tested on Omarchy</strong>, and there it does a handful of things it cannot do anywhere else.</p>
 
             <h3>Your Theme, Not Ours</h3>
             <p>The theme picker has a <strong>Your Desktop</strong> entry that reads the palette Omarchy is actually using &mdash; not a lookalike, the same colours. Change it with <code>omarchy theme set</code> and the app follows on its next start. The Control Panel&rsquo;s Desktop page names the theme it found.</p>
@@ -596,7 +596,7 @@
             <h3>How a Game&rsquo;s Window Opens</h3>
             <p>Control Panel &rarr; Desktop offers <strong>Fullscreen</strong>, <strong>Floating</strong> and <strong>Tiled</strong>. Fullscreen is the default and is what you want almost always: the game is handed the whole monitor the moment it opens, instead of being fitted into a tiling layout and resized a second before it goes fullscreen anyway.</p>
             <p>Choose <strong>Floating</strong> if a particular game shows a small configuration window before it starts &mdash; every game launched through Proton arrives under the same window class, so a rule cannot tell the launcher from the game.</p>
-            <div class="warn-box"><p><strong>A window rule cannot be taken back.</strong> Hyprland keeps a rule for the rest of the session, so switching between these three normally shows up at your next login. The <strong>Apply To This Session</strong> button underneath makes it immediate by having Hyprland re-read its config and putting Cafe Neurotico&rsquo;s rules back &mdash; at the cost of window rules other tools set this session, which is why it is a button and not automatic.</p></div>
+            <div class="warn-box"><p><strong>A window rule cannot be taken back.</strong> Hyprland keeps a rule for the rest of the session, so switching between these three normally shows up at your next login. The <strong>Apply To This Session</strong> button underneath makes it immediate by having Hyprland re-read its config and putting Clarity&rsquo;s rules back &mdash; at the cost of window rules other tools set this session, which is why it is a button and not automatic.</p></div>
 
             <h3>Which Screen Games Open On</h3>
             <p>On top of the window rule, this sets your chosen screen as the <strong>primary output for X11 games</strong>. Hyprland&rsquo;s XWayland starts with no primary at all, and a game that asks for one takes whichever monitor sits at the left edge of the desktop &mdash; if that is a small panel beside a large screen, the game sizes itself to the panel and stays there.</p>
@@ -605,8 +605,8 @@
             <p><strong>Ctrl+K</strong> in the Manager opens a fuzzy list of every game and every settings page at once. Type a few letters, press Enter. Games open their page; actions run.</p>
 
             <h3>The Bar Widget and the Launcher</h3>
-            <p>There is a separate <strong>Omarchy plugin</strong> for the bar: it shows how many games are installed and what is playing, with a menu one click from the library, CREMA, Manage Storage and the Control Panel. It also adds a <strong>launcher overlay</strong> &mdash; bind it to a key, type a few letters of a game&rsquo;s name and press Enter to play it, with its cover and a sentence about it beside the list.</p>
-            <p>The plugin reads <code>~/.config/cafeneurotico/desktop.json</code>, which the app writes on every start, so it needs no configuration &mdash; and it needs the app to have been run at least once before it can show you anything.</p>
+            <p>There is a separate <strong>Omarchy plugin</strong> for the bar: it shows how many games are installed and what is playing, with a menu one click from the library, Couch, Manage Storage and the Control Panel. It also adds a <strong>launcher overlay</strong> &mdash; bind it to a key, type a few letters of a game&rsquo;s name and press Enter to play it, with its cover and a sentence about it beside the list.</p>
+            <p>The plugin reads <code>~/.config/clarity/desktop.json</code>, which the app writes on every start, so it needs no configuration &mdash; and it needs the app to have been run at least once before it can show you anything.</p>
 
             <h3>The Gaming Stack</h3>
             <p>Omarchy ships as a developer desktop, so a fresh install has almost none of the gaming stack. Control Panel &rarr; Desktop lists what is missing &mdash; umu-launcher, Wine, DOSBox, GameMode, MangoHud, gamescope, 32-bit graphics drivers and the rest &mdash; and hands you the install command. It also reports two kernel settings a gaming distribution changes, without touching them: those belong to you and your distribution.</p>
@@ -619,18 +619,18 @@
                 <li><strong>Nothing at all seems to happen on the first Windows game:</strong> it&rsquo;s working. A compatibility runtime downloads once per machine and the game&rsquo;s Windows environment is built the first time you play it &mdash; a few minutes, shown on the Now Playing card. Later launches are instant.</li>
                 <li><strong>You want to see exactly what a game printed:</strong> open the game&rsquo;s page in the Manager and use <strong>Play with Log</strong> from the Compatibility panel. The verbose output shows what Wine or the game actually complained about &mdash; usually a missing dependency you can install from the same panel.</li>
                 <li><strong>A game vanished after Refresh Library:</strong> that&rsquo;s the removal check &mdash; the store no longer reports you as owning it (refunded, or a demo you uninstalled). Re-buy or reinstall it and the next refresh brings it back.</li>
-                <li><strong>A game shows Install instead of Play</strong> (or vice-versa): Refresh Library reconciles install state with GRINDER and Steam. Games owned on several stores at once count as installed if <em>any</em> copy is on disk.</li>
+                <li><strong>A game shows Install instead of Play</strong> (or vice-versa): Refresh Library reconciles install state with Installer and Steam. Games owned on several stores at once count as installed if <em>any</em> copy is on disk.</li>
                 <li><strong>Am I running the latest version?</strong> Open the Control Panel &mdash; the splash it lands on tells you your version, and <strong>Check for Updates</strong> next to it opens the releases page so you can compare. There is no automatic check; nothing is downloaded without you.</li>
                 <li><strong>Missing artwork after import:</strong> run Batch Fetch; for stubborn games open Edit Details and scrape with a corrected title, or pick art manually via SteamGridDB.</li>
                 <li><strong>GPU usage while idle:</strong> animations pause automatically when the window loses focus; the Ken Burns effect can also be disabled outright in Appearance.</li>
-                <li><strong>CREMA feels out of sync:</strong> it re-reads the shared database on focus and refresh &mdash; if you edited a lot on the desktop, back out to the Start screen and re-enter.</li>
+                <li><strong>Couch feels out of sync:</strong> it re-reads the shared database on focus and refresh &mdash; if you edited a lot on the desktop, back out to the Start screen and re-enter.</li>
                 <li><strong>Moved the folder?</strong> Re-run <strong>Add to Application Menu</strong> so the launcher entries point to the new location.</li>
             </ul>
 
             <div class="manual-footer">
-                <p class="accent-line">CAFE NEUROTICO</p>
+                <p class="accent-line">CLARITY</p>
                 <h3>One library. Three faces. Zero cloud.</h3>
-                <p class="mono">The Manager &mdash; CREMA &mdash; GRINDER</p>
+                <p class="mono">The Manager &mdash; Couch &mdash; Installer</p>
                 <p class="mono">Your games, your machine, your data.</p>
             </div>
 

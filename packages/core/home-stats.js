@@ -1,9 +1,9 @@
 'use strict';
 /*
- * @cafeneurotico/core — Home dashboard stats.
+ * @clarity/core — Home dashboard stats.
  *
  * Pure, dependency-free reductions over the games table. Run in the main process
- * (shared-ipc `get-home-stats` / `get-random-game`) so The Manager and CREMA show
+ * (shared-ipc `get-home-stats` / `get-random-game`) so The Manager and Couch show
  * IDENTICAL numbers — single source of truth, no logic forked across the two faces.
  *
  * Phase 1 is 100% local/instant: no DB writes, no network.
@@ -23,11 +23,11 @@ function isWant(g)      { return g.WANT_TO_PLAY === 'YES'; }
 function hasLaunched(g) { return !!(g.LastPlayed && g.LastPlayed > 0); }
 function isBacklog(g)   { return !isPlayed(g) && !hasLaunched(g) && !isWant(g); }
 
-// Manual stores (Others/Emulation/Physical/Apps not linked to GRINDER) are
+// Manual stores (Others/Emulation/Physical/Apps not linked to Installer) are
 // "installed" once they have a launch command; everything else uses Installed=1.
 function isInstalled(g) {
     const s = (g.Store || '').toLowerCase();
-    const isManual = !g.GrinderGameId && (s.includes('others') || s.includes('emulation') || s.includes('physical') || s.includes('apps'));
+    const isManual = !g.InstallerGameId && (s.includes('others') || s.includes('emulation') || s.includes('physical') || s.includes('apps'));
     return isManual ? !!g.LaunchCommand : g.Installed == 1;
 }
 
@@ -69,7 +69,7 @@ function tile(g) {
         CoverArt: g.CoverArt, HeroArt: g.HeroArt, Logo: g.Logo, Icon: g.Icon, Screenshot: g.Screenshot,
         GENRE: g.GENRE, RELEASED: g.RELEASED, METACRITIC: g.METACRITIC, HLTB_Main: g.HLTB_Main,
         ProtonTier: g.ProtonTier, DEV: g.DEV, Installed: g.Installed, LaunchCommand: g.LaunchCommand,
-        GrinderGameId: g.GrinderGameId, FAV: g.FAV, WANT_TO_PLAY: g.WANT_TO_PLAY, kb_played: g.kb_played,
+        InstallerGameId: g.InstallerGameId, FAV: g.FAV, WANT_TO_PLAY: g.WANT_TO_PLAY, kb_played: g.kb_played,
         LastPlayed: g.LastPlayed, date_added: g.date_added, SteamAppID: g.SteamAppID,
         Playtime: g.Playtime, Playtime2wk: g.Playtime2wk,
     };

@@ -1,4 +1,4 @@
-Cafe Neurotico 1.9.3
+Clarity 1.9.3
 
 **The app is going through changes, and this build should be treated as experimental.** It is
 what I run myself, but the project is being reworked and behaviour may change between releases
@@ -13,10 +13,10 @@ true.
 ## Installing a game left it unable to start
 
 **A game could install perfectly and then refuse to launch**, saying only that it was *not found
-in GRINDER database*. The files were there. The library showed it installed. Pressing Play found
+in Installer database*. The files were there. The library showed it installed. Pressing Play found
 nothing.
 
-Games are recorded in GRINDER's own database by the owned-library sync, not by installing. Where
+Games are recorded in Installer's own database by the owned-library sync, not by installing. Where
 that sync had never run — a fresh configuration beside a restored library, which is exactly what
 moving to a new machine leaves behind — the install had no record to update, so it skipped
 writing one **and skipped installing the game's compatibility files**, then reported success
@@ -67,7 +67,7 @@ not fit, and moving the window between monitors is no longer mistaken for a diff
 ## Also
 
 - The library's installed-state marker was never actually being written after an install; it
-  matched on a column that does not exist and failed silently. The same wrong column in CREMA
+  matched on a column that does not exist and failed silently. The same wrong column in Couch
   could abandon a sync partway through.
 - Download progress showed a numeric id instead of the game's name when the game had not been
   synced yet.

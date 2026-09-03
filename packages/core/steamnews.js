@@ -1,6 +1,6 @@
 'use strict';
 /*
- * @cafeneurotico/core — Steam per-game news / patch notes for the Home dashboard
+ * @clarity/core — Steam per-game news / patch notes for the Home dashboard
  * (Phase 3). Uses the PUBLIC Steam News API (ISteamNews/GetNewsForApp) — no key.
  * Network + opt-in; only the games you actually play/own are queried. Defensive.
  */

@@ -5,7 +5,7 @@ let currentPlaylistGames = null;
 let currentGameId = null;
 
 function isManualCategory(game) {
-    if (game.GrinderGameId) return false;
+    if (game.InstallerGameId) return false;
     const s = (game.Store || '').toLowerCase();
     return !/steam|epic|gog|itch|flatpak|pico/.test(s);
 }
@@ -49,20 +49,20 @@ function openAddGameDialog() {
         await loadGames();
     };
     document.getElementById('add-cmd-cancel').onclick = close;
-    document.getElementById('add-cmd-grinder').onclick = async () => {
+    document.getElementById('add-cmd-installer').onclick = async () => {
         const name = nameInput.value.trim();
         close();
         if (name) { const r = await window.api.addGame(name); if (r.success) await loadGames(); }
     };
 }
 
-function _isGrinderGame(game) {
+function _isInstallerGame(game) {
     const store = (game.Store || '').toLowerCase();
-    return store.includes('gog') || store.includes('epic') || /grinder:\/\/launch/i.test(game.LaunchCommand || '');
+    return store.includes('gog') || store.includes('epic') || /installer:\/\/launch/i.test(game.LaunchCommand || '');
 }
 
 function getInstallCommand(game) {
-    if (_isGrinderGame(game)) return null; // GOG/Epic install via GRINDER, not a URL
+    if (_isInstallerGame(game)) return null; // GOG/Epic install via Installer, not a URL
     const cmd = game.LaunchCommand || '';
     const store = (game.Store || '').toLowerCase();
     const appId = game.SteamAppID ? String(game.SteamAppID).replace(/\.0+$/, '').trim() : '';
@@ -564,7 +564,7 @@ document.getElementById('btn-close-custom')?.addEventListener('click', () => doc
 // A GOG release can ship several ways to start, and the one GOG marks primary is not
 // always the one you want: Quake: The Offering starts GLQuake, which reads its music off
 // the physical CD and so plays none at all, while the DOS task in the very same install
-// plays the soundtrack. The GRINDER face has always exposed this choice; from the Manager
+// plays the soundtrack. The Installer face has always exposed this choice; from the Manager
 // there was no way to reach it, which made a whole class of GOG classics quietly worse.
 function _closePlayTaskMenu() {
     document.getElementById('playtask-menu')?.remove();
@@ -619,8 +619,8 @@ function openPlayTaskMenu(anchorBtn, game, tasks) {
         const picked = tasks.find(t => String(t.index) === b.dataset.index);
         if (!picked) return;
         const res = picked.isPrimary
-            ? await window.api.setLaunchTarget(game.GrinderGameId, '', null)
-            : await window.api.setLaunchTarget(game.GrinderGameId, picked.path, picked.index);
+            ? await window.api.setLaunchTarget(game.InstallerGameId, '', null)
+            : await window.api.setLaunchTarget(game.InstallerGameId, picked.path, picked.index);
         if (!res || !res.ok) {
             showAlert('Could not save that choice.' + (res?.error ? `\n\n${res.error}` : ''));
             return;
@@ -636,10 +636,10 @@ async function _refreshPlayTaskBtn(game) {
     btn.style.display = 'none';
     btn.onclick = null;
     btn.classList.remove('active');
-    if (!/^gog_/i.test(game.GrinderGameId || '') || game.Installed != 1) return;
+    if (!/^gog_/i.test(game.InstallerGameId || '') || game.Installed != 1) return;
 
     let tasks = [];
-    try { tasks = await window.api.playTasks(game.GrinderGameId) || []; } catch (e) {}
+    try { tasks = await window.api.playTasks(game.InstallerGameId) || []; } catch (e) {}
     if (currentGameId !== game.id) return;   // gamepage moved on while we were asking
     if (tasks.length < 2) return;            // one way to start is not a choice
 
@@ -751,12 +751,12 @@ document.getElementById('np-close-btn')?.addEventListener('click', closeNowPlayi
 function _guessLabel(cmd) {
     if (!cmd) return 'Custom';
     if (/steam:\/\/rungameid/i.test(cmd))     return 'Steam';
-    if (/grinder:\/\/launch\/gog/i.test(cmd))  return 'GOG via GRINDER';
-    if (/grinder:\/\/launch\/epic/i.test(cmd)) return 'Epic via GRINDER';
+    if (/installer:\/\/launch\/gog/i.test(cmd))  return 'GOG via Installer';
+    if (/installer:\/\/launch\/epic/i.test(cmd)) return 'Epic via Installer';
     if (cmd.startsWith('itch://'))            return 'itch.io';
     if (cmd.startsWith('pico8-cart:'))        return 'PICO-8';
     if (/^flatpak run/i.test(cmd))            return 'Flatpak';
-    if (cmd.startsWith('grinder://'))         return 'GRINDER';
+    if (cmd.startsWith('installer://'))         return 'Installer';
     return 'Custom';
 }
 
@@ -765,7 +765,7 @@ function escHtml(s) {
 }
 
 // Every store a row can be played or installed from, with each one's install state
-// (Steam appmanifest / GOG-Epic grinder.db). Main resolves this from the row's store
+// (Steam appmanifest / GOG-Epic library.db). Main resolves this from the row's store
 // fields, not just LaunchCommands, so a mixed-store row that never got the plural column
 // written still lists both stores. [] on failure — callers fall back to the single path.
 async function launcherStatesFor(game) {
@@ -809,7 +809,7 @@ function _installLauncher(game, store, cmd) {
         if (appId) { window.api.openInstallUrl('steam://install/' + appId); return; }
     }
     if (store === 'gog' || store === 'epic') {
-        if (/^(gog|epic)_/i.test(game.GrinderGameId || '')) { openGrinderInstall(game); return; }
+        if (/^(gog|epic)_/i.test(game.InstallerGameId || '')) { openInstallerInstall(game); return; }
         _openCompatFor(game); return;
     }
     _doLaunch(game, cmd); // untracked launcher — best-effort launch
@@ -827,9 +827,9 @@ document.getElementById('modal-launcher-pick').addEventListener('click', e => {
 // use, '' to cancel the launch, or undefined when there is nothing to ask about — which is
 // every game that is not a mod with more than one IWAD beside it, so nothing else is slowed
 // down by a round trip it does not need.
-async function _iwadForLaunch(grinderGameId) {
+async function _iwadForLaunch(installerGameId) {
     let opts = null;
-    try { opts = await window.api.customIwadOptions(grinderGameId); } catch (e) {}
+    try { opts = await window.api.customIwadOptions(installerGameId); } catch (e) {}
     if (!opts || !opts.iwads || opts.iwads.length < 2) return undefined;
 
     const chosen = await pickRunOptions({
@@ -844,7 +844,7 @@ async function _iwadForLaunch(grinderGameId) {
     });
     if (!chosen) return null;                     // cancelled — do not launch
     // Remembered as the new default so the dialog opens on last night's choice.
-    try { await window.api.customSetIwad(grinderGameId, chosen.choice); } catch (e) {}
+    try { await window.api.customSetIwad(installerGameId, chosen.choice); } catch (e) {}
     return opts.argsFor[chosen.choice];
 }
 
@@ -852,9 +852,9 @@ async function _iwadForLaunch(grinderGameId) {
 // modern renderer, the other is closer to the DOS original and has its own tuning. If both
 // are installed the choice belongs to the moment you press Play, not to install time.
 // Returns the executable to run, '' for "as recorded", or null if cancelled.
-async function _engineForLaunch(grinderGameId) {
+async function _engineForLaunch(installerGameId) {
     let opts = null;
-    try { opts = await window.api.customEngineOptions(grinderGameId); } catch (e) {}
+    try { opts = await window.api.customEngineOptions(installerGameId); } catch (e) {}
     if (!opts || !opts.engines || opts.engines.length < 2) return '';
 
     const chosen = await pickRunOptions({
@@ -868,23 +868,23 @@ async function _engineForLaunch(grinderGameId) {
         },
     });
     if (!chosen) return null;
-    try { await window.api.customSetEngine(grinderGameId, chosen.choice); } catch (e) {}
+    try { await window.api.customSetEngine(installerGameId, chosen.choice); } catch (e) {}
     return chosen.choice;
 }
 
 async function _doLaunch(game, cmd) {
     // Route by the actual command so the multi-launcher picker is honoured:
-    //  - a grinder:// (GOG/Epic) command — or a grinder-linked game with no cmd —
-    //    launches via GRINDER's engine in-process
+    //  - a installer:// (GOG/Epic) command — or a installer-linked game with no cmd —
+    //    launches via Installer's engine in-process
     //  - everything else (steam://, itch://, pico8-cart:, native) launches directly
-    const isGrinderCmd = /grinder:\/\/launch/i.test(cmd || '');
-    if (isGrinderCmd || (!cmd && game?.GrinderGameId)) {
-        if (game?.GrinderGameId) {
-            const exe = await _engineForLaunch(game.GrinderGameId);
+    const isInstallerCmd = /installer:\/\/launch/i.test(cmd || '');
+    if (isInstallerCmd || (!cmd && game?.InstallerGameId)) {
+        if (game?.InstallerGameId) {
+            const exe = await _engineForLaunch(game.InstallerGameId);
             if (exe === null) return;              // the dialog was cancelled
-            const args = await _iwadForLaunch(game.GrinderGameId);
+            const args = await _iwadForLaunch(game.InstallerGameId);
             if (args === null) return;
-            window.api.launchGame('grinder://launch/' + game.GrinderGameId, args, exe);
+            window.api.launchGame('installer://launch/' + game.InstallerGameId, args, exe);
         } else {
             _openCompatFor(game);
         }
@@ -915,7 +915,7 @@ let _giInstallName = '';
 
 // Redistributable installs report line-by-line with no percentage of their own, so the toast
 // carries the current step rather than a bar that would have to be invented. See
-// 'grinder-run-redist' in main.js for what this is repairing.
+// 'installer-run-redist' in main.js for what this is repairing.
 let _redistBusy = false;
 window.api.onRedistProgress(d => {
     if (!_redistBusy) return;
@@ -926,7 +926,7 @@ window.api.onRedistProgress(d => {
 
 // Live progress for in-process install/uninstall — drives the global toast always,
 // plus the modal's inline bar while it's still visible (so 'Hide' keeps progress on screen).
-window.api.onGrinderInstallProgress(d => {
+window.api.onInstallerInstallProgress(d => {
     const step = (d.step || '').toUpperCase();
     const pct  = typeof d.percent === 'number' ? d.percent : undefined;
 
@@ -957,7 +957,7 @@ window.api.onGrinderInstallProgress(d => {
     }
 });
 
-// ── DOWNLOAD MANAGER (multi-download queue — the same manager as GRINDER, in CN) ──
+// ── DOWNLOAD MANAGER (multi-download queue — the same manager as Installer, in CN) ──
 // Installs still run one at a time in the engine; this queues extra requests and
 // surfaces active/queued/completed in #modal-dlm, opened by clicking the top toast.
 let _dlActive = null;        // { gameId, gid, name, store, dir, pct, message, step }
@@ -991,7 +991,7 @@ async function _pumpDownloadQueue() {
     if (!_dlmOpen) opToast('Installing ' + item.name + '…', 0);
     renderDownloadManager();
     let res;
-    try { res = await window.api.grinderInstall({ gameId: item.gameId, grinderGameId: item.gid, installDir: item.dir, dlc: item.dlc, platform: item.platform }); }
+    try { res = await window.api.installerInstall({ gameId: item.gameId, installerGameId: item.gid, installDir: item.dir, dlc: item.dlc, platform: item.platform }); }
     catch (e) { res = { ok: false, error: e.message }; }
     const success = !!(res && res.ok);
     const cancelled = !success && /cancel/i.test((res && res.error) || '');
@@ -1016,8 +1016,8 @@ async function _pumpDownloadQueue() {
 // INSTALL until the window was unfocused and focused again — which "fixed" it only because
 // the focus handler does three things this path was missing.
 //
-// The gamepage's button reads `!!game.LaunchCommand`, and for a GRINDER title that command
-// does not exist until GRINDER's own installed state is pulled into the shared DB. So the
+// The gamepage's button reads `!!game.LaunchCommand`, and for a Installer title that command
+// does not exist until Installer's own installed state is pulled into the shared DB. So the
 // row can be marked Installed=1 while LaunchCommand is still empty, and the button correctly
 // but uselessly keeps saying INSTALL. Hence the same sequence the focus handler runs:
 // verify, sync, reload, then re-render the open page.
@@ -1026,7 +1026,7 @@ async function _pumpDownloadQueue() {
 // than wait on a refresh, which is why the previous code left it fire-and-forget too.
 async function refreshAfterInstall(gameId) {
     try { if (gameId) await window.api.verifyInstallStatus(gameId); } catch {}
-    try { await syncGrinderInstalled(); } catch {}   // where a GRINDER title's LaunchCommand comes from
+    try { await syncInstallerInstalled(); } catch {}   // where a Installer title's LaunchCommand comes from
     await loadGames();
 
     const onGamepage = document.getElementById('view-gamepage')?.classList.contains('active');
@@ -1044,7 +1044,7 @@ async function cancelActiveDownload() {
     if (!_dlActive) return;
     _dlActive.message = 'Cancelling…';
     renderDownloadManager();
-    await window.api.grinderCancelInstall();   // engine kills the child → install resolves failed → queue advances
+    await window.api.installerCancelInstall();   // engine kills the child → install resolves failed → queue advances
 }
 
 function openDownloadManager() {
@@ -1154,15 +1154,15 @@ function _wireDownloadManager() {
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', _wireDownloadManager);
 else _wireDownloadManager();
 
-// In-process GOG/Epic install with a progress modal (no GRINDER window).
-async function openGrinderInstall(game) {
-    const gid = game.GrinderGameId || '';
+// In-process GOG/Epic install with a progress modal (no Installer window).
+async function openInstallerInstall(game) {
+    const gid = game.InstallerGameId || '';
     if (!/^(gog|epic)_/i.test(gid)) { _openCompatFor(game); return; }   // custom → compatibility panel
 
-    const modal = document.getElementById('modal-grinder-install');
+    const modal = document.getElementById('modal-installer-install');
     const $ = id => document.getElementById(id);
     $('gi-title').textContent = game.Game || '';
-    $('gi-dir').value = (await window.api.grinderDefaultDir()) || '';
+    $('gi-dir').value = (await window.api.installerDefaultDir()) || '';
     $('gi-config').style.display = '';
     $('gi-progress').style.display = 'none';
     $('gi-bar').style.width = '0%';
@@ -1176,14 +1176,14 @@ async function openGrinderInstall(game) {
     // Windows build. The native key varies by host (gogdl calls it 'linux' on Linux, 'osx' on
     // macOS) — hardcoding 'linux' here meant a Mac-native GOG game never got offered its own
     // native build at all: hasChoice stayed false, so the platform silently fell through to
-    // whatever grinder.db already had (usually fine) rather than ever being a real choice.
+    // whatever library.db already had (usually fine) rather than ever being a real choice.
     const nativeKey   = window.api.platform === 'darwin' ? 'osx' : 'linux';
     const nativeLabel = window.api.platform === 'darwin' ? 'Mac Native' : 'Linux Native';
     let selectedPlatform;
     let hasChoice = false;
     const platRow = $('gi-platform-row');
     try {
-        const pinfo = await window.api.grinderPlatforms(gid);
+        const pinfo = await window.api.installerPlatforms(gid);
         const avail = pinfo.platforms || [];
         hasChoice = /^gog_/i.test(gid) && avail.includes(nativeKey) && avail.includes('windows');
         selectedPlatform = pinfo.platform === nativeKey ? nativeKey : 'windows';
@@ -1228,7 +1228,7 @@ async function openGrinderInstall(game) {
     const refreshSizeInfo = async () => {
         const el = $('gi-sizeinfo'); el.textContent = 'Checking size & free space…';
         // Always the resolved platform, even without a choice to make — it's already set
-        // correctly above from grinder.db's own value, and passing undefined here used to
+        // correctly above from library.db's own value, and passing undefined here used to
         // silently default the size lookup to Windows (gogInstallInfo's own `platform ||
         // 'windows'` fallback), showing the wrong download size for a game with no Windows
         // build at all.
@@ -1271,7 +1271,7 @@ async function openGrinderInstall(game) {
     }
 
     $('gi-change-dir').onclick = async () => {
-        const dir = await window.api.grinderPickDir($('gi-dir').value);
+        const dir = await window.api.installerPickDir($('gi-dir').value);
         if (dir) { $('gi-dir').value = dir; refreshSizeInfo(); }
     };
     $('gi-cancel').onclick = () => { modal.classList.remove('active'); loadGames(); };
@@ -1326,7 +1326,7 @@ async function showLaunchFailure(info) {
     $('pr-bar').style.width = '0%';
     $('pr-step').textContent = ''; $('pr-progress-msg').textContent = '';
     // Only offer to install a Windows runtime when the failure is actually about one missing —
-    // this used to show unconditionally, so a completely unrelated failure (a stale grinder.db
+    // this used to show unconditionally, so a completely unrelated failure (a stale library.db
     // lookup, a bad path) still offered "Install GE-Proton" as if that would fix it. Confusing
     // on Linux; actively wrong on macOS, where GE-Proton isn't a concept that exists at all.
     $('pr-install').style.display = isProtonIssue ? '' : 'none';
@@ -1348,7 +1348,7 @@ async function showLaunchFailure(info) {
     // the one thing worth trying, and its message says so. Naming the variable while making the
     // user go and find the box would be exactly the worse answer described above.
     const fixBtn = $('pr-fix');
-    const canFixVulkan = (info.code === 'NO_VULKAN' || info.code === 'D3D_CRASH') && info.grinderGameId != null;
+    const canFixVulkan = (info.code === 'NO_VULKAN' || info.code === 'D3D_CRASH') && info.installerGameId != null;
     fixBtn.style.display = canFixVulkan ? '' : 'none';
     fixBtn.disabled = false;
     fixBtn.textContent = 'Use OpenGL for this game';
@@ -1356,8 +1356,8 @@ async function showLaunchFailure(info) {
         fixBtn.onclick = async () => {
             fixBtn.disabled = true;
             fixBtn.textContent = 'Applying…';
-            const r = await window.api.grinderSetEnvVar({
-                grinderGameId: info.grinderGameId, name: 'PROTON_USE_WINED3D', value: '1',
+            const r = await window.api.installerSetEnvVar({
+                installerGameId: info.installerGameId, name: 'PROTON_USE_WINED3D', value: '1',
             });
             if (r && r.ok) {
                 $('pr-message').textContent =
@@ -1443,12 +1443,12 @@ window.api.onProtonInstallProgress(d => {
 window.api.onGameLaunchFailed(info => showLaunchFailure(info || {}));
 
 // In-process GOG/Epic uninstall (reuses the install modal in progress-only mode).
-async function openGrinderUninstall(game) {
-    const gid = game.GrinderGameId || '';
+async function openInstallerUninstall(game) {
+    const gid = game.InstallerGameId || '';
     if (!/^(gog|epic)_/i.test(gid)) return;
     const ok = await showConfirm(`Uninstall "${game.Game}"?\nThis removes the game files and its Wine prefix.`);
     if (!ok) return;
-    const modal = document.getElementById('modal-grinder-install');
+    const modal = document.getElementById('modal-installer-install');
     const $ = id => document.getElementById(id);
     $('gi-title').textContent = 'Uninstalling: ' + (game.Game || '');
     $('gi-config').style.display = 'none';
@@ -1460,7 +1460,7 @@ async function openGrinderUninstall(game) {
     $('gi-cancel').textContent = 'Hide';
     $('gi-cancel').onclick = () => { modal.classList.remove('active'); loadGames(); };
     modal.classList.add('active');
-    const res = await window.api.grinderUninstall({ gameId: game.id, grinderGameId: gid });
+    const res = await window.api.installerUninstall({ gameId: game.id, installerGameId: gid });
     if (res && res.ok) {
         $('gi-step').textContent = 'DONE'; $('gi-bar').style.width = '100%'; $('gi-msg').textContent = 'Game uninstalled.';
         setTimeout(() => { modal.classList.remove('active'); loadGames(); }, 1000);
@@ -1478,8 +1478,8 @@ async function handleInstall(game) {
     const states = await launcherStatesFor(game);
     if (states.length >= 2) { showLauncherPicker(game, states, 'install'); return; }
 
-    if (_isGrinderGame(game)) {
-        if (/^(gog|epic)_/i.test(game.GrinderGameId || '')) { openGrinderInstall(game); return; }
+    if (_isInstallerGame(game)) {
+        if (/^(gog|epic)_/i.test(game.InstallerGameId || '')) { openInstallerInstall(game); return; }
         _openCompatFor(game); return;
     }
     const installCmd = getInstallCommand(game);
@@ -1505,7 +1505,7 @@ async function verifyAndLaunch(gameId, launchCmd) {
 
 window.api.onInstallStatusUpdated(() => loadGames());
 
-// On window refocus (e.g. returning from the GRINDER install/uninstall window),
+// On window refocus (e.g. returning from the Installer install/uninstall window),
 // re-read the shared DB and re-render ONLY if install state actually changed —
 // avoids any re-render jank on ordinary alt-tabbing.
 let _refocusTimer = 0;
@@ -1519,7 +1519,7 @@ window.api.onWindowRefocused(() => {
             return !old || old.Installed != g.Installed || old.LaunchCommand != g.LaunchCommand;
         });
         if (changed) { allGames = fresh; applyFilters(); }
-        // Playlists can be created/edited from CREMA (shared games.db) — re-read the
+        // Playlists can be created/edited from Couch (shared games.db) — re-read the
         // list so a playlist made on the couch shows up without restarting The Manager.
         try {
             const freshPl = await window.api.getPlaylists();
@@ -1551,15 +1551,15 @@ window.api.onWindowRefocused(() => {
     else document.addEventListener('DOMContentLoaded', () => setGpuSuspended(document.hidden));
 })();
 
-// Auto-refresh play button when CNGM regains focus (e.g. after installing via GRINDER)
+// Auto-refresh play button when Clarity regains focus (e.g. after installing via Installer)
 let _focusRefreshTimer = null;
 window.addEventListener('focus', () => {
     clearTimeout(_focusRefreshTimer);
     _focusRefreshTimer = setTimeout(async () => {
         const onGamepage = document.getElementById('view-gamepage')?.classList.contains('active');
         if (currentGameId) await window.api.verifyInstallStatus(currentGameId);
-        await syncGrinderInstalled();   // pull GRINDER's installed flags into the shared DB
-        await loadGames();              // always re-render so a game installed via GRINDER flips Install→Play
+        await syncInstallerInstalled();   // pull Installer's installed flags into the shared DB
+        await loadGames();              // always re-render so a game installed via Installer flips Install→Play
         if (onGamepage && currentGameId) {
             const updated = allGames.find(g => g.id === currentGameId);
             if (updated) refreshGamepagePlayBtn(updated);
@@ -1728,8 +1728,8 @@ window.api.checkEmuLatte().then(exists => {
         if (railEmu) railEmu.style.display = '';
     }
 });
-// Always-visible floating CREMA call-to-action
-document.getElementById('crema-cta')?.addEventListener('click', () => window.api.launchCrema());
+// Always-visible floating Couch call-to-action
+document.getElementById('couch-cta')?.addEventListener('click', () => window.api.launchCouch());
 // Support pill → an in-app panel. Nothing here opens a browser.
 //
 // ⚠️ This used to open the project website's support.html. The site is offline while the app is
@@ -1799,11 +1799,11 @@ window.api.getBaseDir().then(dir => {
     // a rotated 900x1440 head derived 75% while the desktop head beside it derived 100%.
     //
     // With nothing derived there is nothing to re-derive, so the screen stamp that existed to
-    // stop a saved value being overwritten (`cngm_ui_scale_screen`) is gone with it.
+    // stop a saved value being overwritten (`clarity_ui_scale_screen`) is gone with it.
 
     // Mirrored for the pre-paint script: applying the zoom after the window is visible makes
     // the whole layout jump, which is the most obvious part of the startup flash.
-    const _cacheScale = v => { try { localStorage.setItem('cngm_ui_scale_cache_v2', String(v)); } catch {} };
+    const _cacheScale = v => { try { localStorage.setItem('clarity_ui_scale_cache_v2', String(v)); } catch {} };
 
     function _markScaleButton(val) {
         document.querySelectorAll('.ui-scale-btn').forEach(btn =>
@@ -1812,11 +1812,11 @@ window.api.getBaseDir().then(dir => {
 
     // ⚠️ One-time reset. Removing the derivation fixes what a FRESH install gets, but every
     // existing install is still carrying whatever the old code auto-derived and wrote into
-    // `cngm_ui_scale` — typically 0.75 — and that value is indistinguishable from a scale the
+    // `clarity_ui_scale` — typically 0.75 — and that value is indistinguishable from a scale the
     // user actually picked. Since it was almost never a choice, and 100% is now the intended
     // baseline, it is cleared once. A scale chosen after this sticks for good.
     Promise.all([
-        window.api.getSetting('cngm_ui_scale'),
+        window.api.getSetting('clarity_ui_scale'),
         window.api.getSetting('ui_scale_reset_100'),
     ]).then(([val, done]) => {
         let v;
@@ -1824,7 +1824,7 @@ window.api.getBaseDir().then(dir => {
             v = val ? parseFloat(val) : 1.0;
         } else {
             v = 1.0;
-            window.api.setSetting('cngm_ui_scale', '1.0');
+            window.api.setSetting('clarity_ui_scale', '1.0');
             window.api.setSetting('ui_scale_reset_100', '1');
         }
         window.api.setZoomLevel(v);
@@ -2090,7 +2090,7 @@ document.getElementById('modal-free-games')?.addEventListener('click', (e) => {
 });
 
 // ── MAC-NATIVE FILTER (macOS only) ──────────────────────────────────────────
-// Which games have a real macOS build vs. Windows-only. GOG/Epic are tagged from grinder.db
+// Which games have a real macOS build vs. Windows-only. GOG/Epic are tagged from library.db
 // (free, local); Steam needs a live per-game lookup, so it's a user-triggered scan rather than
 // something that runs on every sync — see scan-mac-native in main.js. The filter itself is just
 // another qualifier in activeFilters (see QUALIFIER_FILTERS/applyFilters), reachable from the
@@ -2175,10 +2175,10 @@ document.getElementById('hidden-games-list')?.addEventListener('click', async (e
     renderHiddenGamesList();
 });
 document.getElementById('btn-open-hidden-games')?.addEventListener('click', openHiddenGamesModal);
-// Manage Storage: open GRINDER on installed games sorted by size (GOG/Epic), or Steam's storage settings.
-// ── COMPATIBILITY + STORAGE (absorbed from the GRINDER GUI) ──────────────────
-// GRINDER's per-game setup modal and its storage view were the last two reasons
-// to open that window. Both live here now, against the same grinder.db row.
+// Manage Storage: open Installer on installed games sorted by size (GOG/Epic), or Steam's storage settings.
+// ── COMPATIBILITY + STORAGE (absorbed from the Installer GUI) ──────────────────
+// Installer's per-game setup modal and its storage view were the last two reasons
+// to open that window. Both live here now, against the same library.db row.
 let _compatGid = null;
 
 function _fmtBytes(n) {
@@ -2190,23 +2190,23 @@ function _fmtBytes(n) {
 }
 
 // Per-game entry point. A game reaches the compatibility panel only if it has a
-// GRINDER row to edit. There is no window to fall back to any more, so a game
+// Installer row to edit. There is no window to fall back to any more, so a game
 // without one says why instead of doing nothing.
 function _openCompatFor(game) {
-    const gid = game?.GrinderGameId || '';
+    const gid = game?.InstallerGameId || '';
     if (gid) { openCompatModal(gid, game.Game || ''); return true; }
-    showAlert('This game has no GRINDER entry yet — install it through Cafe Neurotico first, and its compatibility settings appear here.');
+    showAlert('This game has no Installer entry yet — install it through Clarity first, and its compatibility settings appear here.');
     return false;
 }
 
-async function openCompatModal(grinderGameId, title = '') {
-    _compatGid = grinderGameId;
+async function openCompatModal(installerGameId, title = '') {
+    _compatGid = installerGameId;
     const box = document.getElementById('modal-compat');
     document.getElementById('compat-game-name').textContent = title ? '— ' + title : '';
     document.getElementById('compat-status').textContent = '';
     box.classList.add('active');
 
-    const res = await window.api.grinderCompatGet(grinderGameId);
+    const res = await window.api.installerCompatGet(installerGameId);
     if (!res || !res.ok) {
         document.getElementById('compat-status').textContent = res?.error || 'Could not read this game\'s settings.';
         return;
@@ -2218,7 +2218,7 @@ async function openCompatModal(grinderGameId, title = '') {
     // Proton list: the stored value may point at a runtime that is no longer installed,
     // so it is added as its own option rather than silently resetting to the default.
     const psel = document.getElementById('compat-proton');
-    psel.innerHTML = '<option value="">Default (whatever GRINDER picks)</option>';
+    psel.innerHTML = '<option value="">Default (whatever Installer picks)</option>';
     const seen = new Set();
     (res.protons || []).forEach(pv => {
         const val = pv.path || pv;
@@ -2281,13 +2281,13 @@ document.getElementById('btn-compat-save')?.addEventListener('click', async () =
         use_battleye:   document.getElementById('compat-battleye').checked ? 1 : 0,
         use_eac:        document.getElementById('compat-eac').checked      ? 1 : 0,
     };
-    const r = await window.api.grinderCompatSet({ grinderGameId: _compatGid, patch });
+    const r = await window.api.installerCompatSet({ installerGameId: _compatGid, patch });
     if (!r || !r.ok) { status.textContent = r?.error || 'Could not save.'; return; }
     // The launch target is not a plain column — the engine rewrites the stored task.
     const trow = document.getElementById('compat-row-target');
     if (trow.style.display !== 'none') {
-        await window.api.grinderSetLaunchTarget({
-            grinderGameId: _compatGid,
+        await window.api.installerSetLaunchTarget({
+            installerGameId: _compatGid,
             taskIndex: document.getElementById('compat-launch-target').value,
         });
     }
@@ -2302,7 +2302,7 @@ async function openStorageModal() {
     list.innerHTML = '';
     summary.textContent = 'Measuring installed games…';
     box.classList.add('active');
-    const res = await window.api.grinderStorageList();
+    const res = await window.api.installerStorageList();
     if (!res || !res.ok) { summary.textContent = res?.error || 'Could not read installed games.'; return; }
     if (!res.games.length) { summary.textContent = 'No installed games found.'; return; }
     summary.textContent = `${res.games.length} installed game${res.games.length === 1 ? '' : 's'} · ${_fmtBytes(res.total)} on disk`;
@@ -2319,7 +2319,7 @@ document.getElementById('modal-storage')?.addEventListener('click', e => {
     if (e.target.id === 'modal-storage') e.currentTarget.classList.remove('active');
 });
 
-document.getElementById('btn-storage-grinder')?.addEventListener('click', openStorageModal);
+document.getElementById('btn-storage-installer')?.addEventListener('click', openStorageModal);
 document.getElementById('btn-storage-steam')?.addEventListener('click', () => window.api.openInstallUrl('steam://settings/storage'));
 
 // ── Add to Desktop — per-game launcher via the --game deeplink ────────────────
@@ -2509,7 +2509,7 @@ async function openDlcModal(game) {
     document.getElementById('btn-dlc-reset').style.display = 'none';
     modal.classList.add('active');
     let res;
-    try { res = await window.api.dlcList(game.GrinderGameId, null); }
+    try { res = await window.api.dlcList(game.InstallerGameId, null); }
     catch (e) { res = { ok: false, error: e.message, dlcs: [] }; }
     if (_dlcGame !== game || !modal.classList.contains('active')) return;  // closed / switched while loading
     renderDlcModal(game, res);
@@ -2561,7 +2561,7 @@ function renderDlcModal(game, res) {
 }
 
 function _dlcEnqueue(game, mode, ids, label) {
-    enqueueDownload({ gameId: game.id, gid: game.GrinderGameId, name: label, store: 'GOG', dir: null,
+    enqueueDownload({ gameId: game.id, gid: game.InstallerGameId, name: label, store: 'GOG', dir: null,
         dlc: { mode, ids }, dlcKey: `${game.id}:dlc:${mode}:${(ids || []).join(',')}` });
 }
 function closeDlcModal() { _dlcGame = null; document.getElementById('modal-dlc')?.classList.remove('active'); }
@@ -2768,13 +2768,13 @@ function applyCornersStyle() {
 function applyLayoutMode() {
     document.getElementById('app-container').classList.add('layout-rail');
     document.body.classList.toggle('corners-flat', _cornersStyle === 'sharp');
-    localStorage.setItem('cngm_layout_mode', 'rail');
+    localStorage.setItem('clarity_layout_mode', 'rail');
 }
 
 // ════════════════════════════════════════════════════════════════════════════
 //  HOME — "Control Room" dashboard (optional start screen preceding the library)
 //  Stats come from the shared core engine via window.api.getHomeStats(); the
-//  same engine feeds CREMA's Home, so the numbers never drift between faces.
+//  same engine feeds Couch's Home, so the numbers never drift between faces.
 // ════════════════════════════════════════════════════════════════════════════
 const HOME_WIDGETS = [
     { key: 'daily',    label: 'The Daily Grind' },
@@ -3112,7 +3112,7 @@ function renderDisk(data) {
     const body = document.getElementById('home-disk-body'); if (!body) return;
     const ts = data && data.ts;
     let html = `<div class="wl-toolbar"><span style="font-size:11px; color:var(--text_dim); align-self:center; margin-right:auto;">${ts ? ('Scanned ' + _homeAgo(ts)) : 'Not scanned yet'}</span><button id="disk-scan-btn" class="home-ghost">Scan now</button></div>`;
-    if (!ts) html += `<div class="hc-empty">Scan your installed games' on-disk size (Steam + GOG/Epic via GRINDER).</div>`;
+    if (!ts) html += `<div class="hc-empty">Scan your installed games' on-disk size (Steam + GOG/Epic via Installer).</div>`;
     else {
         const max = (data.byStore[0] && data.byStore[0].bytes) || 1;
         html += `<div style="font-size:26px; font-weight:900; color:var(--accent); margin:2px 0 12px;">${_fmtBytes(data.totalBytes)} <span style="font-size:12px; color:var(--text_dim); font-weight:700;">across ${data.scanned} games</span></div>`;
@@ -3396,7 +3396,7 @@ document.getElementById('btn-refresh-library').addEventListener('click', async (
     setTimeout(() => { btn.style.animation = ''; }, 650);
     const onGamepage = document.getElementById('view-gamepage').classList.contains('active');
     if (onGamepage && currentGameId) await window.api.verifyInstallStatus(currentGameId);
-    await updateLibraryFlow({ quiet: true });   // fetch new from Steam/GRINDER + offer to scrape only the new ones
+    await updateLibraryFlow({ quiet: true });   // fetch new from Steam/Installer + offer to scrape only the new ones
     if (onGamepage && currentGameId) {
         const updated = allGames.find(g => g.id === currentGameId);
         if (updated) refreshGamepagePlayBtn(updated);
@@ -3624,7 +3624,7 @@ if (window.api.platform === 'darwin') {
 
 // Control Panel splash → releases page. There is no in-app updater by design:
 // the user reads the release notes on GitHub and grabs the AppImage themselves.
-const RELEASES_URL = 'https://github.com/FromChaosComesClarity/CafeNeurotico/releases';
+const RELEASES_URL = 'https://github.com/FromChaosComesClarity/Clarity/releases';
 document.getElementById('btn-check-app-updates')?.addEventListener('click', () => window.api.openExternal(RELEASES_URL));
 
 // --- MANUAL (opens as separate window) ---
@@ -3666,7 +3666,7 @@ const _PAL_ACTIONS = [
     { id: 'view-gallery',         name: 'Gallery View',             run: () => switchView('view-gallery') },
     { id: 'view-list',            name: 'List View',                run: () => switchView('view-list') },
     { id: 'view-home',            name: 'Home Dashboard',           run: () => switchView('view-home') },
-    { id: 'crema',                name: 'Go Fullscreen with CREMA', run: () => document.getElementById('crema-cta')?.click() },
+    { id: 'couch',                name: 'Go Fullscreen with Couch', run: () => document.getElementById('couch-cta')?.click() },
     { id: 'emulatte',             name: 'Launch EmuLatte',          run: () => document.getElementById('btn-rail-emulatte')?.click() },
 ];
 
@@ -3864,14 +3864,14 @@ document.getElementById('btn-welcome-done').addEventListener('click', dismissWel
 document.getElementById('btn-welcome-manual').addEventListener('click', () => { dismissWelcome(); window.api.openManual(); });
 
 // Welcome screen — headless GOG/Epic sign-in.
-// No GRINDER window: sign-in happens in-place and the owned library imports right away.
+// No Installer window: sign-in happens in-place and the owned library imports right away.
 
-// Pull newly-authorized GOG/Epic games into CNGM's library (same path as Refresh Library).
+// Pull newly-authorized GOG/Epic games into Clarity's library (same path as Refresh Library).
 async function importStoreLibrary() {
     try {
-        await window.api.grinderRefreshOwned();
-        const gs = await window.api.grinderStatus();
-        if (gs.found && gs.allGames?.length) await window.api.syncAllGrinderGames(gs.allGames, gs.path);
+        await window.api.installerRefreshOwned();
+        const gs = await window.api.installerStatus();
+        if (gs.found && gs.allGames?.length) await window.api.syncAllInstallerGames(gs.allGames, gs.path);
         await loadGames();
     } catch (e) { console.warn('[store-import]', e); }
 }
@@ -3920,7 +3920,7 @@ async function runStoreLogin(store, btn, statusEl) {
 }
 
 (() => {
-    const statusEl = document.getElementById('wlc-grinder-status');
+    const statusEl = document.getElementById('wlc-installer-status');
     if (!statusEl) return;
     document.getElementById('btn-welcome-login-gog')?.addEventListener('click',  (e) => runStoreLogin('gog',  e.currentTarget, statusEl));
     document.getElementById('btn-welcome-login-epic')?.addEventListener('click', (e) => runStoreLogin('epic', e.currentTarget, statusEl));
@@ -4827,8 +4827,8 @@ function renderTable(recent, regular) {
         let actionCell;
         if (isInstalled) {
             actionCell = `<button class="primary btn-play" data-cmd="${game.LaunchCommand.replace(/"/g, '&quot;')}" data-id="${game.id}" style="padding: 4px 8px;">${t('status.play')}</button>`;
-        } else if (_isGrinderGame(game)) {
-            actionCell = `<button class="btn-install" data-grinder="1" data-name="${game.Game.replace(/"/g, '&quot;')}" data-id="${game.id}" style="padding: 4px 8px;">${t('status.install')}</button>`;
+        } else if (_isInstallerGame(game)) {
+            actionCell = `<button class="btn-install" data-installer="1" data-name="${game.Game.replace(/"/g, '&quot;')}" data-id="${game.id}" style="padding: 4px 8px;">${t('status.install')}</button>`;
         } else if (installCmd) {
             actionCell = `<button class="btn-install" data-url="${installCmd}" data-id="${game.id}" style="padding: 4px 8px;">${t('status.install')}</button>`;
         } else if (isManualCategory(game)) {
@@ -4919,7 +4919,7 @@ _tbody.addEventListener('click', async (e) => {
         e.stopPropagation();
         if (install.dataset.addcmd) {
             openAddCmdDialog(install.dataset.id, install.dataset.name);
-        } else if (install.dataset.grinder) {
+        } else if (install.dataset.installer) {
             const g = allGames.find(x => x.id == install.dataset.id);
             if (g) handleInstall(g); else showAlert('That game is no longer in the library — refresh and try again.');
         } else {
@@ -5110,8 +5110,8 @@ function renderGallery(recent, regular) {
         let actionBtn = '';
         if (isInstalled) {
             actionBtn = `<button class="btn-play-gallery primary" data-cmd="${game.LaunchCommand.replace(/"/g, '&quot;')}" data-id="${game.id}" style="margin: 5px; font-size: 12px; padding: 4px;">${t('status.play')}</button>`;
-        } else if (_isGrinderGame(game)) {
-            actionBtn = `<button class="btn-install-gallery" data-grinder="1" data-name="${game.Game.replace(/"/g, '&quot;')}" data-id="${game.id}" style="margin: 5px; font-size: 12px; padding: 4px;">${t('status.install')}</button>`;
+        } else if (_isInstallerGame(game)) {
+            actionBtn = `<button class="btn-install-gallery" data-installer="1" data-name="${game.Game.replace(/"/g, '&quot;')}" data-id="${game.id}" style="margin: 5px; font-size: 12px; padding: 4px;">${t('status.install')}</button>`;
         } else if (installCmdG) {
             actionBtn = `<button class="btn-install-gallery" data-url="${installCmdG}" data-id="${game.id}" style="margin: 5px; font-size: 12px; padding: 4px;">${t('status.install')}</button>`;
         } else if (isManualCategory(game)) {
@@ -5174,7 +5174,7 @@ _grid.addEventListener('click', (e) => {
         e.stopPropagation();
         if (install.dataset.addcmd) {
             openAddCmdDialog(install.dataset.id, install.dataset.name);
-        } else if (install.dataset.grinder) {
+        } else if (install.dataset.installer) {
             const g = allGames.find(x => x.id == install.dataset.id);
             if (g) handleInstall(g); else showAlert('That game is no longer in the library — refresh and try again.');
         } else {
@@ -5235,7 +5235,7 @@ let _achFilter = 'all';
 let _achStores = {};   // storeLabel → achievements[]
 
 function _gogAppIdFromGame(game) {
-    const m = (game.LaunchCommand || '').match(/grinder:\/\/launch\/gog\/(\d+)/i);
+    const m = (game.LaunchCommand || '').match(/installer:\/\/launch\/gog\/(\d+)/i);
     return m ? m[1] : null;
 }
 
@@ -5444,7 +5444,7 @@ function refreshGamepagePlayBtn(game) {
         playBtn.onclick = () => verifyAndLaunch(currentGameId, currentLaunchCmd);
     } else {
         const installCmd = getInstallCommand(game);
-        if (_isGrinderGame(game)) {
+        if (_isInstallerGame(game)) {
             playBtn.style.display = 'block';
             playBtn.innerText = t('status.install');
             playBtn.className = 'btn-install-primary';
@@ -5477,7 +5477,7 @@ function openGamepage(game) {
     const coverEl = document.getElementById('gamepage-cover');
     const playBtn = document.getElementById('btn-gamepage-play');
     const trailerBtn = document.getElementById('btn-gamepage-trailer');
-    const grinderBtn = document.getElementById('btn-gamepage-grinder');
+    const installerBtn = document.getElementById('btn-gamepage-installer');
 
     const favBtn = document.getElementById('btn-gamepage-fav');
     const wantBtn = document.getElementById('btn-gamepage-want');
@@ -5570,14 +5570,14 @@ function openGamepage(game) {
     // Play / Install / Add Command Button
     refreshGamepagePlayBtn(game);
 
-    // GRINDER setup button — GOG and Epic games only
+    // Installer setup button — GOG and Epic games only
     const gpStore = (game.Store || '').toLowerCase();
     if (gpStore.includes('gog') || gpStore.includes('epic')) {
-        grinderBtn.style.display = 'block';
-        grinderBtn.onclick = () => _openCompatFor(game);
+        installerBtn.style.display = 'block';
+        installerBtn.onclick = () => _openCompatFor(game);
     } else {
-        grinderBtn.style.display = 'none';
-        grinderBtn.onclick = null;
+        installerBtn.style.display = 'none';
+        installerBtn.onclick = null;
     }
 
     // "Open in Steam" button — only for a game actually owned on Steam.
@@ -5596,15 +5596,15 @@ function openGamepage(game) {
     // Uninstall button — installed GOG/Epic (in-process) or Steam (via the Steam client)
     const uninstallBtn = document.getElementById('btn-gamepage-uninstall');
     if (uninstallBtn) {
-        const grinderCan = /^(gog|epic)_/i.test(game.GrinderGameId || '') && (game.Installed == 1);
+        const installerCan = /^(gog|epic)_/i.test(game.InstallerGameId || '') && (game.Installed == 1);
         // Same gate: uninstalling "through Steam" a game Steam does not own would open
         // the client on a title the user never bought there.
         const sAppId = _isOnSteam(game) ? _steamAppId(game) : '';
-        const steamCan = !grinderCan && sAppId && (game.Installed == 1);
-        if (grinderCan) {
+        const steamCan = !installerCan && sAppId && (game.Installed == 1);
+        if (installerCan) {
             uninstallBtn.style.display = 'block';
             uninstallBtn.title = 'Uninstall';
-            uninstallBtn.onclick = () => openGrinderUninstall(game);
+            uninstallBtn.onclick = () => openInstallerUninstall(game);
         } else if (steamCan) {
             uninstallBtn.style.display = 'block';
             uninstallBtn.title = 'Uninstall via Steam';
@@ -5621,7 +5621,7 @@ function openGamepage(game) {
     // DLC button — installed GOG games (DLCs merge into the existing install folder)
     const dlcBtn = document.getElementById('btn-gamepage-dlc');
     if (dlcBtn) {
-        if (/^gog_/i.test(game.GrinderGameId || '') && game.Installed == 1) {
+        if (/^gog_/i.test(game.InstallerGameId || '') && game.Installed == 1) {
             dlcBtn.style.display = 'block';
             dlcBtn.onclick = (e) => { e.stopPropagation(); openDlcModal(game); };
         } else {
@@ -5638,7 +5638,7 @@ function openGamepage(game) {
     // there are none.
     const redistBtn = document.getElementById('btn-gamepage-redist');
     if (redistBtn) {
-        if (/^gog_/i.test(game.GrinderGameId || '') && game.Installed == 1) {
+        if (/^gog_/i.test(game.InstallerGameId || '') && game.Installed == 1) {
             redistBtn.style.display = 'block';
             redistBtn.onclick = async (e) => {
                 e.stopPropagation();
@@ -5651,7 +5651,7 @@ function openGamepage(game) {
                 _redistBusy = true;
                 opToast('Compatibility files: checking…');
                 let res = null;
-                try { res = await window.api.runRedist(game.GrinderGameId); }
+                try { res = await window.api.runRedist(game.InstallerGameId); }
                 catch (err) { res = { ok: false, error: err.message }; }
                 _redistBusy = false;
                 if (res && res.ok) {
@@ -5674,7 +5674,7 @@ function openGamepage(game) {
     // Save Manager button — installed GOG & Epic games (locate/back up/restore saves)
     const savesBtn = document.getElementById('btn-gamepage-saves');
     if (savesBtn) {
-        if (/^(gog|epic)_/i.test(game.GrinderGameId || '') && game.Installed == 1) {
+        if (/^(gog|epic)_/i.test(game.InstallerGameId || '') && game.Installed == 1) {
             savesBtn.style.display = 'block';
             savesBtn.onclick = (e) => { e.stopPropagation(); openSavesModal(game); };
         } else {
@@ -5886,15 +5886,15 @@ function _renderLauncherList(game) {
     if (launchers.length === 0 && game.LaunchCommand) {
         launchers = [{ label: _guessLabel(game.LaunchCommand), cmd: game.LaunchCommand }];
     }
-    if (launchers.length === 0 && _isGrinderGame(game)) {
-        list.innerHTML = '<p style="font-size:11px; color:var(--text_dim); margin:4px 0; font-style:italic;">Launched via GRINDER. You can add a custom command below if needed.</p>';
+    if (launchers.length === 0 && _isInstallerGame(game)) {
+        list.innerHTML = '<p style="font-size:11px; color:var(--text_dim); margin:4px 0; font-style:italic;">Launched via Installer. You can add a custom command below if needed.</p>';
         return;
     }
-    // grinder:// rows are shown read-only rather than hidden: hiding them meant Save
+    // installer:// rows are shown read-only rather than hidden: hiding them meant Save
     // rebuilt LaunchCommands from the visible rows alone and threw the GOG/Epic launcher
     // away, quietly demoting a Steam+GOG game to Steam-only (no store picker, wrong installer).
     launchers.forEach(l => {
-        const managed = /grinder:\/\/launch/i.test(l.cmd || '');
+        const managed = /installer:\/\/launch/i.test(l.cmd || '');
         list.appendChild(_makeLauncherRow(l.label || '', l.cmd || '', managed));
     });
 }
@@ -6131,7 +6131,7 @@ function _makeLauncherRow(label, cmd, managed = false) {
     row.style.cssText = 'display:flex; gap:6px; align-items:center;';
     const ro = managed ? ' readonly' : '';
     const dim = managed ? ' opacity:.6; cursor:default;' : '';
-    const tip = managed ? ' title="Managed by GRINDER — install and launch are handled for you."' : '';
+    const tip = managed ? ' title="Managed by Installer — install and launch are handled for you."' : '';
     row.innerHTML =
         `<input type="text" class="lnch-label" placeholder="Label" value="${escHtml(label)}"${ro}${tip} style="width:140px; font-size:11px; padding:6px 8px; flex-shrink:0; background:var(--bg_input,rgba(255,255,255,0.07)); border:1px solid var(--border_solid); border-radius:4px; color:var(--text_main);${dim}">` +
         `<input type="text" class="lnch-cmd" placeholder="Command or URL" value="${escHtml(cmd)}"${ro}${tip} style="flex:1; font-size:11px; padding:6px 8px; background:var(--bg_input,rgba(255,255,255,0.07)); border:1px solid var(--border_solid); border-radius:4px; color:var(--text_main);${dim}">` +
@@ -6175,7 +6175,7 @@ function openDetails(game) {
     document.getElementById('edit-fav').checked = game.FAV === 'YES';
     document.getElementById('edit-want').checked = game.WANT_TO_PLAY === 'YES';
 
-    updateGrinderRow(game);
+    updateInstallerRow(game);
 
     // Populate Left Column Asset Previews
     const coverDiv = document.getElementById('ui-cover');
@@ -6836,7 +6836,7 @@ document.getElementById('btn-pico8-open-bbs')?.addEventListener('click', () => {
 
 window.api.onPico8CartDownloaded(({ name }) => {
     loadGames();
-    // Toast in CNGM window
+    // Toast in Clarity window
     const toast = document.createElement('div');
     toast.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);z-index:9999;background:var(--bg_menu);border:1px solid var(--accent);color:var(--accent);padding:10px 20px;border-radius:6px;font-size:13px;font-weight:700;letter-spacing:1px;box-shadow:0 6px 24px rgba(0,0,0,0.8);transition:opacity 0.4s;pointer-events:none;white-space:nowrap;';
     toast.textContent = `✓ ${name} — added to PICO-8 library`;
@@ -6965,7 +6965,7 @@ function openConnectModal() {
     document.getElementById('btn-open-connect')?.click();
 }
 
-// ── STEAM / GRINDER / ITCH / STORE HERO BUTTONS ──────────────────────────
+// ── STEAM / Installer / ITCH / STORE HERO BUTTONS ──────────────────────────
 
 function getThemeColors() {
     const s = getComputedStyle(document.documentElement);
@@ -6995,7 +6995,7 @@ document.getElementById('btn-hero-update-steam')?.addEventListener('click', asyn
     loadGames();
 });
 
-// Sync runs in-process now — `grinder-refresh-owned` already did the whole job
+// Sync runs in-process now — `installer-refresh-owned` already did the whole job
 // (syncOwnedLibrary plus pruning refunds out of the CN library); it simply had no
 // caller. The spinner runs for as long as the sync actually takes.
 async function _syncOwnedLibrary(btnId) {
@@ -7003,8 +7003,8 @@ async function _syncOwnedLibrary(btnId) {
     if (btn?.dataset.busy) return;
     if (btn) { btn.dataset.busy = '1'; btn.style.animation = 'spin 1s linear infinite'; }
     try {
-        const r = await window.api.grinderRefreshOwned();
-        if (!r?.available)  { await showAlert('GRINDER data is not set up yet — connect GOG or Epic first.'); return; }
+        const r = await window.api.installerRefreshOwned();
+        if (!r?.available)  { await showAlert('Installer data is not set up yet — connect GOG or Epic first.'); return; }
         if (r.error)        { await showAlert('Could not refresh your library: ' + r.error); return; }
         await loadGames();
     } finally {
@@ -7018,7 +7018,7 @@ document.getElementById('btn-hero-update-epic')?.addEventListener('click', () =>
 document.getElementById('btn-hero-update-others')?.addEventListener('click', async () => {
     const btn = document.getElementById('btn-hero-update-others');
     btn.style.animation = 'spin 0.6s linear infinite';
-    await syncGrinderInstalled();
+    await syncInstallerInstalled();
     btn.style.animation = '';
     loadGames();
 });
@@ -7092,7 +7092,7 @@ document.getElementById('btn-sync-itch')?.addEventListener('click', async () => 
     btn.disabled = false; btn.innerText = 'Sync itch.io Library';
     statusEl.style.color = result.success ? 'var(--accent)' : '#f57c00';
     statusEl.innerText = result.message;
-    if (result.success) { await loadGames(); syncGrinderInstalled(); }
+    if (result.success) { await loadGames(); syncInstallerInstalled(); }
 });
 
 document.getElementById('btn-sync-steam').addEventListener('click', async () => {
@@ -7149,14 +7149,14 @@ async function updateLibraryFlow({ quiet = false } = {}) {
     }
 
     // Headless store refresh — pull newly-bought GOG/Epic games from the stores
-    // into GRINDER's DB (import-only, not install) so the GRINDER sync below picks
-    // them up into CNGM's library.
+    // into Installer's DB (import-only, not install) so the Installer sync below picks
+    // them up into Clarity's library.
     cpTaskProgress(45);
     line('🔄 Refreshing GOG/Epic library...');
     try {
-        const ro = await window.api.grinderRefreshOwned();
+        const ro = await window.api.installerRefreshOwned();
         if (!ro || ro.available === false) {
-            statusEl.innerHTML = statusEl.innerHTML.replace('🔄 Refreshing GOG/Epic library...', '⚪ GOG/Epic: GRINDER not found');
+            statusEl.innerHTML = statusEl.innerHTML.replace('🔄 Refreshing GOG/Epic library...', '⚪ GOG/Epic: Installer not found');
         } else {
             const parts = [];
             const tally = (label, s) => `${label} +${s.added || 0}${s.removed ? ` −${s.removed}` : ''}`;
@@ -7170,26 +7170,26 @@ async function updateLibraryFlow({ quiet = false } = {}) {
         statusEl.innerHTML = statusEl.innerHTML.replace('🔄 Refreshing GOG/Epic library...', `⚠️ GOG/Epic: ${e.message}`);
     }
 
-    // GRINDER sync — always attempt if GRINDER is present
+    // Installer sync — always attempt if Installer is present
     cpTaskProgress(60);
-    line('🔄 Syncing GRINDER...');
-    const gs = await window.api.grinderStatus();
+    line('🔄 Syncing Installer...');
+    const gs = await window.api.installerStatus();
     if (!gs.found) {
-        statusEl.innerHTML = statusEl.innerHTML.replace('🔄 Syncing GRINDER...', '⚪ GRINDER: not found');
+        statusEl.innerHTML = statusEl.innerHTML.replace('🔄 Syncing Installer...', '⚪ Installer: not found');
     } else {
         try {
             let gSynced = 0;
             if (gs.allGames?.length) {
-                const r = await window.api.syncAllGrinderGames(gs.allGames, gs.path);
+                const r = await window.api.syncAllInstallerGames(gs.allGames, gs.path);
                 gSynced = r.synced ?? 0;
             } else if (gs.installedGames?.length) {
-                const r = await window.api.syncGrinderInstalled(gs.installedGames);
+                const r = await window.api.syncInstallerInstalled(gs.installedGames);
                 gSynced = r.synced ?? 0;
             }
             anySuccess = true;
-            statusEl.innerHTML = statusEl.innerHTML.replace('🔄 Syncing GRINDER...', `✅ GRINDER: ${gSynced} game(s) updated`);
+            statusEl.innerHTML = statusEl.innerHTML.replace('🔄 Syncing Installer...', `✅ Installer: ${gSynced} game(s) updated`);
         } catch(e) {
-            statusEl.innerHTML = statusEl.innerHTML.replace('🔄 Syncing GRINDER...', `⚠️ GRINDER: ${e.message}`);
+            statusEl.innerHTML = statusEl.innerHTML.replace('🔄 Syncing Installer...', `⚠️ Installer: ${e.message}`);
         }
     }
 
@@ -7268,12 +7268,12 @@ function openToolsModal(pane = 'welcome') {
 }
 
 // ── Control Panel: global install folder ─────────────────────────────────────
-// Stored in grinder.db as `default_install_dir`, the same key the GRINDER face reads, so
+// Stored in library.db as `default_install_dir`, the same key the Installer face reads, so
 // both faces (and the per-game override in the install dialog) agree on one location.
 async function _cpPrefillInstallDir() {
     const el = document.getElementById('install-dir-current');
     if (!el) return;
-    try { el.value = (await window.api.grinderDefaultDir()) || ''; } catch { el.value = ''; }
+    try { el.value = (await window.api.installerDefaultDir()) || ''; } catch { el.value = ''; }
     const s = document.getElementById('install-dir-status');
     if (s) s.innerText = '';
 }
@@ -7287,12 +7287,12 @@ async function _cpPrefillInstallDir() {
         setTimeout(() => { if (s.innerText === msg) s.innerText = ''; }, 4000);
     };
     const save = async (dir, okMsg) => {
-        const res = await window.api.grinderSetDefaultDir(dir);
+        const res = await window.api.installerSetDefaultDir(dir);
         if (res && res.ok) { input().value = res.dir || ''; say(okMsg, true); }
         else say((res && res.error) || 'Could not save the install folder.', false);
     };
     document.getElementById('btn-install-dir-change')?.addEventListener('click', async () => {
-        const dir = await window.api.grinderPickDir(input().value);
+        const dir = await window.api.installerPickDir(input().value);
         if (dir) save(dir, 'Install folder saved.');
     });
     document.getElementById('btn-install-dir-reset')?.addEventListener('click', () =>
@@ -7311,85 +7311,85 @@ document.getElementById('btn-install-menu').addEventListener('click', async () =
     status.innerText = result.message;
 });
 
-// Opt-in: auto-start CREMA (fullscreen) on login — reflects the autostart entry's presence.
+// Opt-in: auto-start Couch (fullscreen) on login — reflects the autostart entry's presence.
 (() => {
-    const chk = document.getElementById('chk-crema-autostart');
+    const chk = document.getElementById('chk-couch-autostart');
     if (!chk) return;
-    window.api.getCremaAutostart().then(on => { chk.checked = !!on; }).catch(() => {});
+    window.api.getCouchAutostart().then(on => { chk.checked = !!on; }).catch(() => {});
     chk.addEventListener('change', async () => {
-        const res = await window.api.setCremaAutostart(chk.checked);
+        const res = await window.api.setCouchAutostart(chk.checked);
         if (!res || !res.ok) { chk.checked = !chk.checked; }   // revert on failure
     });
 })();
-// ── GRINDER tool card ──────────────────────────────────────────────────────────
-checkGrinderConnect();
+// ── Installer tool card ──────────────────────────────────────────────────────────
+checkInstallerConnect();
 
-document.getElementById('btn-check-grinder')?.addEventListener('click', checkGrinderConnect);
+document.getElementById('btn-check-installer')?.addEventListener('click', checkInstallerConnect);
 
-// Sync ALL GRINDER games into CNGM (installed + not installed).
+// Sync ALL Installer games into Clarity (installed + not installed).
 // Called on startup and after any library sync.
-async function syncGrinderInstalled() {
-    const s = await window.api.grinderStatus();
+async function syncInstallerInstalled() {
+    const s = await window.api.installerStatus();
     if (!s.found) return;
-    // Match/import all GRINDER games AND reconcile install status from GRINDER (the source of truth).
+    // Match/import all Installer games AND reconcile install status from Installer (the source of truth).
     if (s.allGames?.length) {
-        await window.api.syncAllGrinderGames(s.allGames, s.path);
+        await window.api.syncAllInstallerGames(s.allGames, s.path);
     } else if (s.installedGames?.length) {
-        await window.api.syncGrinderInstalled(s.installedGames);
+        await window.api.syncInstallerInstalled(s.installedGames);
     }
-    await loadGames();   // always re-render so GRINDER-reconciled install state replaces the stored/restored flag
+    await loadGames();   // always re-render so Installer-reconciled install state replaces the stored/restored flag
 }
 
-async function checkGrinderConnect() {
-    const statusEl = document.getElementById('grinder-connect-status');
+async function checkInstallerConnect() {
+    const statusEl = document.getElementById('installer-connect-status');
     if (!statusEl) return;
     // What users actually care about here is whether their stores are connected.
     await renderStoreAuthStatus(statusEl);
 }
 
 document.getElementById('btn-connect-login-gog')?.addEventListener('click',  (e) =>
-    runStoreLogin('gog',  e.currentTarget, document.getElementById('grinder-connect-status')));
+    runStoreLogin('gog',  e.currentTarget, document.getElementById('installer-connect-status')));
 document.getElementById('btn-connect-login-epic')?.addEventListener('click', (e) =>
-    runStoreLogin('epic', e.currentTarget, document.getElementById('grinder-connect-status')));
+    runStoreLogin('epic', e.currentTarget, document.getElementById('installer-connect-status')));
 
-// ── GRINDER row in detail panel ────────────────────────────────────────────────
-async function updateGrinderRow(game) {
-    const row       = document.getElementById('grinder-launch-row');
-    const statusEl  = document.getElementById('grinder-launch-status');
-    const openBtn   = document.getElementById('btn-open-grinder-detail');
+// ── Installer row in detail panel ────────────────────────────────────────────────
+async function updateInstallerRow(game) {
+    const row       = document.getElementById('installer-launch-row');
+    const statusEl  = document.getElementById('installer-launch-status');
+    const openBtn   = document.getElementById('btn-open-installer-detail');
     if (!row) return;
 
-    const epicMatch = (game.LaunchCommand || '').match(/grinder:\/\/launch\/epic\/([^"\s]+)/i);
-    const gogMatch  = (game.LaunchCommand || '').match(/grinder:\/\/launch\/gog\/([^"\s]+)/i);
+    const epicMatch = (game.LaunchCommand || '').match(/installer:\/\/launch\/epic\/([^"\s]+)/i);
+    const gogMatch  = (game.LaunchCommand || '').match(/installer:\/\/launch\/gog\/([^"\s]+)/i);
     const storeMatch = epicMatch || gogMatch;
-    const isCustomGrinder = !storeMatch && !!game.GrinderGameId;
-    const s = await window.api.grinderStatus();
+    const isCustomInstaller = !storeMatch && !!game.InstallerGameId;
+    const s = await window.api.installerStatus();
 
-    // Show for GOG/Epic games AND custom Others games managed by GRINDER
-    if ((!storeMatch && !isCustomGrinder) || !s.found) { row.style.display = 'none'; return; }
+    // Show for GOG/Epic games AND custom Others games managed by Installer
+    if ((!storeMatch && !isCustomInstaller) || !s.found) { row.style.display = 'none'; return; }
 
     row.style.display = 'flex';
     openBtn.style.display = 'none';
 
-    // Custom/Others games: always GRINDER-managed
-    if (isCustomGrinder) {
-        statusEl.textContent = '✓ GRINDER — default launcher';
+    // Custom/Others games: always Installer-managed
+    if (isCustomInstaller) {
+        statusEl.textContent = '✓ Installer — default launcher';
         statusEl.style.color = '#66bb6a';
         openBtn.style.display = '';
         openBtn.onclick = () => _openCompatFor(game);
         return;
     }
 
-    const grinderGameId = epicMatch ? `epic_${epicMatch[1]}` : `gog_${gogMatch[1]}`;
-    const inGrinder = s.installedGames?.includes(grinderGameId);
-    // GOG/Epic always launch via GRINDER
+    const installerGameId = epicMatch ? `epic_${epicMatch[1]}` : `gog_${gogMatch[1]}`;
+    const inInstaller = s.installedGames?.includes(installerGameId);
+    // GOG/Epic always launch via Installer
     openBtn.style.display = '';
     openBtn.onclick = () => _openCompatFor(game);
-    if (game.GrinderGameId || inGrinder) {
-        statusEl.textContent = '✓ GRINDER — default launcher';
+    if (game.InstallerGameId || inInstaller) {
+        statusEl.textContent = '✓ Installer — default launcher';
         statusEl.style.color = '#66bb6a';
     } else {
-        statusEl.textContent = 'Not yet linked in GRINDER';
+        statusEl.textContent = 'Not yet linked in Installer';
         statusEl.style.color = 'var(--text_dim)';
     }
 }
@@ -7415,7 +7415,7 @@ modalTools.addEventListener('click', e => { if (e.target === modalTools) closeTo
     // as one flat list even though the panes were already built.
     const CARD_PANES = [
         ['btn-update-library', 'library'],
-        ['btn-storage-grinder', 'library'],
+        ['btn-storage-installer', 'library'],
         ['btn-install-dir-change', 'library'],
         ['btn-tools-add-game', 'library'],
         ['btn-scan-updates', 'library'],
@@ -7556,7 +7556,7 @@ document.getElementById('btn-check-install').addEventListener('click', async () 
     btn.querySelector('span').innerText = t('status.checking');
     statusEl.innerText = '';
     const result = await window.api.checkAllInstallStatus();
-    await syncGrinderInstalled();   // reconcile GOG/Epic install state from GRINDER (the source of truth)
+    await syncInstallerInstalled();   // reconcile GOG/Epic install state from Installer (the source of truth)
     btn.disabled = false;
     btn.querySelector('span').innerText = t('html.btn_check_install');
     statusEl.style.color = '#66bb6a';
@@ -7666,7 +7666,7 @@ function updateHeroMosaic(filtered) {
 
 const THEMES = {
     "DARK GRAY": {bg: "#141414", bg_panel: "rgba(0,0,0,0.5)", bg_menu: "#222222", accent: "#ffffff", accent_menu: "#00e5ff", text_main: "#ffffff", text_sec: "#bbbbbb", text_dim: "#777777", border: "rgba(255,255,255,0.1)", border_solid: "#555555"},
-    "CREMA": {bg: "#2C1E16", bg_panel: "rgba(67, 40, 24, 0.6)", bg_menu: "#432818", accent: "#D4A373", accent_menu: "#D4A373", text_main: "#FFE6A7", text_sec: "#E6CC98", text_dim: "#A47148", border: "rgba(212, 163, 115, 0.2)", border_solid: "#8B5A2B"},
+    "Couch": {bg: "#2C1E16", bg_panel: "rgba(67, 40, 24, 0.6)", bg_menu: "#432818", accent: "#D4A373", accent_menu: "#D4A373", text_main: "#FFE6A7", text_sec: "#E6CC98", text_dim: "#A47148", border: "rgba(212, 163, 115, 0.2)", border_solid: "#8B5A2B"},
     "CYBERPUNK": {bg: "#09090b", bg_panel: "rgba(26, 26, 46, 0.7)", bg_menu: "#1a1a2e", accent: "#f3e600", accent_menu: "#00ffcc", text_main: "#00ffcc", text_sec: "#e0e0e0", text_dim: "#ff003c", border: "rgba(243, 230, 0, 0.2)", border_solid: "#ff003c"},
     "VAPOUR OS": {bg: "#171a21", bg_panel: "rgba(27, 40, 56, 0.7)", bg_menu: "#1b2838", accent: "#66c0f4", accent_menu: "#66c0f4", text_main: "#c7d5e0", text_sec: "#8f98a0", text_dim: "#556b82", border: "rgba(102, 192, 244, 0.2)", border_solid: "#2a475e"},
     "PSIV BLUE": {bg: "#000022", bg_panel: "rgba(0, 67, 156, 0.4)", bg_menu: "#001144", accent: "#ffffff", accent_menu: "#0070cc", text_main: "#ffffff", text_sec: "#aaaaaa", text_dim: "#666666", border: "rgba(0, 112, 204, 0.3)", border_solid: "#00439c"},
@@ -7775,7 +7775,7 @@ const THEMES = {
 };
 
 const THEME_CATEGORIES = {
-    "Originals & System": ["DARK GRAY", "CREMA", "CYBERPUNK", "SNOW", "MOVIESFLIX", "VAPOUR OS", "PSIV BLUE", "GREEN BOX", "OAKANIZER DARK"],
+    "Originals & System": ["DARK GRAY", "Couch", "CYBERPUNK", "SNOW", "MOVIESFLIX", "VAPOUR OS", "PSIV BLUE", "GREEN BOX", "OAKANIZER DARK"],
     "BrewBalance": ["BREWBALANCE DARK", "BREWBALANCE LIGHT", "MOCHA", "FLAT WHITE", "MATCHA"],
     "Light & Minimal": ["PAPER", "SOLARIZED LIGHT", "CATPPUCCIN LATTE", "GITHUB LIGHT", "GRUVBOX LIGHT", "ROSÉ PINE DAWN", "NORD LIGHT", "DAYBREAK", "OAKANIZER LIGHT"],
     "Gaming Legends": ["GAME BOY DMG", "PIP BOY", "SEVASTOPOL", "RIP AND TEAR CLASSIC", "SUPER BROTHERS", "GREEN HILL", "NES", "SNES", "BLOODBORNE", "METROID PRIME", "SILENT HILL", "DIABLO", "HALF-LIFE", "SHOVEL KNIGHT"],
@@ -7823,8 +7823,8 @@ function applyTheme(themeName) {
     document.body.classList.toggle('sys-xp', themeName === 'WINDOWS XP');   // light chrome text on the Luna-blue titlebar+rail
     document.body.classList.toggle('theme-light', _isLightBg(tConfig.bg));  // accent hover instead of near-black invert
     applyUiFont();                         // theme's era font wins; otherwise the picker's ui_font
-    window.api.setSetting('cngm_theme', themeName);
-    try { localStorage.setItem('cngm_theme_cache', JSON.stringify(tConfig)); } catch(e) {}
+    window.api.setSetting('clarity_theme', themeName);
+    try { localStorage.setItem('clarity_theme_cache', JSON.stringify(tConfig)); } catch(e) {}
 }
 
 document.getElementById('btn-theme-switch').addEventListener('click', () => {
@@ -7929,8 +7929,8 @@ let _zoomNow = 1.0;
 function setZoom(v) {
     _zoomNow = v;
     window.api.setZoomLevel(v);
-    try { localStorage.setItem('cngm_ui_scale_cache_v2', String(v)); } catch {}
-    window.api.setSetting('cngm_ui_scale', String(v));
+    try { localStorage.setItem('clarity_ui_scale_cache_v2', String(v)); } catch {}
+    window.api.setSetting('clarity_ui_scale', String(v));
     document.querySelectorAll('.ui-scale-btn').forEach(btn =>
         btn.classList.toggle('active', parseFloat(btn.getAttribute('data-val')) === v));
     if (typeof opToast === 'function') { opToast(`Interface scale: ${Math.round(v * 100)}%`); setTimeout(opToastHide, 1400); }
@@ -7960,7 +7960,7 @@ window.addEventListener('keydown', e => {
 // different kind of thing: they are wide, branded and horizontal, and squeezed into a 48px
 // column they looked like an afterthought. They go over the hero's top-right corner instead.
 const RAIL_IDS = ['btn-titlebar-home', 'btn-titlebar-library', 'btn-titlebar-downloads'];
-const PILL_IDS = ['support-cta', 'crema-cta'];
+const PILL_IDS = ['support-cta', 'couch-cta'];
 
 function applyCompactChrome(on) {
     const rail = document.getElementById('rail-chrome');
@@ -7983,7 +7983,7 @@ function applyCompactChrome(on) {
     if (on) placeHeroPills();
     // Mirrored for the pre-paint script in index.html — see the comment there. Written on
     // every call, so the cache cannot drift from what is actually on screen.
-    try { localStorage.setItem('cngm_compact_chrome', on ? '1' : '0'); } catch {}
+    try { localStorage.setItem('clarity_compact_chrome', on ? '1' : '0'); } catch {}
 }
 
 // ⚠️ Applied synchronously, right here, from the cache the pre-paint script also reads.
@@ -7994,7 +7994,7 @@ function applyCompactChrome(on) {
 //
 // ⚠️ Must sit AFTER the const declarations above: applyCompactChrome reads RAIL_IDS/PILL_IDS,
 // and a const is in its temporal dead zone until execution reaches it.
-try { applyCompactChrome(localStorage.getItem('cngm_compact_chrome') === '1'); } catch {}
+try { applyCompactChrome(localStorage.getItem('clarity_compact_chrome') === '1'); } catch {}
 
 // ⚠️ The pills belong IN the hero, not floating over the window at a fixed offset. Fixed
 // looked right until the gallery was scrolled: the hero moved away and the pills stayed,
@@ -8319,8 +8319,8 @@ function applyOmarchyGeometry(active) {
     if (on) document.documentElement.style.setProperty('--omarchy-radius', _omarchyRadius + 'px');
     else document.documentElement.style.removeProperty('--omarchy-radius');
     try {
-        if (on) localStorage.setItem('cngm_omarchy_geometry', String(_omarchyRadius));
-        else localStorage.removeItem('cngm_omarchy_geometry');
+        if (on) localStorage.setItem('clarity_omarchy_geometry', String(_omarchyRadius));
+        else localStorage.removeItem('clarity_omarchy_geometry');
     } catch {}
 }
 
@@ -8373,7 +8373,7 @@ _omarchyThemeReady.then(initOmarchyCard).catch(() => {});
     } catch {}
 })();
 
-_omarchyThemeReady.then(ok => window.api.getSetting('cngm_theme').then(saved => ({ ok, saved })))
+_omarchyThemeReady.then(ok => window.api.getSetting('clarity_theme').then(saved => ({ ok, saved })))
     .then(({ ok, saved }) => {
     // On Omarchy, matching the desktop is the better default — but only as a *default*.
     // A saved theme is a deliberate choice and always wins, so this fires on a fresh
@@ -8386,7 +8386,7 @@ _omarchyThemeReady.then(ok => window.api.getSetting('cngm_theme').then(saved => 
     return window.api.getSetting('welcome_shown');
 }).then(shown => {
     if (!shown) { _welcomeModal.classList.add('active'); renderWelcomeDetection(); }
-    // Auto-sync GRINDER installed status on every startup
-    syncGrinderInstalled();
+    // Auto-sync Installer installed status on every startup
+    syncInstallerInstalled();
 });
 

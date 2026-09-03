@@ -1,0 +1,7 @@
+{
+  "name": "@clarity/couch",
+  "version": "0.1.0",
+  "description": "Couch face — fullscreen / gamepad interface",
+  "private": true,
+  "main": "main.js"
+}

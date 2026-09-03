@@ -151,12 +151,12 @@ contextBridge.exposeInMainWorld('api', {
 
                                 // --- SYSTEM ---
                                 installToMenu: () => ipcRenderer.invoke('install-to-menu'),
-                                getCremaAutostart: () => ipcRenderer.invoke('get-crema-autostart'),
-                                setCremaAutostart: (en) => ipcRenderer.invoke('set-crema-autostart', en),
+                                getCouchAutostart: () => ipcRenderer.invoke('get-couch-autostart'),
+                                setCouchAutostart: (en) => ipcRenderer.invoke('set-couch-autostart', en),
 
-                                // --- CREMA COMPANION ---
-                                checkCrema: () => ipcRenderer.invoke('check-crema'),
-                                launchCrema: () => ipcRenderer.send('launch-crema'),
+                                // --- Couch COMPANION ---
+                                checkCouch: () => ipcRenderer.invoke('check-couch'),
+                                launchCouch: () => ipcRenderer.send('launch-couch'),
 
                                 // --- EMULATTE ---
                                 checkEmuLatte: () => ipcRenderer.invoke('check-emulatte'),
@@ -179,36 +179,36 @@ contextBridge.exposeInMainWorld('api', {
                                 // --- STORE BROWSER ---
                                 openStoreBrowser: (store, colors) => ipcRenderer.invoke('open-store-browser', store, colors),
 
-                                // --- GRINDER ---
-                                grinderStatus: () => ipcRenderer.invoke('grinder-status'),
-                                // --- headless GOG/Epic sign-in (no GRINDER window) ---
+                                // --- Installer ---
+                                installerStatus: () => ipcRenderer.invoke('installer-status'),
+                                // --- headless GOG/Epic sign-in (no Installer window) ---
                                 gogLogin:       () => ipcRenderer.invoke('gog-login'),
                                 gogAuthStatus:  () => ipcRenderer.invoke('gog-auth-status'),
                                 gogLogout:      () => ipcRenderer.invoke('gog-logout'),
                                 epicLogin:      () => ipcRenderer.invoke('epic-login'),
                                 epicAuthStatus: () => ipcRenderer.invoke('epic-auth-status'),
-                                syncGrinderInstalled: (ids) => ipcRenderer.invoke('sync-grinder-installed', ids),
-                                syncAllGrinderGames: (games, p) => ipcRenderer.invoke('sync-all-grinder-games', games, p),
-                                grinderRefreshOwned: () => ipcRenderer.invoke('grinder-refresh-owned'),
-                                // --- in-process install (no GRINDER window) ---
-                                grinderInstall:   (payload) => ipcRenderer.invoke('grinder-install', payload),
-                                dlcList:          (grinderGameId, platform) => ipcRenderer.invoke('dlc-list', grinderGameId, platform),
+                                syncInstallerInstalled: (ids) => ipcRenderer.invoke('sync-installer-installed', ids),
+                                syncAllInstallerGames: (games, p) => ipcRenderer.invoke('sync-all-installer-games', games, p),
+                                installerRefreshOwned: () => ipcRenderer.invoke('installer-refresh-owned'),
+                                // --- in-process install (no Installer window) ---
+                                installerInstall:   (payload) => ipcRenderer.invoke('installer-install', payload),
+                                dlcList:          (installerGameId, platform) => ipcRenderer.invoke('dlc-list', installerGameId, platform),
                                 // Reinstall a GOG game's redistributables into its prefix — see
-                                // 'grinder-run-redist' in main.js for why this exists.
-                                runRedist:        (grinderGameId) => ipcRenderer.invoke('grinder-run-redist', grinderGameId),
+                                // 'installer-run-redist' in main.js for why this exists.
+                                runRedist:        (installerGameId) => ipcRenderer.invoke('installer-run-redist', installerGameId),
                                 onRedistProgress: (cb) => ipcRenderer.on('redist-progress', (_e, d) => cb(d)),
-                                playTasks:        (grinderGameId) => ipcRenderer.invoke('play-tasks', grinderGameId),
+                                playTasks:        (installerGameId) => ipcRenderer.invoke('play-tasks', installerGameId),
                                 customRecipeList: () => ipcRenderer.invoke('custom-recipe-list'),
                                 customInstallPick:(recipeId) => ipcRenderer.invoke('custom-install-pick', recipeId),
                                 customInstall:    (payload) => ipcRenderer.invoke('custom-install', payload),
                                 displayOptions:  () => ipcRenderer.invoke('display-options'),
                                 setGameDisplay:  (i) => ipcRenderer.invoke('set-game-display', i),
-                                grinderSetEnvVar: (payload) => ipcRenderer.invoke('grinder-set-env-var', payload),
-                                // Per-game compatibility — what GRINDER's setup modal used to own.
-                                grinderCompatGet: (gid) => ipcRenderer.invoke('grinder-compat-get', gid),
-                                grinderCompatSet: (payload) => ipcRenderer.invoke('grinder-compat-set', payload),
-                                grinderSetLaunchTarget: (payload) => ipcRenderer.invoke('grinder-set-launch-target', payload),
-                                grinderStorageList: () => ipcRenderer.invoke('grinder-storage-list'),
+                                installerSetEnvVar: (payload) => ipcRenderer.invoke('installer-set-env-var', payload),
+                                // Per-game compatibility — what Installer's setup modal used to own.
+                                installerCompatGet: (gid) => ipcRenderer.invoke('installer-compat-get', gid),
+                                installerCompatSet: (payload) => ipcRenderer.invoke('installer-compat-set', payload),
+                                installerSetLaunchTarget: (payload) => ipcRenderer.invoke('installer-set-launch-target', payload),
+                                installerStorageList: () => ipcRenderer.invoke('installer-storage-list'),
                                 omarchyStatus:   () => ipcRenderer.invoke('omarchy-status'),
                                 omarchyInstallTools: (keys) => ipcRenderer.invoke('omarchy-install-tools', keys),
                                 omarchyRunInstaller: (key) => ipcRenderer.invoke('omarchy-run-installer', key),
@@ -219,20 +219,20 @@ contextBridge.exposeInMainWorld('api', {
                                 customFolderPick: (title) => ipcRenderer.invoke('custom-folder-pick', title),
                                 customFolderScan: (folder) => ipcRenderer.invoke('custom-folder-scan', folder),
                                 customFolderAdd:  (payload) => ipcRenderer.invoke('custom-folder-add', payload),
-                                customIwadOptions:(grinderGameId) => ipcRenderer.invoke('custom-iwad-options', grinderGameId),
-                                customEngineOptions:(grinderGameId) => ipcRenderer.invoke('custom-engine-options', grinderGameId),
-                                customSetEngine: (grinderGameId, exe) => ipcRenderer.invoke('custom-set-engine', grinderGameId, exe),
-                                customSetIwad:    (grinderGameId, iwad) => ipcRenderer.invoke('custom-set-iwad', grinderGameId, iwad),
-                                setLaunchTarget:  (grinderGameId, relPath, taskIndex) => ipcRenderer.invoke('set-launch-target', grinderGameId, relPath, taskIndex),
-                                grinderCancelInstall: () => ipcRenderer.invoke('grinder-install-cancel'),
-                                grinderUninstall: (payload) => ipcRenderer.invoke('grinder-uninstall', payload),
-                                grinderDefaultDir: () => ipcRenderer.invoke('grinder-default-dir'),
-                                grinderSetDefaultDir: (dir) => ipcRenderer.invoke('grinder-set-default-dir', dir),
-                                grinderPickDir:    (current) => ipcRenderer.invoke('grinder-pick-dir', current),
+                                customIwadOptions:(installerGameId) => ipcRenderer.invoke('custom-iwad-options', installerGameId),
+                                customEngineOptions:(installerGameId) => ipcRenderer.invoke('custom-engine-options', installerGameId),
+                                customSetEngine: (installerGameId, exe) => ipcRenderer.invoke('custom-set-engine', installerGameId, exe),
+                                customSetIwad:    (installerGameId, iwad) => ipcRenderer.invoke('custom-set-iwad', installerGameId, iwad),
+                                setLaunchTarget:  (installerGameId, relPath, taskIndex) => ipcRenderer.invoke('set-launch-target', installerGameId, relPath, taskIndex),
+                                installerCancelInstall: () => ipcRenderer.invoke('installer-install-cancel'),
+                                installerUninstall: (payload) => ipcRenderer.invoke('installer-uninstall', payload),
+                                installerDefaultDir: () => ipcRenderer.invoke('installer-default-dir'),
+                                installerSetDefaultDir: (dir) => ipcRenderer.invoke('installer-set-default-dir', dir),
+                                installerPickDir:    (current) => ipcRenderer.invoke('installer-pick-dir', current),
                                 getDiskSpace:      (p)   => ipcRenderer.invoke('get-disk-space', p),
                                 getInstallSize:    (gid, platform) => ipcRenderer.invoke('get-install-size', gid, platform),
-                                grinderPlatforms:  (gid) => ipcRenderer.invoke('grinder-platforms', gid),
-                                onGrinderInstallProgress: (cb) => ipcRenderer.on('grinder-install-progress', (e, d) => cb(d)),
+                                installerPlatforms:  (gid) => ipcRenderer.invoke('installer-platforms', gid),
+                                onInstallerInstallProgress: (cb) => ipcRenderer.on('installer-install-progress', (e, d) => cb(d)),
 
                                 // --- Proton (compatibility layer for Windows games) ---
                                 protonList:          ()  => ipcRenderer.invoke('proton-list'),

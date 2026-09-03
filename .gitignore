@@ -2,7 +2,7 @@ node_modules/
 dist/
 *.AppImage
 GameManagerConfig/
-GRINDERConfig/
+InstallerConfig/
 .DS_Store
 *.log
 
@@ -21,8 +21,8 @@ assets/bin/darwin-arm64/gogdl
 assets/bin/darwin-arm64/legendary
 assets/bin/darwin-arm64/comet
 
-# CREMA wallpapers (272M) — too large for git; become a first-run download pack (Phase 3b)
-apps/crema/assets/wallpapers/
+# Couch wallpapers (272M) — too large for git; become a first-run download pack (Phase 3b)
+apps/couch/assets/wallpapers/
 
 # Claude Code local settings
 .claude/

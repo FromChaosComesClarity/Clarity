@@ -5,7 +5,7 @@
 //
 // The suite's own themes are the same shape (bg / accent / text / border), which means the
 // right integration is not "pick whichever of our 93 themes looks closest" — it is to build
-// a theme from the user's actual palette, so Cafe Neurotico matches their desktop exactly
+// a theme from the user's actual palette, so Clarity matches their desktop exactly
 // and keeps matching when they switch. That is what toCafeTheme() does.
 //
 // The key simplification: `~/.local/state/omarchy/current/theme` is the *materialised*
@@ -113,7 +113,7 @@ function mix(a, b, t) {
 }
 
 // ── The mapping ──────────────────────────────────────────────────────────────
-// Cafe Neurotico's theme shape, filled from Omarchy's roles. The roles line up almost
+// Clarity's theme shape, filled from Omarchy's roles. The roles line up almost
 // exactly, which is why this is a mapping and not an approximation:
 //
 //   bg          ← background            the window behind everything

@@ -1,7 +1,7 @@
 {
-  "name": "@cafeneurotico/manager",
+  "name": "@clarity/manager",
   "version": "0.1.0",
-  "description": "Manager face (formerly CNGM) — game library hub",
+  "description": "Manager face (formerly Clarity) — game library hub",
   "private": true,
   "main": "main.js"
 }

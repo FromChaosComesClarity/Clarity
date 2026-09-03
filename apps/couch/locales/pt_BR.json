@@ -21,8 +21,8 @@
     "wake_method": "MÉTODO DE RETORNO",
     "batch_scrape": "BUSCA EM LOTE",
     "history": "HISTÓRICO",
-    "about": "SOBRE O CREMA",
-    "quit": "SAIR DO CREMA",
+    "about": "SOBRE O Couch",
+    "quit": "SAIR DO Couch",
     "language": "IDIOMA"
   },
   "section": {
@@ -125,7 +125,7 @@
   },
   "empty": {
     "library_title": "BIBLIOTECA VAZIA",
-    "library_body": "Use o aplicativo Cafe Neurotico Game Manager para importar jogos, sincronizar lojas e gerenciar sua coleção.",
+    "library_body": "Use o aplicativo Clarity Game Manager para importar jogos, sincronizar lojas e gerenciar sua coleção.",
     "no_games": "NENHUM JOGO NESTA CATEGORIA.",
     "no_desc": "Sem descrição disponível.",
     "no_media": "NENHUMA MÍDIA ENCONTRADA",
@@ -133,8 +133,8 @@
     "no_media_hint2": "Use BUSCAR INFORMAÇÕES para baixar imagens.",
     "no_media_hint3": "Se a busca automática falhar, selecione REFINAR BUSCA.",
     "jb_title": "BIBLIOTECA VAZIA",
-    "jb_body": "Para montar sua coleção, vá até a pasta do CREMA e adicione seus arquivos de áudio na pasta:",
-    "jb_folder": "CREMA_CUSTOM_MUSIC",
+    "jb_body": "Para montar sua coleção, vá até a pasta do Couch e adicione seus arquivos de áudio na pasta:",
+    "jb_folder": "CUSTOM_MUSIC",
     "jb_hint": "Feche e reabra o Jukebox para escanear as faixas.",
     "jb_no_tracks": "NENHUMA FAIXA ENCONTRADA"
   },
@@ -143,7 +143,7 @@
     "installed": "INSTALADO",
     "not_installed": "NÃO INSTALADO",
     "grinding": "TORRANDO E MOENDO OS GRÃOS...",
-    "brewing": "PASSANDO O CAFÉ...",
+    "brewing": "AQUECENDO...",
     "searching": "Buscando...",
     "scanning": "Escaneando...",
     "na": "N/D",
@@ -172,7 +172,7 @@
     "no_custom_covers": "❌ NENHUMA CAPA PERSONALIZADA"
   },
   "confirm": {
-    "quit_title": "SAIR DO CREMA?",
+    "quit_title": "SAIR DO Couch?",
     "yes_quit": "SIM, SAIR",
     "confirm_action": "CONFIRMAR AÇÃO",
     "proceed_scrape": "CONFIRMAR: BUSCAR {mode}"
@@ -217,8 +217,8 @@
     "no_desc": "Sem descrição disponível."
   },
   "about": {
-    "title": "SOBRE O CREMA",
-    "content": "<span style='color: var(--accent); font-size: 26px; font-weight: bold; letter-spacing: 2px;'>CAFE NEUROTICO: CREMA</span><br><span style='color: var(--text_main); font-size: 16px;'>Versão 1.0.0</span><br><br><span style='color: var(--text_sec); font-size: 18px; line-height: 1.6; display: inline-block; max-width: 750px; text-align: center;'><i style='color: var(--text_dim);'>\"Crema é a camada de espuma marrom-avermelhada e cremosa que fica no topo de um espresso recém preparado. É composta por água, óleos de café e bolhas de CO2 pressurizadas, criadas durante a extração em alta pressão. Ela indica frescor e pressão adequada.\"</i><br><br><strong>O Manager, o GRINDER e a CREMA</strong> são três faces de um mesmo app, compartilhando uma só biblioteca.<br><br><strong>O Manager</strong> é a face de desktop: tipo um gerentão, focado nos detalhes, neurótico com a gestão da sua biblioteca, fazendo todo o trabalho pesado com importação automática e manual. <strong>O GRINDER</strong> trabalha quietinho por baixo, instalando e rodando seus jogos da GOG e da Epic.<br><br><strong>A CREMA</strong> é aquela espuma doce por cima do café. É a companheira de tela cheia: tranquilão, de boas e focada só na diversão. Sabe tudo dos bons games e da boa música. Pegue um controle e seja feliz.<br><br>Orgulhosamente projetado no Brasil 🇧🇷 por J.R.A.<br>joserobertoazevedo@hey.com</span>"
+    "title": "SOBRE O Couch",
+    "content": "<span style='color: var(--accent); font-size: 26px; font-weight: bold; letter-spacing: 2px;'>CLARITY: Couch</span><br><span style='color: var(--text_main); font-size: 16px;'>Versão 1.0.0</span><br><br><span style='color: var(--text_sec); font-size: 18px; line-height: 1.6; display: inline-block; max-width: 750px; text-align: center;'><i style='color: var(--text_dim);'>\"Luz baixa, controle na mão, tudo o que você tem já organizado. Só falta jogar. Fique positivo e ame a sua vida.\"</i><br><br><strong>O Manager, o Installer e a Couch</strong> são três faces de um mesmo app, compartilhando uma só biblioteca.<br><br><strong>O Manager</strong> é a face de desktop: tipo um gerentão, focado nos detalhes, dedicado à gestão da sua biblioteca, fazendo todo o trabalho pesado com importação automática e manual. <strong>O Installer</strong> trabalha quietinho por baixo, instalando e rodando seus jogos da GOG e da Epic.<br><br><strong>A Couch</strong> é onde você relaxa. É a companheira de tela cheia: tranquilão, de boas e focada só na diversão. Sabe tudo dos bons games e da boa música. Pegue um controle e seja feliz.<br><br>Orgulhosamente projetado no Brasil 🇧🇷 por J.R.A.<br>joserobertoazevedo@hey.com</span>"
   },
   "keybindings": {
     "gp_select": "Selecionar / Lançar",
@@ -242,9 +242,9 @@
     "kb_search": "Busca Global"
   },
   "sleep": {
-    "press_return": "Pressione [{method}] para voltar ao CREMA",
+    "press_return": "Pressione [{method}] para voltar ao Couch",
     "hold_return": "Segure [{method}] por 2 Segundos",
-    "then_return": "para voltar ao CREMA"
+    "then_return": "para voltar ao Couch"
   },
   "jb_fs": {
     "controls": "Controles",
