@@ -83,6 +83,7 @@
     #couch-cta:hover { border-color: #FFE6A7; box-shadow: 0 0 16px rgba(212,163,115,0.6); }
     #couch-cta:active { transform: scale(0.96); }
     .couch-cta-icon { width: 19px; height: 19px; flex-shrink: 0; }
+    .rail-mark { width: 20px; height: 20px; color: var(--accent); }
     .couch-cta-text { font-size: 10px; font-weight: 900; letter-spacing: 0.4px; color: #FFE6A7; white-space: nowrap; }
     /* Support call-to-action — amber pill (same family as the Couch pill), red pixel heart */
     #support-cta { -webkit-app-region: no-drag; align-self: center; display: flex; align-items: center; gap: 6px;
@@ -1138,24 +1139,11 @@
         </svg>
         <span class="support-cta-text">Support</span>
       </button>
-      <button id="couch-cta" title="Go fullscreen with Couch — couch &amp; gamepad mode">
-        <svg class="couch-cta-icon" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
-          <rect width="512" height="512" rx="112" fill="#2C1E16"/>
-          <rect x="24" y="24" width="464" height="464" rx="88" fill="none" stroke="#8B5A2B" stroke-width="12"/>
-          <path d="M 380 256 C 490 256, 490 150, 380 150" fill="none" stroke="#D4A373" stroke-width="24" stroke-linecap="round"/>
-          <circle cx="256" cy="256" r="160" fill="#432818" stroke="#D4A373" stroke-width="16"/>
-          <path d="M 256 136 A 120 120 0 0 1 376 256" fill="none" stroke="#D4A373" stroke-width="16" stroke-linecap="round"/>
-          <path d="M 256 376 A 120 120 0 0 1 136 256" fill="none" stroke="#D4A373" stroke-width="16" stroke-linecap="round"/>
-          <path d="M 186 256 A 70 70 0 0 1 256 186" fill="none" stroke="#FFE6A7" stroke-width="12" stroke-linecap="round"/>
-          <path d="M 326 256 A 70 70 0 0 1 256 326" fill="none" stroke="#FFE6A7" stroke-width="12" stroke-linecap="round"/>
-          <circle cx="256" cy="204" r="18" fill="#FFE6A7"/>
-          <circle cx="256" cy="308" r="18" fill="#FFE6A7"/>
-          <circle cx="204" cy="256" r="18" fill="#FFE6A7"/>
-          <circle cx="308" cy="256" r="18" fill="#FFE6A7"/>
-        </svg>
-        <span class="couch-cta-text">Go Fullscreen with Couch</span>
+      <button id="couch-cta" title="Go fullscreen: couch and gamepad mode">
+          <svg class="couch-cta-icon" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M348.3 137.8 A150 150 0 1 0 348.3 374.2" fill="none" stroke="currentColor" stroke-width="56" stroke-linecap="round"/><circle cx="256" cy="256" r="34" fill="currentColor" opacity=".5"/></svg>
+        <span class="couch-cta-text">Go Fullscreen</span>
       </button>
-      <button id="btn-min" class="win-btn">—</button>
+      <button id="btn-min" class="win-btn">−</button>
       <button id="btn-max" class="win-btn">□</button>
       <button id="btn-close" class="win-btn win-close">✕</button>
     </div>
@@ -1232,8 +1220,7 @@
           <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="2"/><path d="M6 10h4M8 8v4"/><circle cx="15" cy="13" r="1" fill="currentColor"/><circle cx="18" cy="11" r="1" fill="currentColor"/></svg>
         </button>
         <div id="btn-about" class="rail-btn" title="Clarity Game Manager" style="cursor:pointer; height:38px; flex-direction:column; gap:1px; margin-top:6px; border-top:1px solid var(--border_solid);">
-          <span style="font-size:7px; font-weight:900; color:var(--text_dim); letter-spacing:1px; line-height:1;">CN</span>
-          <span style="font-size:9px; font-weight:900; color:var(--accent); letter-spacing:0.5px; line-height:1;">GM</span>
+            <svg class="rail-mark" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M348.3 137.8 A150 150 0 1 0 348.3 374.2" fill="none" stroke="currentColor" stroke-width="56" stroke-linecap="round"/><circle cx="256" cy="256" r="34" fill="currentColor" opacity=".5"/></svg>
         </div>
       </div>
     </div>

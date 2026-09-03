@@ -3666,7 +3666,7 @@ const _PAL_ACTIONS = [
     { id: 'view-gallery',         name: 'Gallery View',             run: () => switchView('view-gallery') },
     { id: 'view-list',            name: 'List View',                run: () => switchView('view-list') },
     { id: 'view-home',            name: 'Home Dashboard',           run: () => switchView('view-home') },
-    { id: 'couch',                name: 'Go Fullscreen with Couch', run: () => document.getElementById('couch-cta')?.click() },
+    { id: 'couch',                name: 'Go Fullscreen', run: () => document.getElementById('couch-cta')?.click() },
     { id: 'emulatte',             name: 'Launch EmuLatte',          run: () => document.getElementById('btn-rail-emulatte')?.click() },
 ];
 
