@@ -65,7 +65,7 @@ macOS reports are genuinely useful right now, this build needs them.
      the message about Clarity. Confirm once more when it asks.
    - **From Terminal, if neither of the above shows anything:**
      ```sh
-     xattr -dr com.apple.quarantine "/Applications/Clarity.app"
+     xattr -dr com.apple.quarantine "/Applications/Clarity Game Manager.app"
      ```
      This strips the quarantine flag macOS attaches to anything downloaded from the internet,
      after that, it opens like any other app, every time.
