@@ -321,6 +321,14 @@ function steamLibraryPaths() {
 // it changes existing rows too, see the LIKE '%steam://rungameid%' queries in the Manager.
 function steamLaunchCommand(appId) { return `steam steam://rungameid/${appId} -silent`; }
 
+// Windows Steam inside a CrossOver bottle is a macOS-only arrangement: here a Windows
+// Steam game would run under Proton through the installer engine, not through a second
+// Steam. These exist so callers can ask on any platform without branching on host.id,
+// the same shape extraStore uses to say "not supported here".
+function steamBottleForApp()       { return null; }
+function parseSteamBottleCommand() { return null; }
+function steamBottleLaunch()       { return { error: 'Bottled Steam games are a macOS-only feature.' }; }
+
 // ── Other stores this host knows about ───────────────────────────────────────
 // Flatpak: games installed outside GOG/Epic/Steam that still announce themselves through a
 // desktop entry. Discovery only, reconciling the results against the library is the same
@@ -1133,6 +1141,7 @@ module.exports = {
     installerDbCandidates, findInstallerDb, installerDbCreatePath,
     which, dirSizeBytesCommand, dirSizeHumanCommand, legendaryConfigDir,
     steamLibraryPaths, steamLaunchCommand, extraStore, desktop,
+    steamBottleForApp, steamBottleLaunch, parseSteamBottleCommand,
     nativeOsKey, gogdlPlatform, legendaryPlatform,
     launchNative, findNativeGameExe, findNativeInstallResult,
     dosbox,

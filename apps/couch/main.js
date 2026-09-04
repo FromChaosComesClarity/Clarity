@@ -318,6 +318,20 @@ ipcMain.on('launch-game', (event, cmd) => {
         return;
     }
 
+    // Steam game living inside a CrossOver bottle (macOS). Resolved here rather than
+    // stored as a literal wine invocation, so a CrossOver move or reinstall does not
+    // invalidate every command in the database.
+    const sBottle = host.parseSteamBottleCommand(cmd);
+    if (sBottle) {
+        const r = host.steamBottleLaunch(sBottle.bottle, sBottle.appId);
+        if (r && r.error) { console.error('[launch-game] bottled Steam:', r.error);  }
+        else if (r) {
+            spawn(r.cmd, r.args, { env: { ...process.env, ...r.env }, detached: true, stdio: 'ignore' }).unref();
+            console.log('[launch-game] launched via', r.method);
+        }
+        return;
+    }
+
     const child = spawn(cmd, [], { shell: true, detached: true, stdio: 'ignore' });
     child.unref();
 });
@@ -409,6 +423,10 @@ function installerInstalledSet() {
 }
 function launcherInstalled(cmd, steamAppId) {
     const c = cmd || '';
+    // Bottled Steam (macOS): the appmanifest lives inside a CrossOver bottle, which
+    // steamLibraryPaths() already reports, so the same install check answers for it.
+    const sb = host.parseSteamBottleCommand(c);
+    if (sb) return isSteamGameInstalled(sb.appId || steamAppId);
     const sm = c.match(/steam:\/\/rungameid\/(\d+)/i);
     if (sm) return isSteamGameInstalled(sm[1] || steamAppId);
     const gm = c.match(/installer:\/\/launch\/(gog|epic)\/([^"\s]+)/i);
@@ -417,7 +435,7 @@ function launcherInstalled(cmd, steamAppId) {
 }
 function resolveInstallState(game) {
     const cmds = launchCmdsOf(game);
-    if (!cmds.some(c => /steam:\/\/rungameid/i.test(c))) return null;
+    if (!cmds.some(c => /steam:\/\/rungameid/i.test(c) || /^steambottle:\/\//i.test(c))) return null;
     let allTracked = true;
     for (const cmd of cmds) {
         const s = launcherInstalled(cmd, game.SteamAppID);
@@ -457,6 +475,7 @@ function reconcileSteamInstalls() {
         "SELECT id, Store, SteamAppID, InstallerGameId, LaunchCommand, LaunchCommands, Installed FROM games " +
         // Also rows that only imply their Steam launcher: a Steam tag plus an appid (see expandLaunchers).
         "WHERE LaunchCommand LIKE '%steam://rungameid%' OR LaunchCommands LIKE '%steam://rungameid%' " +
+        "   OR LaunchCommand LIKE '%steambottle://%' OR LaunchCommands LIKE '%steambottle://%' " +
         "OR (LOWER(Store) LIKE '%steam%' AND SteamAppID IS NOT NULL AND SteamAppID NOT IN ('', 'None'))"
     ).all();
     for (const g of games) {
