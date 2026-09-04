@@ -50,12 +50,12 @@ macOS reports are genuinely useful right now, this build needs them.
 ## Install
 
 1. Download the `.dmg` (or the `.zip`) from the
-   [1.9.0 release](https://github.com/FromChaosComesClarity/Clarity/releases/tag/v1.9.0), the
-   macOS asset is separate from the Linux AppImage, and it sits on that release rather than the
-   newest one. **The current macOS build is 1.9.0**; Linux has since had 1.9.1, a Linux-only fix
-   that ships no Mac asset, so "latest release" won't have a `.dmg` in it.
-2. Open the `.dmg` and drag **Clarity** into **Applications** (or, for the `.zip`, unzip it
-   and move the `.app` there yourself).
+   [1.13.1 release](https://github.com/FromChaosComesClarity/Clarity/releases/tag/v1.13.1).
+   **The current macOS build is 1.13.1**, and it sits on the same release as the Linux AppImage,
+   so both hosts now ship under one tag. Earlier versions did not: the Mac asset used to live on
+   an older release than the newest one, which is why the guide once sent you somewhere else.
+2. Open the `.dmg` and drag **Clarity Game Manager** into **Applications** (or, for the `.zip`,
+   unzip it and move the `.app` there yourself).
 3. **The build isn't signed**, no Apple Developer account behind it yet, so the very first
    launch needs one extra step. Pick whichever works on your macOS version:
    - **Right-click (or Control-click) the app → Open → Open.** This still works on most versions,
