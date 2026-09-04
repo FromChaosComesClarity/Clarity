@@ -1,10 +1,10 @@
 'use strict';
 /*
- * @clarity/core — the macOS platform backend.
+ * @clarity/core, the macOS platform backend.
  *
  * Sibling to linux.js, same shape, picked up by platform/index.js the moment this file
  * exists. Phase B: paths, store identifiers, system inventory and desktop integration are
- * real. `runtime.*` (the Windows-game compatibility layer) is real too as of Phase E —
+ * real. `runtime.*` (the Windows-game compatibility layer) is real too as of Phase E,
  * CrossOver, driven directly through its own `wine --bottle` CLI. See the runtime section
  * below for what was verified by hand before any of it was written, and
  * docs/mac-port-phase-a.md / docs/mac-port-handoff.md for the rest of the port's history.
@@ -16,7 +16,7 @@ const os    = require('os');
 const { execSync, spawnSync, spawn } = require('child_process');
 
 // ── Injected context ─────────────────────────────────────────────────────────
-// Mirrors linux.js's init() idiom — see its comment.
+// Mirrors linux.js's init() idiom, see its comment.
 let HOME       = os.homedir();
 let configDir  = '';
 let getDb      = () => null;
@@ -33,13 +33,13 @@ function init(ctx = {}) {
 const binDirName = 'darwin-arm64';
 
 // Not portable on macOS: an .app in /Applications cannot hold user data (and an unsigned
-// dev build cannot reliably write beside itself either — see Trap 1 in the handoff). Every
+// dev build cannot reliably write beside itself either, see Trap 1 in the handoff). Every
 // build, packaged or dev, keeps its data in the same per-user Library location.
 function portableBaseDir() {
     return path.join(HOME, 'Library', 'Application Support', 'Clarity');
 }
 
-// There is no APPIMAGE equivalent. `process.execPath` is the real binary either way — inside
+// There is no APPIMAGE equivalent. `process.execPath` is the real binary either way, inside
 // the .app bundle when packaged, the Electron binary itself in dev.
 function selfExecutable() { return process.execPath; }
 
@@ -68,7 +68,7 @@ function installerDbCreatePath(baseDir, isPackaged) {
 }
 
 // ── System inventory ─────────────────────────────────────────────────────────
-// A Finder-launched .app has NO Homebrew in PATH (Trap 2) — `which` alone would report every
+// A Finder-launched .app has NO Homebrew in PATH (Trap 2), `which` alone would report every
 // Homebrew-installed tool as missing. Fall back to both Homebrew prefixes explicitly.
 function which(bin) {
     try {
@@ -82,7 +82,7 @@ function which(bin) {
     return null;
 }
 
-// BSD du has no -B1 (that's GNU-only) — -sk reports 1K blocks everywhere, so multiply by
+// BSD du has no -B1 (that's GNU-only), -sk reports 1K blocks everywhere, so multiply by
 // 1024 ourselves instead of asking du for bytes it can't give.
 function dirSizeBytesCommand(target) {
     return {
@@ -94,7 +94,7 @@ function dirSizeHumanCommand(target) {
     return { cmd: `du -sh "${target}" 2>/dev/null`, parse: out => String(out).split('\t')[0].trim() };
 }
 
-// Not ~/Library/Application Support — legendary is a cross-platform Python CLI that never
+// Not ~/Library/Application Support, legendary is a cross-platform Python CLI that never
 // adopted macOS's config conventions on its own; `legendary status` on this host reports its
 // real config directory as ~/.config/legendary, same as Linux. runLegendary() never passes
 // --config-folder, so this has to match what legendary actually uses, not what a well-behaved
@@ -103,7 +103,7 @@ function dirSizeHumanCommand(target) {
 function legendaryConfigDir() { return path.join(HOME, '.config', 'legendary'); }
 
 // ── Desktop integration ──────────────────────────────────────────────────────
-// canInstallMenuEntries is false — the .app bundle IS the menu entry, there is no separate
+// canInstallMenuEntries is false, the .app bundle IS the menu entry, there is no separate
 // launcher-file mechanism to install one into. The "install to menu" UI path is gated on
 // this flag already. What's below still backs the per-game "add shortcut" path (desktop only
 // on this host) and the Couch autostart toggle, both of which are called unconditionally.
@@ -122,7 +122,7 @@ function launcherContent(entry) {
     const target = /\.app$/i.test(entry.exec)
         ? `open -n "${entry.exec}"${args ? ` --args ${args}` : ''}`
         : `"${entry.exec}"${args ? ` ${args}` : ''}`;
-    return `#!/bin/bash\n# ${entry.name || entry.id}${entry.comment ? ' — ' + entry.comment : ''}\n${target}\n`;
+    return `#!/bin/bash\n# ${entry.name || entry.id}${entry.comment ? ', ' + entry.comment : ''}\n${target}\n`;
 }
 
 function writeLauncher(dir, entry) {
@@ -137,14 +137,14 @@ function removeLauncher(dir, id) {
     try { fs.unlinkSync(path.join(dir, launcherFileName(id))); return true; } catch { return false; }
 }
 
-// No menu database to poke — Finder picks up Desktop changes on its own.
+// No menu database to poke, Finder picks up Desktop changes on its own.
 function refreshMenu() {}
 
 // No quarantine-style "trust this launcher" step for a locally-created file (a build made
-// on this machine never gets the quarantine bit — see Phase B.5 in the handoff).
+// on this machine never gets the quarantine bit, see Phase B.5 in the handoff).
 function markTrusted() {}
 
-// Login Items via a LaunchAgent plist — the macOS equivalent of XDG autostart.
+// Login Items via a LaunchAgent plist, the macOS equivalent of XDG autostart.
 function autostartPath(id) { return path.join(HOME, 'Library', 'LaunchAgents', `com.clarity.${id}.plist`); }
 function getAutostart(id)  { try { return fs.existsSync(autostartPath(id)); } catch { return false; } }
 function setAutostart(id, enabled, entry) {
@@ -167,7 +167,7 @@ function setAutostart(id, enabled, entry) {
     } catch (e) { return { ok: false, error: e.message }; }
 }
 
-// Custom URL schemes (itch://, pico8-cart:) — `open` is macOS's xdg-open.
+// Custom URL schemes (itch://, pico8-cart:), `open` is macOS's xdg-open.
 function openUrlScheme(url) { try { spawn('open', [url], { detached: true, stdio: 'ignore' }).unref(); } catch {} }
 
 // Electron's own focus() is not fighting a window manager here the way it is under X11, so
@@ -183,7 +183,7 @@ const desktop = {
     // No window-rule engine on this host; the UI already handles a null here.
     displayPicker: null,
     // Omarchy is a Linux distribution, so these are null here for the same reason. Every
-    // caller must guard — a missing null check on displayPicker was an instant crash on this
+    // caller must guard, a missing null check on displayPicker was an instant crash on this
     // host once already, and these have exactly the same shape.
     omarchy: null,
     omarchyTheme: null,
@@ -220,7 +220,7 @@ const extraStore = { supported: false, label: '', scan: () => [], findIcon: () =
 // ── Store platform identifiers ───────────────────────────────────────────────
 const nativeOsKey       = 'osx';      // games.platform / GOG installer `os`
 const gogdlPlatform     = 'osx';      // gogdl --platform {windows,osx,linux}
-const legendaryPlatform = 'Mac';      // legendary --platform {Windows,Win32,Mac} — its own default on darwin
+const legendaryPlatform = 'Mac';      // legendary --platform {Windows,Win32,Mac}, its own default on darwin
 
 // ── Native game launch + install detection ───────────────────────────────────
 // A native macOS build is usually a .app bundle; `open -n` launches it without waiting and
@@ -255,15 +255,15 @@ function findNativeGameExe(gameDir) {
 
 // Is `gameDir` a native macOS install of `appId`? Verified against a real
 // `gogdl --platform osx download` (Phase D): unlike Linux, gogdl writes no manifest file at
-// all here — the game IS the .app bundle, dropped directly under the shared install root with
+// all here, the game IS the .app bundle, dropped directly under the shared install root with
 // no extra per-game wrapper folder. findGogInstallResult's caller peels one level off that
 // root before calling us, so `gameDir` here typically already IS the bundle; a plain folder
 // containing one (a source-port style install) is handled too. It carries its own
 // goggame-<appId>.info inside Contents/Resources (same playTasks shape as the Windows .info
-// file) — the filename already encodes the appId, so there's no ambiguity to guess at.
+// file), the filename already encodes the appId, so there's no ambiguity to guess at.
 //
 // install_path must be safe to `rm -rf` alone on uninstall (see headlessUninstall), so it has
-// to be the bundle itself, never the shared root above it — which makes `executable` a
+// to be the bundle itself, never the shared root above it, which makes `executable` a
 // self-reference ('.') rather than a name, so resolvedExe's path.join(install_path, executable)
 // still lands on the bundle. launchNative's `open -n` then resolves the real binary through
 // the bundle's own Info.plist (CFBundleExecutable), exactly as GOG's own installer would.
@@ -293,7 +293,7 @@ function findDosbox() {
 
 function dosboxInstallHint() { return { native: 'brew install dosbox', flatpak: '' }; }
 
-// Same path normalisation as Linux — host-agnostic string handling, not OS-specific logic.
+// Same path normalisation as Linux, host-agnostic string handling, not OS-specific logic.
 function translateDosboxArgs(gogArgs) {
     const out = [];
     for (let i = 0; i < gogArgs.length; i++) {
@@ -312,11 +312,11 @@ const dosbox = { find: findDosbox, installHint: dosboxInstallHint, translateArgs
 
 // ═════════════════════════════════════════════════════════════════════════════
 // Windows-game runtime: CrossOver, driven directly through its own `wine --bottle`
-// CLI entry point — not cxstart, not the GUI. Same choice Linux makes with
+// CLI entry point, not cxstart, not the GUI. Same choice Linux makes with
 // umu-run/proton: talk to the real tool, not a wrapper app (this is exactly why
-// Sikarugir was dropped — GUI-only, no CLI to drive headlessly; see the mac-port
+// Sikarugir was dropped, GUI-only, no CLI to drive headlessly; see the mac-port
 // memory). Everything below was verified against a real CrossOver 26.3 install on
-// this machine before being written — the specific things confirmed by hand:
+// this machine before being written, the specific things confirmed by hand:
 //
 //   - `wine --bottle NAME [--no-gui] EXE args…` is the sanctioned entry point.
 //     It sets up CX_ROOT, the GPTK/D3DMetal library paths, WINEDLLPATH etc. on its
@@ -329,7 +329,7 @@ const dosbox = { find: findDosbox, installHint: dosboxInstallHint, translateArgs
 //     the bottle name.
 //   - Bottles do NOT self-initialize the way umu/Proton prefixes do. `wine --bottle`
 //     against a name with no bottle yet is a fatal error, and `cxbottle --create`
-//     refuses to create one at a path that already exists — even as an empty
+//     refuses to create one at a path that already exists, even as an empty
 //     directory, which is exactly what installer-engine.js's own
 //     `fs.mkdirSync(prefix, {recursive:true})` leaves behind before any of this
 //     runs. ensureBottle() below treats "no system.reg" as "not a real bottle yet"
@@ -337,9 +337,9 @@ const dosbox = { find: findDosbox, installHint: dosboxInstallHint, translateArgs
 //     across all of buildLaunch / buildRedistLaunch / regeditCommand and safe to
 //     call from a directory the engine already pre-created.
 //   - z: still maps to / exactly like Linux/vanilla Wine (confirmed against a real
-//     bottle's dosdevices/) — toWindowsPath needs no CrossOver-specific change.
+//     bottle's dosdevices/), toWindowsPath needs no CrossOver-specific change.
 //
-// Creating a bottle takes ~15-20s and only happens once per game — the same kind
+// Creating a bottle takes ~15-20s and only happens once per game, the same kind
 // of one-time cost Linux pays building a fresh Proton prefix. Because
 // `wine --bottle` refuses to run against a not-yet-real bottle, that creation has
 // to happen before a launch can be spawned at all, which is why buildLaunch,
@@ -358,7 +358,7 @@ function findCrossOverApp() {
     return null;
 }
 
-// CodeWeavers calls this "the hosted application" — confirmed by finding a real
+// CodeWeavers calls this "the hosted application", confirmed by finding a real
 // install; an earlier guess at `Contents/SharedSupport/CrossOver/bin/` was wrong
 // (see the mac-port memory, corrected 2026-08-24).
 function crossOverToolsDir(appPath) {
@@ -388,20 +388,20 @@ function findWineCached() { return findCrossOver()?.wine || null; }
 // ── Bottles ──────────────────────────────────────────────────────────────────
 function isRuntimeDir(dir) {
     // What "a Proton build" means on Linux; here it answers "is this a real,
-    // initialized bottle" — system.reg only exists once cxbottle --create (or a
+    // initialized bottle", system.reg only exists once cxbottle --create (or a
     // first real wine invocation against it) has actually run.
     try { return fs.existsSync(path.join(dir, 'system.reg')); } catch { return false; }
 }
 
 // Everything a bottle legitimately contains at rest. Used to tell "a half-built or
 // broken bottle of ours" (safe to throw away and rebuild) apart from "a directory
-// with somebody's actual files in it" (never touch) — see clearForCreate below.
+// with somebody's actual files in it" (never touch), see clearForCreate below.
 const BOTTLE_ARTIFACTS = new Set([
     'cxbottle.conf', 'system.reg', 'user.reg', 'userdef.reg',
     'dosdevices', 'drive_c', '.update-timestamp', '.DS_Store',
 ]);
 
-// cxbottle refuses to --create over a path that already exists — even an empty
+// cxbottle refuses to --create over a path that already exists, even an empty
 // directory, which is exactly what installer-engine.js's own unconditional
 // `fs.mkdirSync(prefix, {recursive:true})` leaves behind before host.runtime is ever
 // consulted. So something has to clear the way. What must NOT happen is clearing it
@@ -413,11 +413,11 @@ const BOTTLE_ARTIFACTS = new Set([
 function clearForCreate(prefix) {
     let entries;
     try { entries = fs.readdirSync(prefix); }
-    catch { return; }                                  // doesn't exist — nothing to clear
+    catch { return; }                                  // doesn't exist, nothing to clear
     const foreign = entries.filter(e => !BOTTLE_ARTIFACTS.has(e));
     if (foreign.length) {
         const err = new Error(
-            `Refusing to build a CrossOver bottle at ${prefix} — it already contains files ` +
+            `Refusing to build a CrossOver bottle at ${prefix}, it already contains files ` +
             `that are not part of a bottle (${foreign.slice(0, 3).join(', ')}` +
             `${foreign.length > 3 ? `, +${foreign.length - 3} more` : ''}). ` +
             `Point this game at an empty prefix folder, or move those files aside first.`);
@@ -462,14 +462,14 @@ function ensureBottle(prefix, runtimePath) {
 
 function unavailableError() {
     const err = new Error(
-        'CrossOver was not found. Windows games on macOS need CrossOver (from codeweavers.com) — ' +
+        'CrossOver was not found. Windows games on macOS need CrossOver (from codeweavers.com), ' +
         'Clarity drives it directly once it is installed, but cannot install it for you.');
     err.code = 'NO_RUNTIME';
     return err;
 }
 
 // CrossOver is commercial software with its own installer and license, not a build
-// fetched off GitHub releases the way GE-Proton is — nothing here is a stub
+// fetched off GitHub releases the way GE-Proton is, nothing here is a stub
 // standing in for future work, this is the real answer for this host.
 const management = {
     supported: false,
@@ -478,11 +478,11 @@ const management = {
     managedDirs:       () => [],
     resolveInstallDir: () => { throw unavailableError(); },
     isManagedDir:      () => false,
-    listReleases:  async () => ({ ok: false, error: 'CrossOver is commercial software — install it yourself from codeweavers.com.', releases: [] }),
-    latestRelease: async () => ({ ok: false, error: 'CrossOver is commercial software — install it yourself from codeweavers.com.' }),
-    install:       async () => ({ ok: false, error: 'CrossOver is commercial software — install it yourself from codeweavers.com.' }),
+    listReleases:  async () => ({ ok: false, error: 'CrossOver is commercial software, install it yourself from codeweavers.com.', releases: [] }),
+    latestRelease: async () => ({ ok: false, error: 'CrossOver is commercial software, install it yourself from codeweavers.com.' }),
+    install:       async () => ({ ok: false, error: 'CrossOver is commercial software, install it yourself from codeweavers.com.' }),
     cancel: () => false,
-    remove: () => ({ ok: false, error: 'Not applicable — Clarity does not manage your CrossOver install.' }),
+    remove: () => ({ ok: false, error: 'Not applicable, Clarity does not manage your CrossOver install.' }),
 };
 
 function runnerTools() {
@@ -491,16 +491,16 @@ function runnerTools() {
         key: 'crossover', label: 'CrossOver',
         path: cx ? cx.wine : null,
         installable: false, optional: false,
-        hint: cx ? '' : 'not found — install CrossOver from codeweavers.com, then relaunch Clarity',
+        hint: cx ? '' : 'not found, install CrossOver from codeweavers.com, then relaunch Clarity',
     }];
 }
 async function installRunner() {
-    return { ok: false, error: 'CrossOver is commercial software Clarity cannot install for you — get it from codeweavers.com.' };
+    return { ok: false, error: 'CrossOver is commercial software Clarity cannot install for you, get it from codeweavers.com.' };
 }
 
-// Only one "build" is ever possible on this host — there is no per-user store of
+// Only one "build" is ever possible on this host. There is no per-user store of
 // alternate CrossOver versions the way Linux keeps several Proton builds side by
-// side — so this is a single-entry (or empty) list, shaped to match what the
+// side, so this is a single-entry (or empty) list, shaped to match what the
 // existing Proton-picker UI already expects from runtime.scan().
 function scanRuntimes() {
     const cx = findCrossOver();
@@ -514,16 +514,16 @@ function resolveRuntime() { return findCrossOver()?.wine || ''; }
 
 // Note both of these ARE reached for native macOS games too: installer-engine.js calls
 // inUse()/compatEnv() well before its native-build gate (game.platform ===
-// host.nativeOsKey), not after. That's harmless — compatEnv adds nothing, and the
+// host.nativeOsKey), not after. That's harmless, compatEnv adds nothing, and the
 // shipped-wrapper-DLL scan those answers feed finds no Windows DLLs beside a .app
-// bundle — but it does mean neither may assume it is only ever asked about a Windows
+// bundle, but it does mean neither may assume it is only ever asked about a Windows
 // title. Same shape as Linux's: "is a translation layer going to be involved at all".
 function inUse(runtimePath) { return !!(runtimePath || findWineCached()); }
 function canRun(runtimePath) { return !!(runtimePath || findWineCached()); }
 
 // Nothing CrossOver-specific to add here: esync/fsync are Linux kernel futex
 // extensions with no macOS equivalent, and DXVK/NVAPI don't apply to a Metal-backed
-// D3D translation. Still has to return a real (mutable) object — the shared
+// D3D translation. Still has to return a real (mutable) object, the shared
 // shipped-wrapper-DLL and per-game-fix logic in installer-engine.js writes
 // WINEDLLOVERRIDES into whatever this returns, on every platform.
 function compatEnv() { return {}; }
@@ -531,12 +531,12 @@ function compatEnv() { return {}; }
 function assertAvailable(runtimePath) { if (!runtimePath && !findWineCached()) throw unavailableError(); }
 
 // Some callers resolve runtimePath through host.runtime.resolve() (always the found
-// CrossOver, or ''); others — apps/installer/main.js's "run an .exe in this prefix"
-// flow, in particular — read game.proton_path / the default_proton_path setting
+// CrossOver, or ''); others, apps/installer/main.js's "run an .exe in this prefix"
+// flow, in particular, read game.proton_path / the default_proton_path setting
 // directly instead, both Linux-only concepts that are simply always empty on this
 // host. Falling back to findWineCached() here (same as Linux's buildRedistLaunch
 // already does) means an empty runtimePath means "wasn't resolved by this caller",
-// not "CrossOver is missing" — only a real absence throws.
+// not "CrossOver is missing", only a real absence throws.
 function usableRuntimePath(runtimePath) { return runtimePath || findWineCached(); }
 
 async function buildLaunch({ launchExe, allArgs, runtimePath, prefix }) {
@@ -552,7 +552,7 @@ async function buildLaunch({ launchExe, allArgs, runtimePath, prefix }) {
 }
 
 // Unlike buildLaunch this returns the COMPLETE env (redists run standalone, not
-// under a game's own base) — same contract as Linux's version.
+// under a game's own base), same contract as Linux's version.
 async function buildRedistLaunch({ exePath, exeArgs, prefix, runtimePath }) {
     const wine = usableRuntimePath(runtimePath);
     if (!wine) throw unavailableError();
@@ -576,7 +576,7 @@ async function regeditCommand({ prefix, runtimePath, regFile }) {
     };
 }
 
-// z: maps to / exactly like Linux/vanilla Wine — confirmed against a real bottle's
+// z: maps to / exactly like Linux/vanilla Wine, confirmed against a real bottle's
 // dosdevices/ (CrossOver additionally maps y: to $HOME, unused here).
 function toWindowsPath(p) { return ('Z:' + p).replace(/\//g, '\\'); }
 
@@ -605,13 +605,13 @@ const runtime = {
     inUse, canRun, assertAvailable,
     compatEnv, buildLaunch, buildRedistLaunch, regeditCommand,
     toWindowsPath, diagnose, unavailableError,
-    // Not wired up — CrossOver 26 advertises its own BattlEye/EAC support built
+    // Not wired up, CrossOver 26 advertises its own BattlEye/EAC support built
     // into the engine itself, unverified here against a real anti-cheat title, and
     // Installer's own separate runtime copy (Linux's findAntiCheatRuntime) has no
     // reason to exist on a host where the compatibility layer claims to handle it.
     findAntiCheatRuntime: () => null,
     // No structured progress signal from CrossOver's output the way umu prints
-    // one — bottle creation is the only real delay, and it's already absorbed
+    // one, bottle creation is the only real delay, and it's already absorbed
     // (as a real await, not a UI-blocking wait) inside buildLaunch above.
     startupSteps: () => [],
     setupBytes: () => 0,

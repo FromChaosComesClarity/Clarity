@@ -6,7 +6,7 @@
   <style>
   /* ── JUKEBOX (Phase 4 W4) ───────────────────────────────────────────────────
      After cliamp.stream: monospace, box-drawing rules rather than panels, numbered
-     file-name labels, flat surfaces, one accent. ⚠️ Structure and typography only —
+     file-name labels, flat surfaces, one accent. ⚠️ Structure and typography only,
      every colour is a Couch theme variable, so the user's chosen theme (93 of them,
      including the live Omarchy one) still drives the look. */
   #jukebox-screen {
@@ -44,7 +44,7 @@
   .jb-col-list { flex: 4; min-width: 0; }
   .jb-col-now  { flex: 3; min-width: 0; }
 
-  /* Numbered, file-named section labels — the one Cliamp device that carries meaning
+  /* Numbered, file-named section labels, the one Cliamp device that carries meaning
      here, because these four panes ARE read in order. */
   .jb-label {
     font-size: clamp(10px, 0.72vw, 13px);
@@ -120,7 +120,7 @@
 
   .jb-foot { letter-spacing: 0.08em; }
 
-    /* All fonts bundled locally (no network dependency) — files in assets/fonts/. */
+    /* All fonts bundled locally (no network dependency), files in assets/fonts/. */
     @font-face { font-family: 'Raleway'; src: url('assets/fonts/Raleway-Regular.ttf') format('truetype'); font-weight: 400; }
     @font-face { font-family: 'Raleway'; src: url('assets/fonts/Raleway-Bold.ttf') format('truetype'); font-weight: 700; }
     @font-face { font-family: 'Raleway'; src: url('assets/fonts/Raleway-Black.ttf') format('truetype'); font-weight: 900; }
@@ -137,7 +137,7 @@
     @font-face { font-family: 'BigBlue Terminal'; src: url('assets/fonts/BigBlueTerminal.ttf') format('truetype'); }
     @font-face { font-family: 'C64 Pro Mono'; src: url('assets/fonts/C64ProMono.ttf') format('truetype'); }
     :root {
-      /* Set by applyUiFont() — the picked interface font, or the active theme's era font. */
+      /* Set by applyUiFont(), the picked interface font, or the active theme's era font. */
       --ui-font: 'Poppins';
       --bg: #2C1E16; --bg_panel: rgba(67, 40, 24, 0.6); --bg_menu: #432818;
       --accent: #D4A373; --accent_menu: #D4A373; --text_main: #FFE6A7;
@@ -202,7 +202,7 @@
     .boot-anim { animation: bootPop 0.8s forwards cubic-bezier(0.175, 0.885, 0.32, 1.275); }
 
     /* SCREENSAVER ANIMATION */
-    /* Ken Burns pan/zoom animations removed — static imagery + opacity crossfades only */
+    /* Ken Burns pan/zoom animations removed, static imagery + opacity crossfades only */
 
 
 
@@ -297,7 +297,7 @@
     #gallery-count { position: absolute; bottom: 16px; left: 22px; z-index: 2; font-size: 14px; font-weight: 900; color: var(--text_dim); letter-spacing: 2px; text-shadow: 0 2px 8px rgba(0,0,0,1); }
     #gallery-hero-game-name { position: absolute; bottom: 16px; right: 22px; z-index: 2; font-size: 26px; font-weight: 900; color: #fff; text-shadow: 0 2px 14px rgba(0,0,0,1); text-align: right; max-width: 60%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     #gallery-hero-logo { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 2; max-width: 55%; max-height: 50%; object-fit: contain; display: none; filter: drop-shadow(0 4px 24px rgba(0,0,0,0.95)); }
-    /* Scroll wrapper is the scroll container — the inner grid has default overflow:visible so
+    /* Scroll wrapper is the scroll container, the inner grid has default overflow:visible so
        scaled cells render freely into the grid padding zone without scroll-container clipping */
     #gallery-scroll { position: relative; z-index: 2; flex: 1; min-height: 0; overflow-y: auto; overflow-x: hidden; }
     #gallery-scroll::-webkit-scrollbar { width: 0; }
@@ -340,7 +340,7 @@
     .ggp-btn.ggp-active { border-color: var(--accent); color: var(--accent); }
     .ggp-btn.ggp-focused { border-color: #fff; transform: scale(1.06); box-shadow: 0 0 14px rgba(255,255,255,0.35); }
     .ggp-btn.ggp-active.ggp-focused { border-color: var(--accent); box-shadow: 0 0 14px var(--accent); }
-    /* FREE-to-play pill (mirrors the Manager's) — gamepage bars + gallery cells */
+    /* FREE-to-play pill (mirrors the Manager's), gamepage bars + gallery cells */
     .couch-f2p { display:inline-flex; align-items:center; font-size:11px; font-weight:900; letter-spacing:1px; padding:4px 9px; border-radius:5px; background:rgba(12,14,17,0.82); color:#5be27a; border:1px solid rgba(91,226,122,0.55); flex-shrink:0; }
     .gcell-f2p { font-size:9px; font-weight:900; letter-spacing:0.5px; padding:2px 6px; border-radius:4px; background:rgba(12,14,17,0.82); color:#5be27a; border:1px solid rgba(91,226,122,0.55); flex-shrink:0; align-self:center; }
     /* Store/category corner logos on the gamepages (masked, theme-neutral white) */
@@ -355,7 +355,7 @@
     /* Scrollable body below hero */
     #ggp-scroll { flex: 1; min-height: 0; overflow-y: auto; overflow-x: hidden; }
     #ggp-scroll::-webkit-scrollbar { width: 0; }
-    /* Achievements overlay grid — themed scrollbar (this one stays visible: it's a long list) */
+    /* Achievements overlay grid, themed scrollbar (this one stays visible: it's a long list) */
     #couch-ach-grid::-webkit-scrollbar { width: 10px; }
     #couch-ach-grid::-webkit-scrollbar-track { background: rgba(0,0,0,0.28); border-radius: 5px; margin: 6px 0; }
     #couch-ach-grid::-webkit-scrollbar-thumb { background: var(--accent); border-radius: 5px; }
@@ -400,7 +400,7 @@
     #ggp-ss-img { max-width: 90%; max-height: 80vh; object-fit: contain; border-radius: 10px; box-shadow: 0 10px 50px rgba(0,0,0,0.9); }
     #ggp-ss-counter { font-size: 17px; font-weight: 900; color: var(--text_dim); letter-spacing: 3px; }
     #ggp-ss-hint { font-size: 14px; font-weight: 900; color: var(--text_dim); letter-spacing: 2px; }
-    /* Trailer popup — near-fullscreen video */
+    /* Trailer popup, near-fullscreen video */
     #ggp-trailer-header { display: none; flex-direction: column; align-items: center; gap: 4px; flex-shrink: 0; }
     #ggp-trailer-label { font-size: 11px; font-weight: 900; color: var(--accent); letter-spacing: 5px; text-transform: uppercase; }
     #ggp-trailer-game-name { font-size: 24px; font-weight: 900; color: #fff; letter-spacing: 2px; text-shadow: 0 2px 10px rgba(0,0,0,0.8); }
@@ -431,7 +431,7 @@
     .cfgp-meta-pill.accent { color:var(--accent); }
     .cfgp-meta-sep { width:1px; height:15px; background:rgba(255,255,255,0.18); flex-shrink:0; }
     /* Info chips (classic-gamepage stats, immersive dress): dark glass, accent labels.
-       Solid translucent bg on purpose — backdrop-filter over the Ken Burns bg costs GPU. */
+       Solid translucent bg on purpose, backdrop-filter over the Ken Burns bg costs GPU. */
     .cfgp-chip { display:flex; flex-direction:column; gap:5px; padding:12px 18px; background:rgba(8,10,14,0.58); border:1px solid rgba(255,255,255,0.09); border-radius:12px; }
     .cfgp-chip .cl { font-size:11px; font-weight:900; letter-spacing:2px; text-transform:uppercase; color:var(--accent); }
     .cfgp-chip .cv { font-size:17px; font-weight:800; color:rgba(255,255,255,0.92); white-space:nowrap; max-width:340px; overflow:hidden; text-overflow:ellipsis; }
@@ -551,7 +551,7 @@
       <img id="sleep-cover" class="sleep-cover" src="">
       <div id="sleep-title" class="sleep-title" data-i18n="html.sleep_title">GAME RUNNING</div>
       <div id="sleep-instruction" class="sleep-instruction">Press [START] + [SELECT] to return to Couch</div>
-      <!-- First Windows launch downloads umu's runtime and builds a Wine prefix — minutes with
+      <!-- First Windows launch downloads umu's runtime and builds a Wine prefix, minutes with
            a black screen otherwise, which on a TV is indistinguishable from a crash. -->
       <div id="sleep-progress" style="display:none; width:min(560px,70vw); margin:26px auto 0;">
         <div style="height:8px; background:rgba(255,255,255,0.12); border-radius:4px; overflow:hidden;">
@@ -585,15 +585,15 @@
       <div class="footer" id="start-footer" data-i18n="html.loading_hw">Loading Hardware Inputs...</div>
     </div>
 
-    <!-- ════════ HOME — "Marquee" couch dashboard (optional start screen) ════════ -->
+    <!-- ════════ HOME, "Marquee" couch dashboard (optional start screen) ════════ -->
     <style>
       #home-screen { padding:0; }
       #home-content { flex:1; min-height:0; overflow-y:auto; scrollbar-width:none; }
-      #home-content::-webkit-scrollbar { display:none; }   /* gamepad UI — hidden like every other Couch scroller */
+      #home-content::-webkit-scrollbar { display:none; }   /* gamepad UI, hidden like every other Couch scroller */
       .ch-wrap { min-height:100%; box-sizing:border-box; padding:44px 60px 26px; display:flex; flex-direction:column; gap:24px; }
       @keyframes chUp { from { opacity:0; transform:translateY(16px); } to { opacity:1; transform:none; } }
       .ch-top, .ch-hero, .ch-actions, .ch-rowsec { animation:chUp 0.42s cubic-bezier(0.2,0.8,0.2,1) both; }
-      /* gpu-suspended pauses animations at frame 0 — chUp starts at opacity:0, so a Home
+      /* gpu-suspended pauses animations at frame 0, chUp starts at opacity:0, so a Home
          rendered while the window is blurred (e.g. right after closing a game) would sit
          INVISIBLE ("empty Home"). Drop the entry animation entirely while suspended. */
       body.gpu-suspended .ch-top, body.gpu-suspended .ch-hero, body.gpu-suspended .ch-actions, body.gpu-suspended .ch-rowsec { animation:none !important; }
@@ -616,7 +616,7 @@
       .ch-act .at { font-size:19px; font-weight:900; color:var(--text_main); letter-spacing:0.5px; }
       .ch-act .asub { font-size:12.5px; color:var(--text_dim); margin-top:3px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:200px; }
       .ch-act .cov { width:48px; height:64px; border-radius:8px; object-fit:cover; flex-shrink:0; }
-      /* Jukebox action tile — same look as its siblings; the cover + EQ bars carry the flair */
+      /* Jukebox action tile, same look as its siblings; the cover + EQ bars carry the flair */
       .ch-act-jb .at { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:230px; }
       .jb-cov { width:48px; height:48px; border-radius:10px; object-fit:cover; flex-shrink:0; box-shadow:0 4px 14px rgba(0,0,0,0.45); }
       .jb-eq { display:flex; align-items:flex-end; gap:3px; height:26px; margin-left:auto; flex-shrink:0; }
@@ -663,7 +663,7 @@
       .ch-hero.ch-focus, .ch-act.ch-focus { border-color:var(--accent); box-shadow:0 0 0 2px var(--accent), 0 0 30px color-mix(in srgb, var(--accent) 50%, transparent); }
       .ch-tile.ch-focus img { border-color:var(--accent); box-shadow:0 0 24px color-mix(in srgb, var(--accent) 60%, transparent); transform:scale(1.05); }
       .ch-foot { margin-top:auto; font-size:13px; color:var(--text_dim); letter-spacing:1.5px; text-align:center; padding-top:6px; text-transform:uppercase; }
-      /* ── TV Reader — in-app article view (news / your-games-news), themed + gamepad ── */
+      /* ── TV Reader, in-app article view (news / your-games-news), themed + gamepad ── */
       #reader-screen { background:var(--bg); }
       .rd-head { flex-shrink:0; padding:34px 0 18px; border-bottom:1px solid var(--border); width:min(1060px, 86vw); margin:0 auto; }
       .rd-kick { font-size:13px; font-weight:900; letter-spacing:3px; text-transform:uppercase; color:var(--accent); margin-bottom:10px; }
@@ -748,7 +748,7 @@
          ⚠️ It takes Cliamp's *structure and typography*, not its palette. Couch ships 93
          themes and follows the Omarchy one; hardcoding cyan and magenta would break every
          theme a person actually chose. Every colour below is a theme variable.
-         ⚠️ Every jb-* id the renderer drives is kept — this is a new view over working
+         ⚠️ Every jb-* id the renderer drives is kept. This is a new view over working
          logic, not a rewrite of the jukebox. -->
     <div id="jukebox-screen" class="screen blur-target hidden">
       <div class="jb-shell">
@@ -784,8 +784,8 @@
                 <img id="jb-np-cover" src="" alt="">
               </div>
               <div class="jb-np-meta">
-                <div id="jb-np-title" class="jb-np-title">—</div>
-                <div id="jb-np-artist" class="jb-np-artist">—</div>
+                <div id="jb-np-title" class="jb-np-title">-</div>
+                <div id="jb-np-artist" class="jb-np-artist">-</div>
               </div>
             </div>
 
@@ -1092,7 +1092,7 @@
   </div>
 
   <!-- Launch failure (almost always: no Proton installed for a Windows game). Couch can't
-       install Proton itself — no keyboard, and store/setup flows belong to the Manager — so
+       install Proton itself, no keyboard, and store/setup flows belong to the Manager, so
        it explains the problem and says where to fix it. -->
   <div id="launch-fail-backdrop" class="overlay-backdrop hidden" style="z-index: 320;">
     <div class="overlay-modal" style="width:680px;">

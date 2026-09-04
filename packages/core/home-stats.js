@@ -1,10 +1,10 @@
 'use strict';
 /*
- * @clarity/core — Home dashboard stats.
+ * @clarity/core, Home dashboard stats.
  *
  * Pure, dependency-free reductions over the games table. Run in the main process
  * (shared-ipc `get-home-stats` / `get-random-game`) so The Manager and Couch show
- * IDENTICAL numbers — single source of truth, no logic forked across the two faces.
+ * IDENTICAL numbers, single source of truth, no logic forked across the two faces.
  *
  * Phase 1 is 100% local/instant: no DB writes, no network.
  */
@@ -15,7 +15,7 @@ function leadingInt(v) {
     return m ? parseInt(m[0], 10) : null;
 }
 
-// ── Category predicates — must mirror the BACKLOG / PLAYED / INSTALLED logic in
+// ── Category predicates, must mirror the BACKLOG / PLAYED / INSTALLED logic in
 //    both renderers so a count here always matches what the library shows. ──
 function isPlayed(g)    { return g.kb_played == 1; }
 function isFav(g)       { return g.FAV === 'YES'; }
@@ -61,7 +61,7 @@ function sortedTally(map) {
     return [...map.entries()].map(([label, count]) => ({ label, count })).sort((a, b) => b.count - a.count);
 }
 
-// Tidy projection for tile widgets — keep the payload small (drop description blobs).
+// Tidy projection for tile widgets, keep the payload small (drop description blobs).
 function tile(g) {
     if (!g) return null;
     return {
@@ -123,14 +123,14 @@ function computeHomeSnapshot(games, opts = {}) {
         .slice(0, hiddenGemCount).map(tile);
 
     // Daily pick: deterministic by date. Prefer the installed backlog; fall back to any game.
-    // Rotate the STORE bucket round-robin per day first, then pick a game inside it — otherwise
+    // Rotate the STORE bucket round-robin per day first, then pick a game inside it, otherwise
     // whichever store dominates the backlog (Flatpak/PICO-8/Steam) would monopolise the slot.
     let dailyPick = null;
     const named = games.filter(g => g.Game && String(g.Game).trim()); // never feature a blank/placeholder row
     // Today's Pick only features the "big" store buckets (Jose's call: they're far more
     // relevant than Flatpak/PICO-8/itch/apps as a daily highlight).
     const DAILY_BUCKETS = new Set(['Steam', 'GOG', 'Epic', 'Others', 'Emulation']);
-    // …and only scraped games (must have hero-worthy art — the pick is a full-bleed banner).
+    // …and only scraped games (must have hero-worthy art. The pick is a full-bleed banner).
     const hasArt = g => !!(g.HeroArt || g.Screenshot || g.CoverArt);
     const featured = named.filter(g => DAILY_BUCKETS.has(storeBucket(g.Store)) && hasArt(g));
     const pool = featured.filter(g => isInstalled(g) && isBacklog(g));
@@ -159,21 +159,21 @@ function computeHomeSnapshot(games, opts = {}) {
         .sort((a, b) => (leadingInt(b.Playtime2wk) || 0) - (leadingInt(a.Playtime2wk) || 0))
         .slice(0, playtimeCount).map(tile);
 
-    // Couch Night — local/online co-op games (installed first).
+    // Couch Night, local/online co-op games (installed first).
     const couchNight = games.filter(g => { const c = (g.Coop || '').toLowerCase(); return c && c !== 'none'; })
         .sort((a, b) => (isInstalled(b) ? 1 : 0) - (isInstalled(a) ? 1 : 0)).slice(0, 12).map(tile);
 
-    // Franchise Spotlight — the series you own the most of (>= 2).
+    // Franchise Spotlight, the series you own the most of (>= 2).
     const franchiseMap = new Map();
     for (const g of games) { const f = (g.Franchise || '').trim(); if (f) { if (!franchiseMap.has(f)) franchiseMap.set(f, []); franchiseMap.get(f).push(g); } }
     let franchise = null, fBest = null;
     for (const [name, list] of franchiseMap) { if (list.length >= 2 && (!fBest || list.length > fBest.list.length)) fBest = { name, list }; }
     if (fBest) franchise = { name: fBest.name, count: fBest.list.length, games: fBest.list.slice(0, 12).map(tile) };
 
-    // Beaten ring — share of the library marked played.
+    // Beaten ring, share of the library marked played.
     const beatenPct = total ? Math.round(played / total * 100) : 0;
 
-    // Throwback — deterministic daily retro pick (released before 2010, else oldest available).
+    // Throwback, deterministic daily retro pick (released before 2010, else oldest available).
     const retroPool = games.filter(g => { const y = leadingInt(String(g.RELEASED || '').slice(-4)); return y && y < 2010; });
     const tbPool = retroPool.length ? retroPool : games.filter(g => leadingInt(String(g.RELEASED || '').slice(-4)));
     const throwback = tbPool.length ? tile(tbPool[hashStr('tb' + dailySeed) % tbPool.length]) : null;
@@ -209,7 +209,7 @@ function computeHomeSnapshot(games, opts = {}) {
     };
 }
 
-/** Random pick honoring simple constraints — powers the Roulette widget. */
+/** Random pick honoring simple constraints, powers the Roulette widget. */
 function pickRandom(games, c = {}) {
     let pool = Array.isArray(games) ? games.slice() : [];
     if (c.hidePico8)     pool = pool.filter(g => !isPico(g));

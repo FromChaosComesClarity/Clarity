@@ -6,13 +6,13 @@
  * fixed by a commit: the Electron userData directories (which Electron derives from
  * app.setName), the on-disk library locations, and the absolute paths recorded inside
  * both databases. Renaming the code without moving these leaves the app pointing at
- * nothing — an empty library beside 335 GB of games it can no longer see.
+ * nothing, an empty library beside 335 GB of games it can no longer see.
  *
  * ⚠️ Run this BEFORE the first launch of a Clarity build. Between the code change and
  * this script the two halves disagree, and launching in that window makes the app create
  * fresh empty databases at the new paths, which is then a merge problem rather than a move.
  *
- * Dry run by default — prints every action and changes nothing. Pass --apply to execute.
+ * Dry run by default, prints every action and changes nothing. Pass --apply to execute.
  * Idempotent: every step checks its own target first, so a half-finished run resumes cleanly.
  */
 import { execFileSync } from 'node:child_process';
@@ -36,7 +36,7 @@ function move(from, to) {
     if (!fs.existsSync(from)) {
         return fs.existsSync(to) ? skip(`${H(to)} already in place`) : skip(`${H(from)} not present`);
     }
-    if (fs.existsSync(to)) return warn(`BOTH exist: ${H(from)} and ${H(to)} — merge by hand`);
+    if (fs.existsSync(to)) return warn(`BOTH exist: ${H(from)} and ${H(to)}, merge by hand`);
     const sameFs = fs.statSync(path.dirname(from)).dev === fs.statSync(path.dirname(to)).dev;
     act(`${H(from)} → ${H(to)}${sameFs ? '' : '  (CROSS-DEVICE: will copy, not rename)'}`);
     if (!APPLY) return;
@@ -47,7 +47,7 @@ function move(from, to) {
 function remove(target, why) {
     if (!fs.existsSync(target)) return skip(`${H(target)} already gone`);
     if (fs.statSync(target).isDirectory() && fs.readdirSync(target).length) {
-        return warn(`${H(target)} is not empty — left alone`);
+        return warn(`${H(target)} is not empty, left alone`);
     }
     act(`remove ${H(target)} (${why})`);
     if (APPLY) fs.rmSync(target, { recursive: true, force: true });
@@ -84,7 +84,7 @@ function renameSettingKey(db, from, to) {
 function renameColumn(db, table, from, to) {
     const cols = sql(db, `SELECT group_concat(name) FROM pragma_table_info('${table}');`).split(',');
     if (cols.includes(to))   return skip(`${table}.${to} already renamed`);
-    if (!cols.includes(from)) return warn(`${table}.${from} not found — cannot rename`);
+    if (!cols.includes(from)) return warn(`${table}.${from} not found, cannot rename`);
     act(`${table}: rename column ${from} → ${to}`);
     if (APPLY) sql(db, `ALTER TABLE ${table} RENAME COLUMN ${from} TO ${to};`);
 }
@@ -114,21 +114,21 @@ const NEW = {
                  : path.join(HOME, 'Clarity'),
 };
 
-console.log(`\n  Cafe Neurotico → Clarity migration  [${APPLY ? 'APPLYING' : 'DRY RUN — pass --apply to execute'}]  ${MAC ? 'macOS' : 'Linux'}\n`);
+console.log(`\n  Cafe Neurotico → Clarity migration  [${APPLY ? 'APPLYING' : 'DRY RUN, pass --apply to execute'}]  ${MAC ? 'macOS' : 'Linux'}\n`);
 
 // Refuse to run against a live process: moving a userData dir out from under a running
 // Electron app corrupts its Local Storage and leaves a stale singleton lock.
 let running = [];
 try {
     // Anchored to an executable path, because a bare word match also hits any shell whose
-    // command line merely mentions the AppImage — including the one running this script.
+    // command line merely mentions the AppImage, including the one running this script.
     running = execFileSync('pgrep', ['-af', '(^|/)(electron|Clarity\\.AppImage|CafeNeurotico\\.AppImage)'], { encoding: 'utf8' })
         .trim().split('\n').filter(Boolean)
         .filter(l => ![process.pid, process.ppid].includes(Number(l.split(/\s+/)[0])))
         .filter(l => !l.includes('migrate-to-clarity'));
-} catch { /* pgrep exits 1 when nothing matches — that is the good case */ }
+} catch { /* pgrep exits 1 when nothing matches. That is the good case */ }
 if (running.length) {
-    console.log('  ✗ ABORT — the app appears to be running:\n' + running.map(l => '      ' + l).join('\n') + '\n\n  Close it and re-run.\n');
+    console.log('  ✗ ABORT, the app appears to be running:\n' + running.map(l => '      ' + l).join('\n') + '\n\n  Close it and re-run.\n');
     process.exit(1);
 }
 
@@ -143,7 +143,7 @@ move(OLD.appDir, NEW.appDir);
 remove(OLD.stray, 'empty leftover deploy dir');
 
 // After the moves above, everything lives at its NEW path. During a dry run nothing has
-// actually moved, so each later step must inspect wherever the data still is — otherwise
+// actually moved, so each later step must inspect wherever the data still is, otherwise
 // the preview reports "not present" for every file and shows none of the database work,
 // which is the one thing a preview exists to show.
 const live = (newP, oldP) => (fs.existsSync(newP) || !fs.existsSync(oldP)) ? newP : oldP;
@@ -158,7 +158,7 @@ move(path.join(appDir, 'CafeNeurotico_old.AppImage'), path.join(appDir, 'Clarity
 move(path.join(gmc, 'grinder-progress.json'),             path.join(gmc, 'installer-progress.json'));
 
 // Companion apps keep their own state inside the shared library directory, so they
-// move with it — but their *names* are part of the rebrand too.
+// move with it, but their *names* are part of the rebrand too.
 console.log('\n▸ Companion app data');
 move(path.join(gmc, 'CafeNeuroticoClock'), path.join(gmc, 'ClarityClock'));
 move(path.join(gmc, 'CREMA_wallpapers'),   path.join(gmc, 'couch_wallpapers'));
@@ -175,7 +175,7 @@ const libDbNow = fs.existsSync(libDb) ? libDb : path.join(engine, 'grinder.db');
 if (fs.existsSync(libDbNow)) {
     backup(libDbNow);
     rewrite(libDbNow, 'games', 'install_path', '/Games/CafeNeurotico/', '/Games/Clarity/');
-} else skip('library.db not found — nothing to rewrite');
+} else skip('library.db not found, nothing to rewrite');
 
 console.log('\n▸ Manager database (games.db)');
 const gamesDb = path.join(gmc, 'games.db');
@@ -216,7 +216,7 @@ console.log('\n▸ Stale desktop entries');
 const appsDir = path.join(HOME, '.local', 'share', 'applications');
 for (const f of fs.existsSync(appsDir) ? fs.readdirSync(appsDir) : []) {
     if (/^cafe-neurotico.*\.desktop$/.test(f)) {
-        act(`remove ${H(path.join(appsDir, f))} — re-create from the app's "Install to menu"`);
+        act(`remove ${H(path.join(appsDir, f))}, re-create from the app's "Install to menu"`);
         if (APPLY) fs.rmSync(path.join(appsDir, f));
     }
 }
@@ -240,7 +240,7 @@ for (const [file, label] of [
 ]) {
     try {
         const stale = fs.readFileSync(file, 'utf8').includes('cafeneurotico');
-        stale ? warn(`${label}: ${H(file)} still names cafeneurotico — point it at io.github.fromchaoscomesclarity.clarity`)
+        stale ? warn(`${label}: ${H(file)} still names cafeneurotico, point it at io.github.fromchaoscomesclarity.clarity`)
               : console.log(`  ✓ ${label}: ${H(file)} already on the clarity id`);
     } catch { skip(`${label}: ${H(file)} not present`); }
 }

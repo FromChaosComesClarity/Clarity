@@ -33,7 +33,7 @@ const REQUIRED = ['ffmpeg', 'ffprobe', 'yt-dlp', 'gogdl', 'legendary', 'comet'];
 // Pinned release asset + its SHA256, per host. Bump the tag and hash together when a
 // binary set changes.
 //
-// gogdl in both tarballs is OUR BUILD, from the fork — it carries fixes that are not in
+// gogdl in both tarballs is OUR BUILD, from the fork, it carries fixes that are not in
 // upstream 1.2.1 (CDN failover on a corrupt chunk, bounded secure-link retries, non-blocking
 // telemetry, API timeouts). These binaries are gitignored, so the tarball is the only place
 // they live: point this at the upstream build and a clean checkout would quietly lose all of
@@ -47,7 +47,7 @@ const REQUIRED = ['ffmpeg', 'ffprobe', 'yt-dlp', 'gogdl', 'legendary', 'comet'];
 //
 // The archive is expected to contain the six names in REQUIRED exactly. Upstream calls its
 // macOS builds gogdl_macos_arm64 / legendary_macOS_arm64 / comet-aarch64-apple-darwin /
-// yt-dlp_macos — rename them when building that tarball rather than branching here.
+// yt-dlp_macos, rename them when building that tarball rather than branching here.
 const SOURCES = {
     linux: {
         url:    'https://github.com/FromChaosComesClarity/Clarity/releases/download/binaries-v2/clarity-binaries-v2.tar.gz',
@@ -67,7 +67,7 @@ const presentIn   = names => names.every(name => existsSync(join(BIN_DIR, name))
 const reportGaps  = source => {
     for (const [name, how] of Object.entries(source?.missing || {})) {
         if (existsSync(join(BIN_DIR, name))) continue;
-        console.warn(`\n⚠ ${name} is not in this tarball — ${how}\n`);
+        console.warn(`\n⚠ ${name} is not in this tarball, ${how}\n`);
     }
 };
 const sha256 = file => createHash('sha256').update(readFileSync(file)).digest('hex');
@@ -76,7 +76,7 @@ function main() {
     const source = SOURCES[host.id];
 
     if (source && presentIn(expectedOf(source))) {
-        console.log(`• helper binaries already present (${host.binDirName}) — skipping fetch`);
+        console.log(`• helper binaries already present (${host.binDirName}), skipping fetch`);
         reportGaps(source);
         return;
     }
@@ -108,7 +108,7 @@ function main() {
     }
 
     execFileSync('tar', ['-xzf', tmp, '-C', BIN_DIR], { stdio: 'inherit' });
-    // Only what this tarball actually delivered — chmod on an absent name would abort here.
+    // Only what this tarball actually delivered, chmod on an absent name would abort here.
     const landed = expectedOf(source).filter(n => existsSync(join(BIN_DIR, n)));
     if (landed.length) execFileSync('chmod', ['+x', ...landed.map(n => join(BIN_DIR, n))]);
     rmSync(tmp, { force: true });

@@ -118,7 +118,7 @@ app.whenReady().then(() => {
         try { db.prepare("ALTER TABLE games ADD COLUMN Installed INTEGER DEFAULT 1").run(); } catch(e) {}
         // One-time migration: rename the legacy launch scheme heroic://launch/… → installer://launch/… (Heroic-era leftover)
         try { db.prepare("UPDATE games SET LaunchCommand = REPLACE(LaunchCommand, 'heroic://launch/', 'installer://launch/') WHERE LaunchCommand LIKE '%heroic://launch/%'").run(); } catch(e) {}
-        // Game playlists + Recently-Imported support — schema MUST match The Manager
+        // Game playlists + Recently-Imported support, schema MUST match The Manager
         // (apps/manager/main.js) since both faces share this games.db. Whichever face
         // opens first creates the tables; the other is a no-op.
         try { db.prepare("ALTER TABLE games ADD COLUMN date_added INTEGER DEFAULT 0").run(); } catch(e) {}
@@ -196,7 +196,7 @@ function getInstallerMap() {
     return _installerMap;
 }
 
-// In-process Installer engine — launch GOG/Epic games without spawning anything
+// In-process Installer engine, launch GOG/Epic games without spawning anything
 // (Installer is a face of this same binary now). Points at ~/.config/installer.
 const installerEngine = require('../../packages/core/installer-engine.js');
 let _installerEngineDb = null;
@@ -229,7 +229,7 @@ function ensureInstallerEngine() {
 }
 
 // A Windows game that dies the moment it starts (almost always: no Proton installed) is
-// invisible on a TV — the couch UI would just sit there. Push it to the overlay instead.
+// invisible on a TV, the couch UI would just sit there. Push it to the overlay instead.
 // Couch can't install Proton itself (no keyboard, and it never owns store/setup flows), so it
 // says what's wrong and points at the Manager.
 function reportLaunchThrow(installerGameId, err) {
@@ -266,7 +266,7 @@ function syncInstalledFromInstaller() {
             const val = r.installed ? 1 : 0;
             const res = db.prepare("UPDATE games SET Installed=? WHERE LaunchCommand LIKE ?")
                           .run(val, `%${r.app_id}%`);
-            // ⚠️ games.db has no app_id column — it keys Installer games by InstallerGameId, which
+            // ⚠️ games.db has no app_id column, it keys Installer games by InstallerGameId, which
             // is exactly the shape of library.db's own row id ('gog_<appId>'). The old fallback
             // asked for app_id and threw, and because the whole loop sits in one try/catch that
             // throw abandoned the sync for every remaining row, not just this one.
@@ -295,7 +295,7 @@ ipcMain.on('launch-game', (event, cmd) => {
         } else {
             console.error('[launch-game] no Installer mapping/engine for', installerMatch[2]);
         }
-        return; // GOG/Epic must go through Installer — never fall through to a shell command
+        return; // GOG/Epic must go through Installer, never fall through to a shell command
     }
     // installer://launch/<id> (direct Installer id)
     const gLaunch = cmd.match(/^installer:\/\/(?:launch\/)?(.+)$/);
@@ -304,7 +304,7 @@ ipcMain.on('launch-game', (event, cmd) => {
         return;
     }
 
-    // 2. itch.io — hand the scheme to the desktop's opener (shell.openExternal rejects custom schemes)
+    // 2. itch.io, hand the scheme to the desktop's opener (shell.openExternal rejects custom schemes)
     if (cmd.startsWith('itch://')) {
         host.desktop.openUrlScheme(cmd);
         return;
@@ -356,7 +356,7 @@ function launcherStore(cmd) {
     if (/installer:\/\/launch\/epic\//i.test(cmd)) return 'epic';
     return null;
 }
-// The canonical per-store launcher list for a row: [{ label, cmd }] — mirrors the Manager.
+// The canonical per-store launcher list for a row: [{ label, cmd }], mirrors the Manager.
 // LaunchCommands is the source of truth when populated, but plenty of genuinely multi-store
 // rows never had it written (legacy cross-store merges, or a Manager save that dropped the
 // Installer launcher), so anything the row's own store fields prove exists is filled back in.
@@ -374,7 +374,7 @@ function expandLaunchers(game) {
     const stores = (game.Store || '').toLowerCase();
     const has = s => out.some(l => launcherStore(l.cmd) === s);
 
-    // SteamAppID alone proves nothing — it doubles as the metadata key on GOG/itch rows.
+    // SteamAppID alone proves nothing, it doubles as the metadata key on GOG/itch rows.
     const appId = String(game.SteamAppID || '').replace(/\.0+$/, '').trim();
     if (stores.includes('steam') && appId && appId !== 'None' && !has('steam')) {
         add('Steam', host.steamLaunchCommand(appId));
@@ -510,7 +510,7 @@ ipcMain.on('force-focus', () => {
     setTimeout(() => win.setAlwaysOnTop(false), 2000);
 
     // Then whatever else the host can do to raise a window past focus-stealing
-    // prevention. Always safe to call — a host with no such trick does nothing.
+    // prevention. Always safe to call, a host with no such trick does nothing.
     host.desktop.focusWindow(win);
 });
 
@@ -711,20 +711,20 @@ ipcMain.handle('scrape-igdb-data', async (e, gameName, mode, igdbId) => {
         let overallSuccess = false;
 
         if (mode === 'COVER' || mode === 'ALL') {
-            // Cover — Steam CDN preferred, IGDB fallback (skip IGDB if adult content)
+            // Cover, Steam CDN preferred, IGDB fallback (skip IGDB if adult content)
             const coverFile = `${beautifulName} - Cover.jpg`;
             let coverOk = steamAppId ? await downloadImage(`https://steamcdn-a.akamaihd.net/steam/apps/${steamAppId}/library_600x900.jpg`, path.join(imagesDir, coverFile)) : false;
             if (!coverOk && igdb.cover?.url && !isAdultContent) coverOk = await downloadImage(igdbImg(igdb.cover.url, 'cover_big'), path.join(imagesDir, coverFile));
             if (coverOk) { db.prepare("UPDATE games SET CoverArt=? WHERE Game=?").run(`GameManagerConfig/images/${coverFile}`, gameName); overallSuccess = true; }
 
-            // Hero Art — Steam CDN only
+            // Hero Art, Steam CDN only
             if (steamAppId) {
                 const heroFile = `${beautifulName} - Hero.jpg`;
                 if (await downloadImage(`https://steamcdn-a.akamaihd.net/steam/apps/${steamAppId}/library_hero.jpg`, path.join(imagesDir, heroFile)))
                     db.prepare("UPDATE games SET HeroArt=? WHERE Game=?").run(`GameManagerConfig/images/${heroFile}`, gameName);
             }
 
-            // Logo — Steam CDN, then SGDB
+            // Logo, Steam CDN, then SGDB
             const logoFile = `${beautifulName} - Logo.png`;
             let logoOk = steamAppId ? await downloadImage(`https://steamcdn-a.akamaihd.net/steam/apps/${steamAppId}/logo.png`, path.join(imagesDir, logoFile)) : false;
             if (!logoOk) {
@@ -812,7 +812,7 @@ ipcMain.handle('scrape-steam-data', async (e, gameName, mode, appId) => {
             if (await downloadImage(`https://steamcdn-a.akamaihd.net/steam/apps/${appId}/library_hero.jpg`, path.join(imagesDir, heroFile)))
                 db.prepare("UPDATE games SET HeroArt=? WHERE Game=?").run(`GameManagerConfig/images/${heroFile}`, gameName);
 
-            // Logo — Steam CDN first, SGDB fallback
+            // Logo, Steam CDN first, SGDB fallback
             const logoFile = `${beautifulName} - Logo.png`;
             let logoOk = await downloadImage(`https://steamcdn-a.akamaihd.net/steam/apps/${appId}/logo.png`, path.join(imagesDir, logoFile));
             if (!logoOk) {
@@ -868,7 +868,7 @@ ipcMain.handle('scrape-steam-data', async (e, gameName, mode, appId) => {
                 if (pr.ok) { const pd = await pr.json(); if (pd.tier) proton = pd.tier.toUpperCase(); }
             } catch(e) {}
 
-            // IGDB — similar games, franchise, fill gaps
+            // IGDB, similar games, franchise, fill gaps
             let similar = "", franchise = "";
             try {
                 const igdb = await igdbSearch(gameName, appId);
@@ -947,7 +947,7 @@ ipcMain.on('save-playlists', (e, pl) => { try { fs.writeFileSync(playlistsPath, 
 // ── GAME PLAYLISTS (shared games.db, same tables as The Manager) ───────────────
 // NOTE: the channel above (get-playlists) belongs to the JUKEBOX's music playlists.
 // Game playlists are a different feature stored in games.db, so they use their own
-// channel names that mirror The Manager's handlers — except the list-all channel,
+// channel names that mirror The Manager's handlers, except the list-all channel,
 // renamed to 'get-game-playlist-list' to avoid colliding with the jukebox one.
 ipcMain.handle('get-game-playlist-list', () => {
     if (!db) return [];
@@ -955,7 +955,7 @@ ipcMain.handle('get-game-playlist-list', () => {
 });
 ipcMain.handle('get-playlist-games', (_, playlistId) => {
     // Smart playlists resolve their rule (genre, store, installed…) instead of reading a
-    // stored member list — same helper the Manager uses, so both faces agree on members.
+    // stored member list, same helper the Manager uses, so both faces agree on members.
     try { return _smart.playlistGames(db, playlistId); } catch(e) { return []; }
 });
 ipcMain.handle('get-game-playlists', (_, gameId) => {
@@ -993,17 +993,17 @@ function getInstallerDbPath() {
 }
 
 /*
- * Whether the stores are signed in — REPORTED, never offered.
+ * Whether the stores are signed in, REPORTED, never offered.
  *
  * ⚠️ Couch does not and must not have a store login: it is a gamepad UI on a television, and
  * a device-code flow with a browser and a password field has no business there. But it does
  * need to be able to say *why* an install cannot start, because "Size info unavailable" for a
- * signed-out account is the least useful sentence in the app — it was the oldest open bug in
+ * signed-out account is the least useful sentence in the app. It was the oldest open bug in
  * the project. Reading the status is not offering a login.
  */
 ipcMain.handle('couch-store-auth', async () => {
     if (!ensureInstallerEngine()) return { gog: false, epic: false, engine: false };
-    // ⚠️ Both are async — read synchronously they return a Promise, which is truthy without
+    // ⚠️ Both are async, read synchronously they return a Promise, which is truthy without
     // `.loggedIn`, so every account came back signed out.
     let gog = false, epic = false;
     try { gog = !!(await installerEngine.gogStatus())?.loggedIn; } catch {}

@@ -1,6 +1,6 @@
 'use strict';
 /*
- * @clarity/core — fill every game's genres from the best source available.
+ * @clarity/core, fill every game's genres from the best source available.
  *
  * Three passes, cheapest-and-best first, each one only handling what the previous
  * could not:
@@ -38,7 +38,7 @@ async function fetchJson(url, timeoutMs = 20000) {
     finally { clearTimeout(t); }
 }
 
-// SteamSpy's tags field is `{ "Action RPG": 35022, … }` — but an unknown appid answers
+// SteamSpy's tags field is `{ "Action RPG": 35022, … }`, but an unknown appid answers
 // with an empty array instead of an empty object, hence the shape check.
 async function steamspyTags(appId) {
     const d = await fetchJson(`https://steamspy.com/api.php?request=appdetails&appid=${encodeURIComponent(appId)}`);
@@ -54,12 +54,12 @@ function cleanAppId(v) {
 
 /*
  * options:
- *   db          — games.db handle
- *   igdbLookup  — async (name, appId) => { genres:[{name}], themes:[{name}], keywords:[{name}] }
+ *   db        , games.db handle
+ *   igdbLookup, async (name, appId) => { genres:[{name}], themes:[{name}], keywords:[{name}] }
  *                 supplied by the face that owns the IGDB token; omit to skip pass 2
- *   onProgress  — ({ scanned, total, label, classified }) => void
- *   shouldCancel— () => boolean, polled between games
- *   force       — re-scan rows scanned recently (default: skip anything under a month old)
+ *   onProgress, ({ scanned, total, label, classified }) => void
+ *   shouldCancel, () => boolean, polled between games
+ *   force     , re-scan rows scanned recently (default: skip anything under a month old)
  *
  * Returns { scanned, classified, skipped, cancelled }.
  */

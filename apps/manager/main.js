@@ -96,14 +96,14 @@ function getSavedBounds() {
 // desk Electron reports the first-enumerated output as "primary" regardless of the compositor's
 // real primary, so a small side panel (e.g. a 640x480 HDMI screen) wins and the clamp below
 // shrinks the window to a useless 600x440. Prefer the display that already holds the saved
-// window, else the largest one. The cursor is no help — Wayland makes getCursorScreenPoint()
-// return {0,0} — and neither is waiting: getAllDisplays() returns 1, 2 or 3 outputs at random
+// window, else the largest one. The cursor is no help, Wayland makes getCursorScreenPoint()
+// return {0,0}, and neither is waiting: getAllDisplays() returns 1, 2 or 3 outputs at random
 // on this session and then never corrects itself (display-added never fires), which is why
 // the size floor in createWindow is deliberately NOT capped by the reported work area.
 function pickDisplay(saved) {
     const all = screen.getAllDisplays();
     if (!all.length) return screen.getPrimaryDisplay();
-    // Only trust the saved position when the whole window still fits on that display —
+    // Only trust the saved position when the whole window still fits on that display,
     // a partial match means the monitor layout changed under us (new machine, unplugged
     // screen), and the saved coordinates are meaningless.
     if (saved && saved.x != null && saved.y != null) {
@@ -122,13 +122,13 @@ function pickDisplay(saved) {
 function createWindow () {
     const saved = getSavedBounds();
     // Clamp to the display's work area so it never opens larger than the screen (e.g. 1080p with
-    // a saved size from a bigger monitor, or panels/taskbars eating vertical space) — which pushed
+    // a saved size from a bigger monitor, or panels/taskbars eating vertical space), which pushed
     // the welcome screen partly off-screen. Fall back to a centered window when it wouldn't fit.
     const wa = pickDisplay(saved).workArea;
     // ...but only when the reported work area is believable. Electron under-reports the outputs
     // here (see pickDisplay), and a work area smaller than the smallest usable window means we
     // are looking at a side panel it mistook for the whole desk, not a genuinely tiny screen.
-    // In that case don't clamp at all — an oversized window the user can resize beats a
+    // In that case don't clamp at all, an oversized window the user can resize beats a
     // miniscule one they can't read, and a restored size was one this machine already had.
     const MIN_W = 1024, MIN_H = 700;
     const trustWorkArea = wa.width >= MIN_W && wa.height >= MIN_H;
@@ -139,7 +139,7 @@ function createWindow () {
     const onScreen = x != null && y != null && x >= wa.x && y >= wa.y &&
                      x + width <= wa.x + wa.width && y + height <= wa.y + wa.height;
     if (!onScreen) {
-        // Centre on the chosen display by hand — passing undefined would let Electron centre it
+        // Centre on the chosen display by hand, passing undefined would let Electron centre it
         // on *its* idea of the primary, i.e. the wrong screen. If the window doesn't even fit
         // there (under-reported display), hand placement back to Electron rather than pushing
         // it off-screen.
@@ -147,7 +147,7 @@ function createWindow () {
         x = fits ? Math.round(wa.x + (wa.width  - width)  / 2) : undefined;
         y = fits ? Math.round(wa.y + (wa.height - height) / 2) : undefined;
     }
-    // macOS: keep the real traffic lights instead of the custom-drawn win-btn row — inset to
+    // macOS: keep the real traffic lights instead of the custom-drawn win-btn row, inset to
     // sit inside our own #titlebar rather than Electron's default top-left corner. Every other
     // host stays frame:false with the custom row, unchanged.
     const chrome = process.platform === 'darwin'
@@ -182,7 +182,7 @@ function createWindow () {
         }
     });
 
-    // Show only after the renderer has applied the theme — eliminates blank screen and color flash.
+    // Show only after the renderer has applied the theme, eliminates blank screen and color flash.
     // Fallback: if renderer never signals within 3s, show anyway.
     const showWin = () => { if (!win.isVisible()) win.show(); };
     ipcMain.once('renderer-ready', showWin);
@@ -198,13 +198,13 @@ function createWindow () {
 //   --action=<id>   run one of the command palette's actions
 //
 // ⚠️ play and action exist for the Omarchy launcher overlay, and they deliberately do
-// their work *in here*. The alternative — the plugin spawning games itself — would mean
+// their work *in here*. The alternative, the plugin spawning games itself, would mean
 // a second launcher that re-implements the engine and IWAD pickers, the install-state
 // verification and the last-played write, and it would drift the day one of them changed.
 // The overlay finds the row; the app performs it.
 //
 // Read from argv on first launch, and from the *second* instance's argv when we are
-// already running — otherwise the request is dropped on the floor and the user just
+// already running, otherwise the request is dropped on the floor and the user just
 // sees the library.
 const REQUEST_ARGS = [
     { flag: '--game=',   channel: 'open-game',  valid: v => /^\d+$/.test(v) },
@@ -252,7 +252,7 @@ ipcMain.on('renderer-ready', () => {
 });
 
 // The command palette's actions, published for the desktop (see desktop-descriptor.js).
-// The renderer owns the list — every action is a closure over the UI — so it reports the
+// The renderer owns the list, every action is a closure over the UI, so it reports the
 // ids and names once the palette is wired, and this only writes them down.
 ipcMain.on('publish-palette-actions', (_e, actions) => { desktopDescriptor.publishActions(actions); });
 
@@ -277,7 +277,7 @@ app.whenReady().then(() => {
         db.pragma('journal_mode = WAL');
     // Shared IPC handlers live in packages/core/shared-ipc.js (single source of truth).
     registerSharedHandlers({ db, baseDir, trailersDir, ytDlpPath, ytDlpConfigPath, ffmpegPath, getBeautifulName, getOldCrushedName });
-    applyHyprlandRules();   // needs `db` — see the note on the function
+    applyHyprlandRules();   // needs `db`, see the note on the function
         db.prepare(`
         CREATE TABLE IF NOT EXISTS games (
             id INTEGER PRIMARY KEY AUTOINCREMENT, Store TEXT, FAV TEXT, WANT_TO_PLAY TEXT,
@@ -314,7 +314,7 @@ app.whenReady().then(() => {
         // …and unwrap the external Heroic flatpak that used to carry that URL. The rename above
         // left `flatpak run com.heroicgameslauncher.hgl "installer://launch/…"`, which the in-process
         // launcher can't recognise (its match is anchored) and which needs a Heroic install we no
-        // longer depend on — so those rows launched nothing. The bare URL is what Installer handles.
+        // longer depend on, so those rows launched nothing. The bare URL is what Installer handles.
         try {
             const unwrap = c => {
                 const m = String(c || '').match(/com\.heroicgameslauncher\.hgl\s+"?(installer:\/\/launch\/[^"\s]+)"?/i);
@@ -343,7 +343,7 @@ app.whenReady().then(() => {
         try { db.prepare("ALTER TABLE games ADD COLUMN Hidden INTEGER DEFAULT 0").run(); } catch(e) {}      // 1 = user-hidden from all library views
         try { db.prepare("ALTER TABLE games ADD COLUMN SaveDirOverride TEXT").run(); } catch(e) {}          // GOG save-game manager: user-picked save folder ("Locate saves…")
         try { db.prepare("ALTER TABLE games ADD COLUMN MacNative INTEGER DEFAULT 0").run(); } catch(e) {}    // 1 = has a native macOS build (Steam platforms.mac, or GOG/Epic via library.db)
-        try { db.prepare("ALTER TABLE games ADD COLUMN MacNativeChecked INTEGER DEFAULT 0").run(); } catch(e) {} // 1 = already checked (Steam lookup is a live API call — never re-ask once answered)
+        try { db.prepare("ALTER TABLE games ADD COLUMN MacNativeChecked INTEGER DEFAULT 0").run(); } catch(e) {} // 1 = already checked (Steam lookup is a live API call, never re-ask once answered)
         try { db.prepare(`CREATE TABLE IF NOT EXISTS save_backups (
             id INTEGER PRIMARY KEY AUTOINCREMENT, game_id INTEGER, path TEXT, created INTEGER, bytes INTEGER, source TEXT
         )`).run(); } catch(e) {}                                                                            // log of GOG save-zip backups (incl. pre-restore snapshots)
@@ -382,7 +382,7 @@ app.whenReady().then(() => {
 
 app.on('window-all-closed', () => { if (process.platform !== 'darwin') app.quit(); });
 
-// In the unified suite Installer is THIS binary invoked with a leading 'installer' arg —
+// In the unified suite Installer is THIS binary invoked with a leading 'installer' arg,
 // there is no separate Installer.AppImage to locate, so this always resolves.
 function findInstallerPath() {
     return host.selfExecutable();
@@ -427,7 +427,7 @@ function ensureInstallerEngine(createIfMissing = false) {
     const home = os.homedir();
     let gdbPath = host.findInstallerDb(baseDir);
     // No library.db yet (fresh install, Installer GUI never opened). Create one so
-    // GOG/Epic sign-in and library import can happen headlessly — Installer stays a
+    // GOG/Epic sign-in and library import can happen headlessly, Installer stays a
     // power-user tool the average user never has to open. Schema is created below.
     let created = false;
     if (!gdbPath) {
@@ -465,7 +465,7 @@ function ensureInstallerEngine(createIfMissing = false) {
 //
 // The screen lock is the important one. A gamepad-only Couch session, a long cutscene or a
 // turn spent staring at a map produces no keyboard or mouse input at all, so the desktop's
-// idea of idle and the player's are completely different — and on Omarchy the lock screen
+// idea of idle and the player's are completely different, and on Omarchy the lock screen
 // wins. Electron's powerSaveBlocker speaks the Wayland idle-inhibit protocol, which hypridle
 // honours.
 //
@@ -479,7 +479,7 @@ let _gamesRunning = 0;
 function onGameSession(active) {
     const omarchy = host.desktop?.omarchy;
     // ⚠️ Re-applied on every launch, not just at startup. Rules set through `hyprctl eval` are
-    // runtime state, and ANY Hyprland config reload discards them — which `omarchy theme set`
+    // runtime state, and ANY Hyprland config reload discards them, which `omarchy theme set`
     // does every time. Change your theme once and games silently go back to tiling, with
     // nothing to indicate why. Re-applying costs four IPC calls and happens at the moment the
     // float rule actually matters: just before the game's window maps.
@@ -492,7 +492,7 @@ function onGameSession(active) {
 
 // ── Launch failures ───────────────────────────────────────────────────────────
 // A GOG/Epic game is spawned detached, so when it dies on the spot nothing used to reach the
-// user — the library just sat there while umu had already exited 1 (the classic case: no Proton
+// user, the library just sat there while umu had already exited 1 (the classic case: no Proton
 // installed, see the engine's PROTON_SEARCH_DIRS note). Everything that can go wrong at launch
 // funnels through here and pops the Proton/launch-problem dialog in the renderer.
 function broadcast(channel, payload) {
@@ -504,7 +504,7 @@ function broadcast(channel, payload) {
 function reportLaunchFailure(info) {
     try {
         broadcast('game-launch-failed', {
-            // Needed so the dialog can offer to FIX the failure rather than only describe it —
+            // Needed so the dialog can offer to FIX the failure rather than only describe it,
             // a per-game environment variable has to know which game.
             installerGameId: info?.gameId ?? null,
             title:  info?.title || '',
@@ -533,7 +533,7 @@ function reportLaunchFailure(info) {
 //
 // ⚠️ The writable column list is a hard allowlist. The row is keyed by an id the
 // renderer supplies, so accepting arbitrary column names would let a bad payload
-// rewrite `id`, `store` or `installed` and orphan the game from its library entry —
+// rewrite `id`, `store` or `installed` and orphan the game from its library entry,
 // the same class of break as the two-library.db split.
 const COMPAT_COLUMNS = new Set([
     'prefix_path', 'proton_path', 'launch_args', 'custom_exe', 'custom_env',
@@ -572,7 +572,7 @@ ipcMain.handle('installer-compat-set', (_, { installerGameId, patch } = {}) => {
     } catch (e) { return { ok: false, error: e.message }; }
 });
 
-// GOG launch target is not a plain column — the engine rewrites the stored task.
+// GOG launch target is not a plain column, the engine rewrites the stored task.
 ipcMain.handle('installer-set-launch-target', (_, { installerGameId, taskIndex } = {}) => {
     if (!ensureInstallerEngine() || !installerGameId) return { ok: false, error: 'Installer data not available.' };
     try {
@@ -600,7 +600,7 @@ ipcMain.handle('installer-storage-list', async () => {
     } catch (e) { return { ok: false, error: e.message }; }
 });
 
-// Walks a tree once, following no symlinks — a game directory can contain a link
+// Walks a tree once, following no symlinks, a game directory can contain a link
 // back into the prefix, and following it would count the same bytes repeatedly.
 function dirSizeBytes(dir) {
     let total = 0;
@@ -678,7 +678,7 @@ ipcMain.handle('proton-install-latest', async (event) => {
     const r = await mgmt.install({ release: latest.release, onProgress: send });
     if (!r.ok) return r;
 
-    // Confirm the engine can now actually see it — the whole point of the exercise.
+    // Confirm the engine can now actually see it, the whole point of the exercise.
     ensureInstallerEngine();
     const found = installerEngine.scanProtonVersions()[0];
     if (!found) return { ok: false, error: 'Installed, but no compatibility runtime was found afterwards.' };
@@ -697,8 +697,8 @@ function parseInstallerId(gid) {
 }
 
 // Where GOG/Epic games get installed. `default_install_dir` in library.db is the single source
-// of truth (the Installer face reads the same key); when it's unset — fresh machine, Installer GUI
-// never opened — fall back to the same built-in base the engine itself installs into, so the
+// of truth (the Installer face reads the same key); when it's unset, fresh machine, Installer GUI
+// never opened, fall back to the same built-in base the engine itself installs into, so the
 // install dialog shows a real path instead of an empty box.
 const INSTALLER_DEFAULT_DIR = path.join(os.homedir(), 'Games', 'Clarity');
 function installerDefaultDir() {
@@ -741,7 +741,7 @@ ipcMain.handle('installer-refresh-owned', async () => {
     try {
         const r = await installerEngine.syncOwnedLibrary();
         // Propagate refunds/removals into Clarity's library: syncOwnedLibrary just pruned these ids
-        // from library.db, so drop the matching Clarity rows too — or, for a title also on Steam,
+        // from library.db, so drop the matching Clarity rows too, or, for a title also on Steam,
         // strip only the GOG/Epic side. Scoped to THIS run's removed ids (never a broad
         // library.db diff), so pre-existing games.db↔library.db drift is never wrongly deleted.
         const removedIds = [...(r.gog?.removedIds || []), ...(r.epic?.removedIds || [])];
@@ -763,7 +763,7 @@ ipcMain.handle('installer-refresh-owned', async () => {
 // ── Headless store sign-in ──────────────────────────────────────────────────────
 // Open the GOG/Epic OAuth window ourselves, capture the auth code and let the shared
 // engine finish the exchange (tokens stored in library.db). No Installer window ever
-// appears — the average user connects their stores without meeting Installer at all.
+// appears, the average user connects their stores without meeting Installer at all.
 
 ipcMain.handle('gog-login', () => {
     if (!ensureInstallerEngine(true)) return { ok: false, error: 'Installer data not available.' };
@@ -806,7 +806,7 @@ ipcMain.handle('gog-logout', () => {
 ipcMain.handle('epic-login', () => {
     if (!ensureInstallerEngine(true)) return { ok: false, error: 'Installer data not available.' };
     // legendary.gl/epiclogin is maintained by the legendary team and always uses the
-    // current valid Epic client ID — avoids hardcoding one that can be revoked.
+    // current valid Epic client ID, avoids hardcoding one that can be revoked.
     const AUTH_URL = 'https://legendary.gl/epiclogin';
     const parentWin = BrowserWindow.getFocusedWindow();
     return new Promise(resolve => {
@@ -823,7 +823,7 @@ ipcMain.handle('epic-login', () => {
             if (resolved) return;
             try {
                 const text = await authWin.webContents.executeJavaScript('document.body.innerText');
-                // Epic exposes the code in several shapes depending on the flow — try each.
+                // Epic exposes the code in several shapes depending on the flow, try each.
                 const m = text.match(/"redirectUrl"\s*:\s*"[^"]*[?&]code=([^"&\s]+)/) ||
                           text.match(/"authorizationCode"\s*:\s*"([^"]+)"/) ||
                           text.match(/"exchangeCode"\s*:\s*"([^"]+)"/);
@@ -914,7 +914,7 @@ ipcMain.handle('dlc-list', async (_, installerGameId, platform) => {
 //
 // GOG ships these alongside a title and expects them installed INTO the prefix. A game that
 // is missing one usually installs cleanly and then dies the moment it starts, with nothing in
-// the log naming the cause — Baldur's Gate: Enhanced Edition needs openAL and does exactly
+// the log naming the cause, Baldur's Gate: Enhanced Edition needs openAL and does exactly
 // that. Installer has always had this action; the Manager did not, so the only repair was a
 // full reinstall. Every install made before installs created their own library.db row skipped
 // runRedist along with the bookkeeping, so those games all need this.
@@ -925,7 +925,7 @@ ipcMain.handle('installer-run-redist', async (event, installerGameId) => {
         return { ok: false, error: 'Compatibility files are only shipped for GOG games.' };
     let game = null;
     try { game = _installerEngineDb.prepare("SELECT * FROM games WHERE app_id=? AND store='gog'").get(parsed.appId); } catch {}
-    if (!game) return { ok: false, error: 'This game is not in the Installer database yet — reinstall it to add it.' };
+    if (!game) return { ok: false, error: 'This game is not in the Installer database yet, reinstall it to add it.' };
     const prefixPath = installerEngine.prefixPathForGame(game);
     const protonPath = game.proton_path || (() => {
         try { return _installerEngineDb.prepare("SELECT value FROM settings WHERE key='default_proton_path'").get()?.value; }
@@ -937,7 +937,7 @@ ipcMain.handle('installer-run-redist', async (event, installerGameId) => {
 
 // The alternate ways a GOG release can be started (goggame-<appId>.info playTasks), and
 // the picker's write-back. library.db's games.id *is* the InstallerGameId, so the engine's
-// reader takes it unchanged — no lookup by app_id needed here.
+// reader takes it unchanged, no lookup by app_id needed here.
 ipcMain.handle('play-tasks', (_, installerGameId) => {
     if (!installerGameId || !ensureInstallerEngine()) return [];
     try { return installerEngine.gogPlayTasks(installerGameId); } catch { return []; }
@@ -962,7 +962,7 @@ const kwinDisplay = host.desktop.displayPicker;
 
 // The choice belongs with the rest of our settings, which travel with the AppImage.
 // A loaded KWin script is gone after a logout, so the stored choice is put back into
-// effect on every start. Nothing to do — and nothing written — if there is no choice.
+// effect on every start. Nothing to do, and nothing written, if there is no choice.
 try {
     kwinDisplay.configure(configDir);
     if (kwinDisplay.isSupported()) kwinDisplay.apply();
@@ -972,7 +972,7 @@ try {
 // session-scoped and nothing is written to the user's config, so they have to be set again on
 // every start. A no-op off Hyprland.
 // ⚠️ Called after the database is open, NOT at module load. The float-games choice is a
-// setting, and at module-evaluation time `db` is still undefined — reading it there silently
+// setting, and at module-evaluation time `db` is still undefined, reading it there silently
 // returned nothing and the toggle appeared to do nothing at all.
 //
 // ⚠️ Hyprland rules also cannot be un-set once applied for a session, so this is read once at
@@ -986,7 +986,7 @@ function applyHyprlandRules() {
 }
 
 // fullscreen | float | tile. ⚠️ The old boolean `omarchy_float_games` is read once and
-// translated, because a row that says '1' is someone who went and ticked the box — that is a
+// translated, because a row that says '1' is someone who went and ticked the box. That is a
 // choice for floating and it is kept. An absent row was only ever the old default, so it
 // becomes the new one.
 function gameWindowMode() {
@@ -1004,7 +1004,7 @@ function gameWindowMode() {
  * "Apply to this session" behind the game-window setting.
  *
  * ⚠️ A Hyprland rule cannot be withdrawn, so switching from Fullscreen to Floating does
- * nothing on its own — the old rule is still there and still wins, which is exactly what it
+ * nothing on its own, the old rule is still there and still wins, which is exactly what it
  * looks like from the outside: a setting that did nothing. The only way round it is to make
  * the compositor forget every runtime rule and put ours back, which is what this does, and
  * why it is a button the user presses rather than something that happens behind their back.
@@ -1036,7 +1036,7 @@ ipcMain.handle('set-game-display', (_, index) => {
 // ── Omarchy ──────────────────────────────────────────────────────────────────
 // A desktop-level integration, not a platform: host.id is still 'linux'. Both modules are
 // null on macOS and self-gating on Linux, so every handler here answers "not detected" on a
-// host that is not Omarchy rather than throwing. ⚠️ Optional chaining is not decoration —
+// host that is not Omarchy rather than throwing. ⚠️ Optional chaining is not decoration,
 // desktop.displayPicker being null crashed this file once on macOS for want of exactly that.
 const omarchy = host.desktop?.omarchy || null;
 
@@ -1056,7 +1056,7 @@ ipcMain.handle('omarchy-status', () => {
     };
 });
 
-// Both of these open a terminal and return immediately — the install itself is the user's,
+// Both of these open a terminal and return immediately, the install itself is the user's,
 // running under their own sudo, and its outcome shows up on the next status read.
 ipcMain.handle('omarchy-install-tools', (_, keys) => {
     if (!omarchy) return { ok: false, error: 'Not supported on this system.' };
@@ -1064,11 +1064,11 @@ ipcMain.handle('omarchy-install-tools', (_, keys) => {
 });
 
 // Hands the tuning command to a terminal, exactly like the package installs. The app never
-// runs it — kernel parameters belong to the person who owns the machine.
+// runs it, kernel parameters belong to the person who owns the machine.
 ipcMain.handle('omarchy-apply-tuning', () => {
     if (!omarchy) return { ok: false, error: 'Not supported on this system.' };
     const cmd = omarchy.tuningCommand?.() || '';
-    if (!cmd) return { ok: false, error: 'Nothing to change — every setting already matches.' };
+    if (!cmd) return { ok: false, error: 'Nothing to change, every setting already matches.' };
     return omarchy.openTerminalWith(cmd);
 });
 
@@ -1077,12 +1077,12 @@ ipcMain.handle('omarchy-run-installer', (_, key) => {
     return omarchy.runInstaller(String(key || ''));
 });
 
-// ⚠️ 'omarchy-theme' and its live watch are registered in shared-ipc.js, NOT here — Couch
+// ⚠️ 'omarchy-theme' and its live watch are registered in shared-ipc.js, NOT here, Couch
 // needs them too, and registering the same channel twice throws at startup.
 
 // Paths other games already occupy. Custom installs share a folder with GOG and Epic
-// installs and the names collide — <root>/Witchaven is where GOG puts Witchaven and where
-// a recipe called Witchaven wants to go — so a target that lands on one must be renamed,
+// installs and the names collide, <root>/Witchaven is where GOG puts Witchaven and where
+// a recipe called Witchaven wants to go, so a target that lands on one must be renamed,
 // never emptied.
 function _reservedPaths(exceptId) {
     if (!ensureInstallerEngine()) return [];
@@ -1134,7 +1134,7 @@ function _registerCustomInstall(r) {
     const cmd = `installer://launch/${gid}`;
     const existing = db.prepare('SELECT id FROM games WHERE InstallerGameId=?').get(gid);
     if (existing) db.prepare('UPDATE games SET Installed=1, LaunchCommand=? WHERE id=?').run(cmd, existing.id);
-    // OpenBOR is its own category rather than a member of Others — one engine with one
+    // OpenBOR is its own category rather than a member of Others, one engine with one
     // rigid layout, the same argument that earned PICO-8 its own place in the library.
     // It stands alone now that the gallery has a filter for it: a game filed under both
     // would be counted twice and turn up under Others, which is where it was never meant
@@ -1153,7 +1153,7 @@ ipcMain.handle('custom-recipe-list', () => {
         const out = { ...r, installed: false, installedCount: 0, data: r.data ? { ...r.data } : null };
         try {
             if (r.dynamic) {
-                // One recipe, many installs (every OpenBOR game shares it) — so report a
+                // One recipe, many installs (every OpenBOR game shares it), so report a
                 // count rather than a yes/no, and never offer to "reinstall" a shape.
                 out.installedCount = _installerEngineDb?.prepare("SELECT COUNT(*) n FROM games WHERE id LIKE ?").get(`cn_${r.id}_%`)?.n || 0;
             } else {
@@ -1182,7 +1182,7 @@ ipcMain.handle('custom-recipe-list', () => {
 
 ipcMain.handle('custom-install-pick', async (_, recipeId) => {
     const recipe = customInstallers.getRecipe(recipeId);
-    // There is no module-scope `win` in this file — every dialog derives the parent
+    // There is no module-scope `win` in this file, every dialog derives the parent
     // itself. Referencing one throws inside the handler, which reaches the renderer as
     // a rejected invoke and looks exactly like a button that does nothing.
     const parent = BrowserWindow.getFocusedWindow();
@@ -1203,7 +1203,7 @@ ipcMain.handle('custom-install', async (_, { recipeId, archivePath, engineArchiv
 
     // A mod is installed against an engine. Reuse one that is already here; otherwise
     // install the engine the user just pointed at, in the same click, because nobody sets
-    // out to install GZDoom — they set out to install Brutal Doom.
+    // out to install GZDoom, they set out to install Brutal Doom.
     if (recipe.engine) {
         let engine = _installedEngine(recipe.engine);
         if (!engine) {
@@ -1226,7 +1226,7 @@ ipcMain.handle('custom-install', async (_, { recipeId, archivePath, engineArchiv
             engine = { install_path: er.installPath, executable: er.executable, title: er.title };
         }
 
-        // A game on a shared engine brings no download of its own — it needs the engine
+        // A game on a shared engine brings no download of its own. It needs the engine
         // and its data, and gets a folder of its own so two Build games never collide
         // over tiles000.art.
         const mr = recipe.onEngine
@@ -1241,7 +1241,7 @@ ipcMain.handle('custom-install', async (_, { recipeId, archivePath, engineArchiv
                 engineRoot: engine.install_path, engineExe: engine.executable,
                 dataRows: _installerRowsForData(),
               });
-        // Several loadable files inside — the renderer asks which, then calls back with
+        // Several loadable files inside, the renderer asks which, then calls back with
         // `selected`. Carries the engine title so the second pass can report it.
         if (!mr.ok) return (mr.choose || mr.needsData) ? { ...mr, engineTitle: engine.title } : mr;
         try { _registerCustomInstall(mr); } catch (e) { return { ok: false, error: `Installed, but could not add it to the library: ${e.message}` }; }
@@ -1264,8 +1264,8 @@ ipcMain.handle('custom-install', async (_, { recipeId, archivePath, engineArchiv
     return r;
 });
 
-// Adding a Windows game from a folder that is already unpacked. Registered in place —
-// nothing is copied — so this also covers folders living on another drive.
+// Adding a Windows game from a folder that is already unpacked. Registered in place,
+// nothing is copied, so this also covers folders living on another drive.
 ipcMain.handle('custom-folder-pick', async (_, title) => {
     const parent = BrowserWindow.getFocusedWindow();
     const res = await dialog.showOpenDialog(parent, {
@@ -1295,7 +1295,7 @@ ipcMain.handle('custom-folder-add', (_, { folder, executable, title } = {}) => {
 
 // Asked at the moment of pressing Play, not at install time: which Doom this mod runs on
 // is a per-session decision, the way you would pick a disc off a shelf. Returns null when
-// there is nothing to ask — not a mod, or only one IWAD available — so the launch goes
+// there is nothing to ask, not a mod, or only one IWAD available, so the launch goes
 // straight through and nothing is put in the way of games that have no choice to make.
 ipcMain.handle('custom-iwad-options', (_, installerGameId) => {
     if (!installerGameId || !ensureInstallerEngine()) return null;
@@ -1314,8 +1314,8 @@ ipcMain.handle('custom-iwad-options', (_, installerGameId) => {
 });
 
 // BuildGDX is a Java program, and Java asks Windows whether a folder is writable rather
-// than trying. Wine answers that question for its Z: drive — the one that maps the whole
-// Linux filesystem — by saying no, even where writing plainly works: a cmd.exe redirect
+// than trying. Wine answers that question for its Z: drive, the one that maps the whole
+// Linux filesystem, by saying no, even where writing plainly works: a cmd.exe redirect
 // into the same folder succeeds. So BuildGDX refused every game folder with
 // "AccessDeniedException: You don't have write permissions".
 //
@@ -1340,7 +1340,7 @@ function _ensureGdxDriveMapping(gid) {
 
 // Tell each engine where the games ended up. Without this an engine opened on its own
 // finds nothing and quits, which is what happened once the games moved into their own
-// folders — see writeEngineSearchPaths.
+// folders, see writeEngineSearchPaths.
 function _refreshEngineSearchPaths(engineIds) {
     for (const e of _installedEngines(engineIds || [])) {
         let folders = [];
@@ -1355,7 +1355,7 @@ function _refreshEngineSearchPaths(engineIds) {
 }
 
 // Which engine to run this on, asked at Play time. Null unless the game folder really
-// holds more than one — a game with a single engine must never be slowed by a question.
+// holds more than one, a game with a single engine must never be slowed by a question.
 ipcMain.handle('custom-engine-options', (_, installerGameId) => {
     if (!installerGameId || !ensureInstallerEngine()) return null;
     try {
@@ -1419,7 +1419,7 @@ ipcMain.handle('installer-uninstall', async (event, { gameId, installerGameId } 
 // Default install dir + a native folder picker for the install dialog.
 ipcMain.handle('installer-default-dir', () => { ensureInstallerEngine(); return installerDefaultDir(); });
 ipcMain.handle('installer-pick-dir', async (_, current) => {
-    // NOTE: `win` is local to createWindow() — referencing it here threw a ReferenceError that
+    // NOTE: `win` is local to createWindow(), referencing it here threw a ReferenceError that
     // rejected the invoke, so the install dialog's "Change" button silently did nothing.
     const parent = BrowserWindow.getFocusedWindow();
     const opts = { properties: ['openDirectory', 'createDirectory'] };
@@ -1547,7 +1547,7 @@ function folderFromLaunchCommand(cmd) {
 }
 function resolveGameFolder(game) {
     if (!game) return null;
-    // 1. Steam — appmanifest installdir → steamapps/common/<installdir>
+    // 1. Steam, appmanifest installdir → steamapps/common/<installdir>
     const appid = game.SteamAppID ? String(game.SteamAppID).replace(/\.0+$/, '') : '';
     if (appid && appid !== 'None') {
         for (const dir of getSteamLibraryPaths()) {
@@ -1559,7 +1559,7 @@ function resolveGameFolder(game) {
             } catch {}
         }
     }
-    // 2. GOG / Epic — library.db install_path (only when actually installed)
+    // 2. GOG / Epic, library.db install_path (only when actually installed)
     if (game.InstallerGameId) {
         const gpath = installerDbPath();
         if (gpath) {
@@ -1572,7 +1572,7 @@ function resolveGameFolder(game) {
             } catch {}
         }
     }
-    // 3. Custom / emulator / others — derive from the launch command(s)
+    // 3. Custom / emulator / others, derive from the launch command(s)
     const cmds = [];
     try { for (const l of JSON.parse(game.LaunchCommands || '[]')) if (l && l.cmd) cmds.push(l.cmd); } catch {}
     if (game.LaunchCommand) cmds.push(game.LaunchCommand);
@@ -1597,14 +1597,14 @@ ipcMain.handle('open-game-folder', (e, gameId) => {
 
 // ── GOG SAVE-GAME MANAGER ─────────────────────────────────────────────────────
 // Locate a GOG game's save folder(s), back them up to a portable .zip and restore
-// them — the piece GOG-on-Linux completely lacks (no Galaxy). Desktop/Manager face
+// them, the piece GOG-on-Linux completely lacks (no Galaxy). Desktop/Manager face
 // only. Windows/Proton games resolve saves in 3 tiers (.script → Wine-profile scan →
 // install-dir scan); native-Linux games fall back to a manual "Locate saves…" pick.
 // Design + empirical validation: plan floofy-rolling-pixel.md.
 const AdmZip = require('adm-zip');
 
 // GOG installer-script {tokens} → real dirs under the Wine prefix / install dir.
-// (Distinct from GOG's *cloud* <?…?> token set — do NOT mix the two.)
+// (Distinct from GOG's *cloud* <?…?> token set, do NOT mix the two.)
 const GOG_SAVE_TOKENS = {
     '{app}':          (c) => c.install,
     '{userdocs}':     (c) => path.join(c.win, 'Documents'),
@@ -1705,7 +1705,7 @@ function dirHasFiles(dir, budget = 400) {
     return false;
 }
 
-// Wine seeds every prefix with empty XDG stubs (Downloads/Music/…) — never a save on their own.
+// Wine seeds every prefix with empty XDG stubs (Downloads/Music/…), never a save on their own.
 const SAVE_DOC_STUBS = new Set(['downloads','music','pictures','videos','desktop','contacts','links',
     'searches','favorites','my music','my pictures','my videos','onedrive','nethood','printhood',
     'templates','start menu','sendto','recent','application data','local settings']);
@@ -1736,7 +1736,7 @@ function scanWinProfile(win) {
     return out.slice(0, 6);
 }
 
-// Tier 3: classic games save INSIDE the install dir — match STRONG save-name signals only.
+// Tier 3: classic games save INSIDE the install dir, match STRONG save-name signals only.
 const SAVE_STRONG_DIR = /^(saves?|savegames?|saved|savedata|slot.*)$/i;
 const SAVE_STRONG_FILE = /\.sav(e)?$/i;
 function scanInstallDir(installDir) {
@@ -1797,7 +1797,7 @@ function resolveSaveDirs(ctx) {
     }
     const cands = [];
     if (ctx.platform === 'windows' && win) {
-        // 1. Authoritative store template — GOG .script savePath / Epic CloudSaveFolder.
+        // 1. Authoritative store template, GOG .script savePath / Epic CloudSaveFolder.
         const templates = ctx.store === 'epic' ? epicCloudSaveFolders(ctx.appId) : scriptSavePaths(ctx.install);
         for (const tmpl of templates) {
             const resolved = [];   // candidate absolute paths, best first
@@ -1844,7 +1844,7 @@ function saveGameContext(gameId) {
     const store   = /^epic_/i.test(gid) ? 'epic' : 'gog';
     const prefix  = installerEngine.prefixPathForGame(grow);
     const install = expandTilde(grow.install_path || '') || resolveGameFolder(row) || '';
-    // Epic on Linux is always Proton (no native builds) — treat blank platform as 'windows'.
+    // Epic on Linux is always Proton (no native builds), treat blank platform as 'windows'.
     return { supported: true, store, row, grow, ctx: {
         store, platform: grow.platform || 'windows', prefix, install,
         appId: grow.app_id, title: grow.title || row.Game, override: row.SaveDirOverride || '',
@@ -1874,7 +1874,7 @@ ipcMain.handle('gog-backup-saves', async (_, gameId, dirs) => {
     const chosen = (Array.isArray(dirs) ? dirs : []).filter(d => { try { return fs.statSync(d).isDirectory(); } catch { return false; } });
     if (!chosen.length) return { ok: false, error: 'No save folders selected.' };
     const { canceled, filePath } = await dialog.showSaveDialog({
-        title: `Back Up Saves — ${c.ctx.title}`,
+        title: `Back Up Saves, ${c.ctx.title}`,
         defaultPath: `Clarity Saves - ${saveSafeName(c.ctx.title)} - ${saveDateStamp()}.zip`,
         filters: [{ name: 'Zip archive', extensions: ['zip'] }],
     });
@@ -1907,7 +1907,7 @@ function saveRestoreTargets(zipPath, c) {
     return { zip, manifest, targets };
 }
 
-// Restore step 1 — pick/validate the zip and return the re-homed targets. The renderer
+// Restore step 1, pick/validate the zip and return the re-homed targets. The renderer
 // shows its OWN themed confirm (not a native message box) before committing.
 ipcMain.handle('gog-restore-preview', async (_, gameId, zipPath) => {
     const c = saveGameContext(gameId);
@@ -1923,7 +1923,7 @@ ipcMain.handle('gog-restore-preview', async (_, gameId, zipPath) => {
     return { ok: true, zipPath: src, title: c.ctx.title, targets: r.targets };
 });
 
-// Restore step 2 — snapshot the CURRENT saves, then overwrite. Called after the themed confirm.
+// Restore step 2, snapshot the CURRENT saves, then overwrite. Called after the themed confirm.
 ipcMain.handle('gog-restore-commit', async (_, gameId, zipPath) => {
     const c = saveGameContext(gameId);
     if (!c || !c.supported) return { ok: false, error: 'Saves aren\'t supported for this game.' };
@@ -1946,7 +1946,7 @@ ipcMain.handle('gog-restore-commit', async (_, gameId, zipPath) => {
     } catch (e) { return { ok: false, error: 'Could not make a safety snapshot: ' + e.message }; }
     // True replace: wipe each target folder first so files that exist only in the CURRENT saves
     // don't linger (the "overwrites" the confirm promised). The pre-restore snapshot above makes
-    // this recoverable. Never wipe a shared root (a legacy/over-broad backup) — merge into it instead.
+    // this recoverable. Never wipe a shared root (a legacy/over-broad backup), merge into it instead.
     const win = c.ctx.platform === 'windows' ? winUserHome(c.ctx.prefix) : null;
     for (const t of targets) {
         if (fs.existsSync(t) && !isSharedSaveRoot(t, win, c.ctx.install)) {
@@ -1972,7 +1972,7 @@ ipcMain.handle('gog-restore-commit', async (_, gameId, zipPath) => {
     return { ok: true, restored };
 });
 
-// Delete a previous backup .zip (only files we logged for THIS game — never arbitrary paths).
+// Delete a previous backup .zip (only files we logged for THIS game, never arbitrary paths).
 ipcMain.handle('gog-delete-backup', (_, gameId, backupPath) => {
     if (!db || !backupPath) return { ok: false };
     let row; try { row = db.prepare("SELECT id FROM save_backups WHERE game_id=? AND path=?").get(gameId, backupPath); } catch {}
@@ -1982,7 +1982,7 @@ ipcMain.handle('gog-delete-backup', (_, gameId, backupPath) => {
     return { ok: true };
 });
 
-// "Locate saves…" — user points at the folder; overrides auto-detection for this game.
+// "Locate saves…", user points at the folder; overrides auto-detection for this game.
 // Opens the picker AT the game's Wine user-home so Documents / AppData / Saved Games are one click away.
 ipcMain.handle('gog-set-save-override', async (_, gameId) => {
     if (!db) return { ok: false };
@@ -2019,7 +2019,7 @@ function upsertSteamGame(appid, rawName) {
     const launchCommand = host.steamLaunchCommand(appid);
     const isInstalled = isSteamGameInstalled(appid) ? 1 : 0;
 
-    // Match only by exact LaunchCommand or SteamAppID — never by game name,
+    // Match only by exact LaunchCommand or SteamAppID, never by game name,
     // to prevent merging separate store entries (e.g. GOG + Steam of the same title).
     const existing = db.prepare(
         "SELECT * FROM games WHERE LaunchCommand = ? OR (SteamAppID = ? AND SteamAppID IS NOT NULL AND SteamAppID != '' AND SteamAppID != 'None')"
@@ -2028,11 +2028,11 @@ function upsertSteamGame(appid, rawName) {
     if (existing) {
         const existingCmd = existing.LaunchCommand || '';
         if (/steam:\/\/rungameid/i.test(existingCmd)) {
-            // Pure Steam update — refresh SteamAppID and install status
+            // Pure Steam update, refresh SteamAppID and install status
             db.prepare("UPDATE games SET SteamAppID=?, Installed=? WHERE id=?")
               .run(appid, isInstalled, existing.id);
             // Also check for a sibling non-Steam entry with the same title (pre-existing duplicate)
-            // — if found, merge the Steam launcher into it and delete this Steam-only orphan
+            //, if found, merge the Steam launcher into it and delete this Steam-only orphan
             const sibling = db.prepare(
                 "SELECT * FROM games WHERE LOWER(TRIM(Game))=LOWER(TRIM(?)) AND id != ? AND Store NOT LIKE '%Steam%'"
             ).get(name, existing.id);
@@ -2054,7 +2054,7 @@ function upsertSteamGame(appid, rawName) {
                 db.prepare("DELETE FROM games WHERE id=?").run(existing.id);
             }
         } else {
-            // Cross-store merge — append Steam launcher to LaunchCommands, keep existing as primary
+            // Cross-store merge, append Steam launcher to LaunchCommands, keep existing as primary
             let launchers = [];
             try { launchers = JSON.parse(existing.LaunchCommands || '[]'); } catch(e) {}
             if (launchers.length === 0 && existingCmd) {
@@ -2126,8 +2126,8 @@ function _diskStoreBucket(s) {
     if (s.includes('emulation')) return 'Emulation'; if (s.includes('physical')) return 'Physical'; if (s.includes('apps')) return 'Apps';
     if (s.includes('others')) return 'Others'; return 'Other';
 }
-// Which games have a native macOS build — Steam via its public store API (platforms.mac),
-// GOG/Epic via library.db's platform/platforms (already correctly tagged 'osx' there — see
+// Which games have a native macOS build, Steam via its public store API (platforms.mac),
+// GOG/Epic via library.db's platform/platforms (already correctly tagged 'osx' there, see
 // darwin.js and the GOG_CATALOG_OS_ALIAS fix in installer-engine.js). Only meaningful on macOS;
 // gated by host.id so a Linux run of this same shared file never touches it.
 //
@@ -2143,7 +2143,7 @@ ipcMain.handle('scan-mac-native', async (evt, opts) => {
     const force = !!(opts && opts.force);
     const send = (scanned, total, label) => { try { evt.sender.send('mac-native-scan-progress', { scanned, total, label }); } catch {} };
     try {
-        // GOG/Epic — free, local, always refreshed.
+        // GOG/Epic, free, local, always refreshed.
         const gpath = host.findInstallerDb(baseDir);
         const installerPlatforms = new Map();
         if (gpath) {
@@ -2158,7 +2158,7 @@ ipcMain.handle('scan-mac-native', async (evt, opts) => {
         let updated = 0;
         for (const g of installerRows) {
             // library.db's own `id` column already carries the store_appid form ("gog_123…"),
-            // same as InstallerGameId itself — key on that directly, not the split appId (see
+            // same as InstallerGameId itself, key on that directly, not the split appId (see
             // disk-scan's installerPaths for the same lookup done right).
             const blob = installerPlatforms.get(String(g.InstallerGameId)) || '';
             const isMac = blob.split(',').map(s => s.trim()).includes('osx');
@@ -2166,7 +2166,7 @@ ipcMain.handle('scan-mac-native', async (evt, opts) => {
             updated++;
         }
 
-        // Steam — one live lookup per game, only for what hasn't been asked yet (or `force`).
+        // Steam, one live lookup per game, only for what hasn't been asked yet (or `force`).
         let steamRows = db.prepare(
             `SELECT id, SteamAppID FROM games WHERE SteamAppID IS NOT NULL AND SteamAppID != '' AND SteamAppID != 'None'` +
             (force ? '' : ' AND MacNativeChecked=0')
@@ -2186,7 +2186,7 @@ ipcMain.handle('scan-mac-native', async (evt, opts) => {
             db.prepare("UPDATE games SET MacNative=?, MacNativeChecked=1 WHERE id=?").run(isMac ? 1 : 0, r.id);
             updated++;
             // Steam's public store API has no documented rate limit but is known to soft-throttle
-            // bursts — a small gap per call is cheap insurance against a scan of hundreds of games
+            // bursts, a small gap per call is cheap insurance against a scan of hundreds of games
             // silently degrading into a wall of failed lookups partway through.
             await new Promise(res => setTimeout(res, 150));
         }
@@ -2258,7 +2258,7 @@ ipcMain.handle('ach-scan', async () => {
 
 // ── Multi-store install detection ────────────────────────────────────────────
 // A library row can front several stores at once (e.g. Store "Steam, GOG") with one
-// launcher per store in LaunchCommands. Install state is the OR across those stores —
+// launcher per store in LaunchCommands. Install state is the OR across those stores,
 // the game is "installed" if ANY store's copy is on disk. The old code keyed off only
 // the primary LaunchCommand, so an installed Steam copy was invisible whenever the
 // primary command happened to be the GOG/Epic one (→ Play hidden, Installed stuck at 0).
@@ -2266,7 +2266,7 @@ ipcMain.handle('ach-scan', async () => {
 // The canonical per-store launcher list for a row: [{ label, cmd }].
 //
 // LaunchCommands is the source of truth when it is populated, but plenty of genuinely
-// multi-store rows have never had it — cross-store merges predating the column only wrote
+// multi-store rows have never had it, cross-store merges predating the column only wrote
 // the Store tag, and until the edit dialog stopped hiding Installer launchers a plain Save
 // collapsed the list back down to the primary. Those rows silently lost their second store:
 // no picker, and install state keyed off whichever launcher survived. So anything the row's
@@ -2287,8 +2287,8 @@ function expandLaunchers(game) {
     const stores = (game.Store || '').toLowerCase();
     const has = s => out.some(l => launcherStore(l.cmd) === s);
 
-    // A SteamAppID on its own proves nothing — it doubles as the metadata key on GOG and
-    // itch rows — so a Steam launcher is only inferred when the row is tagged Steam too.
+    // A SteamAppID on its own proves nothing, it doubles as the metadata key on GOG and
+    // itch rows, so a Steam launcher is only inferred when the row is tagged Steam too.
     const appId = String(game.SteamAppID || '').replace(/\.0+$/, '').trim();
     if (stores.includes('steam') && appId && appId !== 'None' && !has('steam')) {
         add('Steam', host.steamLaunchCommand(appId));
@@ -2314,16 +2314,16 @@ function launchCmdsOf(game) {
 //
 // The key has to account for WAL. library.db runs in WAL mode, so an install's
 // `UPDATE games SET installed=1` lands in library.db-wal and leaves the main file's
-// mtime untouched — keying on that alone pinned this Set to whatever it held at boot,
+// mtime untouched, keying on that alone pinned this Set to whatever it held at boot,
 // for the whole session. The damage was not just a stale read: for a row fronting both
 // Steam and GOG, resolveInstallState() sees the Steam copy absent and the GOG copy
-// "not installed", concludes 0, and verify-install-status writes that back — actively
+// "not installed", concludes 0, and verify-install-status writes that back, actively
 // undoing the Installed=1 the install had just committed. Hence a freshly installed
 // game reverting to Install until the app was restarted.
 //
 // Both files, mtime and size: a checkpoint drains the WAL back to 0 bytes without
 // necessarily moving mtime, and that is a change too. Reading the files rather than
-// hooking our own writes also keeps it correct when the writer is another process —
+// hooking our own writes also keeps it correct when the writer is another process,
 // standalone Installer, or Couch.
 let _installerInstalledCache = { key: '', set: new Set() };
 function installerInstalledStamp(p) {
@@ -2357,7 +2357,7 @@ function invalidateInstallerInstalledCache() {
 
 // Is one launch command's store copy installed on disk? Returns true/false for a
 // recognised store (Steam via appmanifest, GOG/Epic via library.db), or null otherwise
-// (custom / emulator / manual — those key off "has a launch command" elsewhere).
+// (custom / emulator / manual, those key off "has a launch command" elsewhere).
 function launcherInstalled(cmd, steamAppId) {
     const c = cmd || '';
     const sm = c.match(/steam:\/\/rungameid\/(\d+)/i);
@@ -2413,7 +2413,7 @@ ipcMain.handle('verify-install-status', (e, gameId) => {
 });
 
 // Rows that front Steam: an explicit steam:// launcher in either column, or a Steam tag
-// plus an appid (a mixed-store row whose Steam launcher is only implied — see expandLaunchers).
+// plus an appid (a mixed-store row whose Steam launcher is only implied, see expandLaunchers).
 const STEAM_FRONTING_SQL =
     "LaunchCommand LIKE '%steam://rungameid%' OR LaunchCommands LIKE '%steam://rungameid%' " +
     "OR (LOWER(Store) LIKE '%steam%' AND SteamAppID IS NOT NULL AND SteamAppID NOT IN ('', 'None'))";
@@ -2436,8 +2436,8 @@ function reconcileSteamInstalls() {
 }
 
 // ── Rows whose install lives at a path that no longer exists ─────────────────
-// Custom installs — source ports, fan games, mods, anything launched by running a file
-// directly — never went through the checks above: resolveInstallState() returns null unless
+// Custom installs, source ports, fan games, mods, anything launched by running a file
+// directly, never went through the checks above: resolveInstallState() returns null unless
 // the row has a steam:// launcher, so their Installed flag was only ever whatever it was set
 // to when the game was installed.
 //
@@ -2455,7 +2455,7 @@ function reconcileSteamInstalls() {
 //
 // ⚠️ Bidirectional on purpose. One-directional was the obvious first instinct and it is a
 // trap: a game on an external drive is genuinely installed, just not mounted, and clearing
-// its flag while the drive is unplugged would strand it — nothing else ever sets Installed
+// its flag while the drive is unplugged would strand it, nothing else ever sets Installed
 // back to 1 for a path-launched row, so the game would be stuck offering INSTALL forever.
 // Reading it both ways means "installed" tracks "playable right now" and plugging the drive
 // back in restores the Play button on the next start.
@@ -2465,7 +2465,7 @@ function reconcileSteamInstalls() {
 // ⚠️ These three are the bulk of a restored library's false Play buttons, and none of them was
 // being checked by anything:
 //   • pico8-cart: carries an absolute path to the cart, and a restored config points at the
-//     OTHER machine's config directory — the carts are simply not here.
+//     OTHER machine's config directory. The carts are simply not here.
 //   • flatpak run <id> is verifiable from the exports directory without shelling out.
 //   • installer://launch/<store>/<id> already has a source of truth in Installer's own database;
 //     resolveInstallState() just never reached it, because it returns early unless the row
@@ -2509,13 +2509,13 @@ function launcherSchemeInstalled(cmd) {
     // version missed it entirely, because it only matched gog|epic. A machine that never
     // installed those source ports has no rows for them at all, while the imported games.db
     // still claims all of them are installed.
-    // itch:// games are launched BY the itch app — it owns the install and the URI is
+    // itch:// games are launched BY the itch app, it owns the install and the URI is
     // meaningless without it. So the honest test is not "is this game installed" (only itch's
     // own database knows that) but "can this launcher run at all", and if the app is not on
     // this machine the answer is no for every itch game in the library.
     //
     // ⚠️ Only judged in the negative. If itch IS installed, whether a particular game is
-    // installed lives in itch's butler database, which is not ours to read — so that returns
+    // installed lives in itch's butler database, which is not ours to read, so that returns
     // null and the row is left exactly as it was.
     if (/^itch:\/\//i.test(c)) {
         const ITCH = [
@@ -2579,7 +2579,7 @@ function reconcileLocalPathInstalls() {
 
         // Each launcher resolves to true/false when it can be judged, or null when it cannot
         // (a bare command resolved through PATH, an unknown URI scheme, a store we do not
-        // track). One unjudgeable launcher and the whole row is left alone — the flag may be
+        // track). One unjudgeable launcher and the whole row is left alone, the flag may be
         // the only record that the game is there.
         const states = cmds.map(cmd => {
             const scheme = launcherSchemeInstalled(cmd);
@@ -2642,7 +2642,7 @@ ipcMain.handle('check-all-install-status', async () => {
     }
 
     // GOG/Epic (installer://) install state is reconciled from Installer's DB via
-    // sync-installer-installed / sync-all-installer-games — not detected here.
+    // sync-installer-installed / sync-all-installer-games, not detected here.
 
     // ── PHYSICAL / OTHERS / EMULATION / APPS: installed = has launch command ──
     const manualResult = db.prepare(`
@@ -2660,7 +2660,7 @@ ipcMain.handle('check-all-install-status', async () => {
 // GOG/Epic: compare the installed version against the store's latest (gogdl/legendary);
 // the user applies an update inside CN by re-running the install (reconciles to latest).
 // Steam owns its own updater, so Steam is a best-effort "pending in Steam" flag read from
-// the local appmanifest that routes to the Steam client — never an in-CN update.
+// the local appmanifest that routes to the Steam client, never an in-CN update.
 function steamUpdatePending(appId) {
     const id = String(appId).replace(/\.0+$/, '');
     if (!id || id === 'None') return false;
@@ -2674,7 +2674,7 @@ function steamUpdatePending(appId) {
             const toDownload = num('BytesToDownload');
             const downloaded = num('BytesDownloaded');
             // StateFlags bit 2 = "update required"; a real bytes gap = a queued/partial update.
-            // (ScheduledAutoUpdate is deliberately ignored — it's a next-check timestamp Steam
+            // (ScheduledAutoUpdate is deliberately ignored, it's a next-check timestamp Steam
             // sets on plenty of up-to-date games, so it produces false "update available" hits.)
             if ((stateFlags & 2) || (toDownload > 0 && toDownload !== downloaded)) return true;
         } catch {}
@@ -2691,7 +2691,7 @@ function cnUpdateRow(g, current, latest, store) {
 }
 
 // ── DOSBox mode ──────────────────────────────────────────────────────────────
-// GOG's DOS games ship a Windows DOSBox 0.74 from 2010 that we run through Proton — an
+// GOG's DOS games ship a Windows DOSBox 0.74 from 2010 that we run through Proton, an
 // emulator inside a translation layer. A native DOSBox reads the very same GOG .conf, so
 // the game keeps every tweak GOG made for it and only the emulator changes. Stored in
 // Installer's settings because the engine is what acts on it.
@@ -2720,7 +2720,7 @@ ipcMain.handle('set-dosbox-mode', (_, mode) => {
 const _manuals = require('../../packages/core/manuals.js');
 let gameManualWin = null;
 
-// Manuals we download live here, one folder per game — the only manual files this app
+// Manuals we download live here, one folder per game, the only manual files this app
 // owns, and therefore the only ones it may ever delete.
 const manualsDir = path.join(baseDir, 'GameManagerConfig', 'manuals');
 const gameManualDir = gameId => path.join(manualsDir, String(gameId));
@@ -2747,15 +2747,15 @@ ipcMain.handle('manual-list', (_, gameId) => {
     return { attached, detected, gogAppId: _gogAppId(row) };
 });
 
-// Attach something detection already found — no dialog needed.
+// Attach something detection already found, no dialog needed.
 ipcMain.handle('attach-manual', (_, gameId, filePath, label, source) => {
     if (!db) return { ok: false };
     const id = _manuals.addManual(db, gameId, filePath, label, source || 'user');
     return { ok: !!id, id };
 });
 
-// Browse for one. Opens in the game's own install folder when we can find it — that is
-// where GOG leaves the PDFs it ships — but it is an ordinary file dialog, so anywhere
+// Browse for one. Opens in the game's own install folder when we can find it. That is
+// where GOG leaves the PDFs it ships, but it is an ordinary file dialog, so anywhere
 // else on disk works just as well.
 ipcMain.handle('pick-manual', async (_, gameId) => {
     if (!db) return { ok: false };
@@ -2827,7 +2827,7 @@ ipcMain.handle('open-manual-viewer', (event, opts = {}) => {
         x: (pb.x || 0) + 60, y: Math.max(0, (pb.y || 0) + 30),
         frame: false,
         backgroundColor: (opts.theme && opts.theme.bg) || '#141414',
-        title: opts.title ? `Manual — ${opts.title}` : 'Manual',
+        title: opts.title ? `Manual, ${opts.title}` : 'Manual',
         webPreferences: {
             preload: path.join(__dirname, 'preload.js'),
             contextIsolation: true,
@@ -2842,7 +2842,7 @@ ipcMain.handle('open-manual-viewer', (event, opts = {}) => {
     return { ok: true };
 });
 
-// Window controls for the viewer's own chrome — scoped to the manual window so they can
+// Window controls for the viewer's own chrome, scoped to the manual window so they can
 // never be aimed at the library window by anything else holding the preload.
 ipcMain.handle('game-manual-close', () => { try { gameManualWin?.close(); } catch {} });
 ipcMain.handle('game-manual-minimize', () => { try { gameManualWin?.minimize(); } catch {} });
@@ -2853,7 +2853,7 @@ ipcMain.handle('open-manual-externally', async (_, p) => {
 // ── Genre scan ───────────────────────────────────────────────────────────────
 // Community tags from SteamSpy, IGDB for everything Steam never heard of, and the old
 // GENRE column as a floor (see packages/core/genre-scan.js). The pace is SteamSpy's
-// one-request-a-second guidance, so a full library takes minutes, not seconds — hence
+// one-request-a-second guidance, so a full library takes minutes, not seconds, hence
 // the progress events and the cancel flag.
 const _genreScan = require('../../packages/core/genre-scan.js');
 const _smart = require('../../packages/core/smart-playlists.js');
@@ -2913,7 +2913,7 @@ ipcMain.handle('scan-updates', async (evt) => {
     const out = [];
     const send = (scanned, total, label) => { try { evt.sender.send('update-scan-progress', { scanned, total, label }); } catch {} };
 
-    // 1) GOG / Epic — via the in-process Installer engine.
+    // 1) GOG / Epic, via the in-process Installer engine.
     if (ensureInstallerEngine() && _installerEngineDb) {
         let installed = [];
         try { installed = _installerEngineDb.prepare(
@@ -2924,7 +2924,7 @@ ipcMain.handle('scan-updates', async (evt) => {
         const total = gog.length + epic.length;
         let scanned = 0;
 
-        // Epic — one bulk `legendary list-installed --check-updates`.
+        // Epic, one bulk `legendary list-installed --check-updates`.
         if (epic.length) {
             send(scanned, total, 'Checking Epic games…');
             let updMap = new Map();
@@ -2935,7 +2935,7 @@ ipcMain.handle('scan-updates', async (evt) => {
                 if (info && info.update) out.push(cnUpdateRow(g, info.current, info.latest, 'epic'));
             }
         }
-        // GOG — per-game `gogdl info` (no bulk update check exists). Linux builds report no
+        // GOG, per-game `gogdl info` (no bulk update check exists). Linux builds report no
         // versionName, so they can't be diffed and are skipped.
         for (const g of gog) {
             scanned++;
@@ -2949,7 +2949,7 @@ ipcMain.handle('scan-updates', async (evt) => {
         send(total, total, '');
     }
 
-    // 2) Steam — best-effort "pending in Steam" from the local appmanifest.
+    // 2) Steam, best-effort "pending in Steam" from the local appmanifest.
     if (db) {
         let steamRows = [];
         try { steamRows = db.prepare(
@@ -2994,7 +2994,7 @@ ipcMain.handle('sync-installer-installed', (_, installedIds) => {
             db.prepare("UPDATE games SET InstallerGameId=?, Installed=1 WHERE id=?").run(gid, g.id);
             synced++;
         } else if (g.InstallerGameId) {
-            // No longer installed in Installer — clear the auto-set override
+            // No longer installed in Installer, clear the auto-set override
             db.prepare("UPDATE games SET InstallerGameId=NULL WHERE id=?").run(g.id);
         }
     }
@@ -3037,7 +3037,7 @@ ipcMain.handle('sync-all-installer-games', (_, allInstallerGames, installerPath)
     }
 
     // NOTE: refund/removal of GOG/Epic titles is handled in the installer-refresh-owned handler,
-    // which drops from games.db exactly the ids syncOwnedLibrary just pruned from library.db —
+    // which drops from games.db exactly the ids syncOwnedLibrary just pruned from library.db,
     // scoped to this run so pre-existing games.db↔library.db drift is never mistaken for a refund.
 
     for (const gg of allInstallerGames) {
@@ -3051,7 +3051,7 @@ ipcMain.handle('sync-all-installer-games', (_, allInstallerGames, installerPath)
         try {
             db.prepare("UPDATE games SET Installed=? WHERE InstallerGameId=?").run(gg.installed ? 1 : 0, gg.id);
             // ...and make sure GOG/Epic games have a launch command, otherwise the UI shows "Install"
-            // (button needs LaunchCommand) even though they're installed — and they couldn't launch.
+            // (button needs LaunchCommand) even though they're installed, and they couldn't launch.
             if (gg.app_id && (gg.store === 'gog' || gg.store === 'epic')) {
                 db.prepare("UPDATE games SET LaunchCommand=? WHERE InstallerGameId=? AND (LaunchCommand IS NULL OR TRIM(LaunchCommand)='')")
                   .run(`installer://launch/${gg.store}/${gg.app_id}`, gg.id);
@@ -3067,12 +3067,12 @@ ipcMain.handle('sync-all-installer-games', (_, allInstallerGames, installerPath)
         }
 
         if (existing) {
-            // Matched — update InstallerGameId and install status
+            // Matched, update InstallerGameId and install status
             db.prepare("UPDATE games SET InstallerGameId=?, Installed=? WHERE id=?")
               .run(gg.id, gg.installed ? 1 : 0, existing.id);
             synced++;
         } else {
-            // No Clarity equivalent — insert as new entry if not already imported
+            // No Clarity equivalent, insert as new entry if not already imported
             const alreadyIn = db.prepare("SELECT id FROM games WHERE InstallerGameId=?").get(gg.id);
             if (!alreadyIn) {
                 let launchCmd = '';
@@ -3081,7 +3081,7 @@ ipcMain.handle('sync-all-installer-games', (_, allInstallerGames, installerPath)
                 const store = gg.store === 'gog' ? 'GOG' : gg.store === 'epic' ? 'EPIC' : 'Others';
                 if (!launchCmd) launchCmd = `installer://${gg.id}`;
 
-                // Before inserting, check if a Steam game with the same title already exists — merge instead
+                // Before inserting, check if a Steam game with the same title already exists, merge instead
                 const steamMatch = (gg.store === 'gog' || gg.store === 'epic') && gg.title
                     ? db.prepare(
                         "SELECT * FROM games WHERE LOWER(TRIM(Game))=LOWER(TRIM(?)) AND Store LIKE '%Steam%' AND (InstallerGameId IS NULL OR InstallerGameId='')"
@@ -3113,7 +3113,7 @@ ipcMain.handle('sync-all-installer-games', (_, allInstallerGames, installerPath)
         }
     }
     // Installer only knows the GOG/Epic side, so the writes above set Installed purely from
-    // that store — which zeroes a mixed-store row (e.g. Steam+GOG) whose Steam copy is the
+    // that store, which zeroes a mixed-store row (e.g. Steam+GOG) whose Steam copy is the
     // one actually installed. Re-assert the Steam OR so those rows aren't wrongly downgraded.
     reconcileSteamInstalls();
     return { synced };
@@ -3161,13 +3161,13 @@ ipcMain.handle('install-to-menu', () => {
             try { fs.chmodSync(suitePath, '755'); } catch {}
             host.desktop.writeLauncher(appsDir, {
                 id: 'clarity', name: 'Clarity',
-                comment: 'Your game library — Manager, Installer and Couch in one.',
+                comment: 'Your game library, Manager, Installer and Couch in one.',
                 exec: suitePath, icon: path.join(iconsDir, 'Clarity.svg'),
                 categories: ['Game', 'Utility'], wmClass: 'clarity',
             });
             host.desktop.writeLauncher(appsDir, {
                 id: 'clarity-couch', name: 'Couch (Fullscreen)',
-                comment: 'Clarity in fullscreen, gamepad-first mode — made for the living room / TV.',
+                comment: 'Clarity in fullscreen, gamepad-first mode, made for the living room / TV.',
                 exec: suitePath, args: ['--couch'], icon: path.join(iconsDir, 'Couch.svg'),
                 categories: ['Game'], wmClass: 'couch',
                 keywords: ['couch', 'tv', 'living room', 'gamepad', 'controller', 'fullscreen',
@@ -3180,7 +3180,7 @@ ipcMain.handle('install-to-menu', () => {
             try { fs.chmodSync(p, '755'); } catch {}
             host.desktop.writeLauncher(appsDir, {
                 id: 'clarity-emulatte', name: 'EmuLatte',
-                comment: 'Clarity EmuLatte — ROM library manager.',
+                comment: 'Clarity EmuLatte, ROM library manager.',
                 exec: p, icon: path.join(iconsDir, 'EmuLatte.svg'),
                 categories: ['Game', 'Emulator'],
             });
@@ -3261,7 +3261,7 @@ ipcMain.handle('set-couch-autostart', (_, enabled) => {
         try { fs.mkdirSync(iconsDir, { recursive: true }); fs.writeFileSync(path.join(iconsDir, 'Couch.svg'), Buffer.from(Couch_SVG_B64, 'base64')); } catch {}
         return host.desktop.setAutostart(COUCH_AUTOSTART_ID, true, {
             name: 'Couch (Fullscreen)',
-            comment: 'Clarity — auto-start in fullscreen / gamepad mode on login.',
+            comment: 'Clarity, auto-start in fullscreen / gamepad mode on login.',
             exec: suitePath, args: ['--couch'], icon: path.join(iconsDir, 'Couch.svg'),
             categories: ['Game'], wmClass: 'couch',
         });
@@ -3279,7 +3279,7 @@ ipcMain.on('open-manual', () => {
 });
 
 // ⚠️ The renderer must NOT derive the UI scale from `window.screen`. On a multi-monitor
-// desk that reports the display the window happens to sit on — and on a fresh install, before
+// desk that reports the display the window happens to sit on, and on a fresh install, before
 // any bounds are saved, that is Electron's idea of the primary, which `pickDisplay` exists
 // precisely because we cannot trust. A 3440x1440 ultrawide beside a portrait 900x1440 panel
 // derived 0.75 from the panel and shrank the whole UI on the screen actually being used.
@@ -3460,7 +3460,7 @@ ipcMain.handle('fetch-achievements-now', async (_, appId) => {
 ipcMain.handle('igdb-test', async () => {
     const auth = await getIgdbToken();
     if (!auth) return { success: false, message: 'No credentials saved.' };
-    // Use name search for the test — most reliable, no external_games dependency
+    // Use name search for the test, most reliable, no external_games dependency
     const result = await igdbQuery(auth, 'search "Portal 2"; fields name; limit 1;');
     if (result?.name) return { success: true, message: `✅ Connected! Found: ${result.name}` };
     return { success: false, message: '❌ Token OK but IGDB query failed. Try again in a moment.' };
@@ -3686,7 +3686,7 @@ ipcMain.handle('set-game-flag', (_, id, field, value) => {
 });
 
 // Desktop notification (freedesktop/DBus via Electron). KDE Connect's notification-sync
-// plugin (or GSConnect) mirrors these to a paired phone — icon included when the phone
+// plugin (or GSConnect) mirrors these to a paired phone, icon included when the phone
 // app has "sync icons" on. `icon` is a games-db art path (baseDir-relative) or absolute.
 ipcMain.handle('notify', (_, { title, body, icon } = {}) => {
     try {
@@ -3730,7 +3730,7 @@ ipcMain.on('launch-game', (event, cmd, launchArgs, executable) => {
     // GOG/Epic via Installer, launched IN-PROCESS (cmd carries Installer's game id).
     // This is the path used by games with a InstallerGameId (the common case).
     // launchArgs, when present, is a one-off override chosen at the moment of pressing
-    // Play — the Doom a mod runs on — and is deliberately not written back.
+    // Play, the Doom a mod runs on, and is deliberately not written back.
     const gLaunch = cmd.match(/^installer:\/\/(?:launch\/)?(.+)$/);
     if (gLaunch) {
         const gid = gLaunch[1];
@@ -3764,7 +3764,7 @@ ipcMain.on('launch-game', (event, cmd, launchArgs, executable) => {
         }
     }
 
-    // itch.io — hand the scheme to the desktop's opener (shell.openExternal rejects custom schemes)
+    // itch.io, hand the scheme to the desktop's opener (shell.openExternal rejects custom schemes)
     if (cmd.startsWith('itch://')) {
         host.desktop.openUrlScheme(cmd);
         return;
@@ -3860,7 +3860,7 @@ ipcMain.handle('scan-pico8', () => {
     const found = new Set();
 
     const setCartCover = (rowId, cartPath) => {
-        // The .p8.png IS the cover image — copy it directly, no canvas needed
+        // The .p8.png IS the cover image, copy it directly, no canvas needed
         try {
             const coverFile = `${rowId}_p8_cover.png`;
             fs.copyFileSync(cartPath, path.join(imagesDir, coverFile));
@@ -3943,7 +3943,7 @@ ipcMain.handle('launch-pico8-bbs', (e, accent = '#ff77a8') => {
             const bar = document.createElement('div');
             bar.id = 'clarity-titlebar';
             bar.innerHTML = \`
-                <div class="clarity-tb-brand">Clarity — PICO-8 BBS</div>
+                <div class="clarity-tb-brand">Clarity, PICO-8 BBS</div>
                 <div class="clarity-tb-hint">Right-click a cart image · click CART · or click any .p8.png link to save to your library</div>
                 <div class="clarity-tb-btns">
                     <button class="tb-close" onclick="window.close()" title="Close">&#x2715;</button>
@@ -3999,7 +3999,7 @@ ipcMain.handle('launch-pico8-bbs', (e, accent = '#ff77a8') => {
                 else { gameId = db.prepare("INSERT INTO games (Game,Store,LaunchCommand,Installed) VALUES (?,?,?,1)").run(name, 'PICO-8', launchCmd).lastInsertRowid; }
             } catch {}
 
-            // Copy the .p8.png directly as cover art — it IS the image, no conversion needed
+            // Copy the .p8.png directly as cover art, it IS the image, no conversion needed
             if (gameId && filename.endsWith('.p8.png')) {
                 try {
                     const imDir = path.join(baseDir, 'GameManagerConfig', 'images');
@@ -4028,7 +4028,7 @@ ipcMain.handle('launch-pico8-bbs', (e, accent = '#ff77a8') => {
 
             // Toast in BBS window
             if (_bbsWin && !_bbsWin.isDestroyed()) {
-                const toastMsg = JSON.stringify(`✓ ${name} — saved to library`);
+                const toastMsg = JSON.stringify(`✓ ${name}, saved to library`);
                 _bbsWin.webContents.executeJavaScript(`
                     (function(){
                         const t=document.createElement('div');
@@ -4123,7 +4123,7 @@ async function doItchSync() {
                 gameId = db.prepare("INSERT INTO games (Game,Store,LaunchCommand,Installed) VALUES (?,?,?,?)").run(game.title, 'itch.io', launchCmd, installed).lastInsertRowid;
             }
 
-            // Queue cover art download (must run outside the transaction — it's async)
+            // Queue cover art download (must run outside the transaction, it's async)
             const hasCover = (existing?.CoverArt || '');
             if (game.cover_url && !hasCover && gameId) {
                 coverTasks.push({ url: game.cover_url, gameId });
@@ -4256,7 +4256,7 @@ ipcMain.handle('sync-steam', async (event, steamId, apiKey) => {
     if (!steamId || !apiKey) return { success: false, message: "Missing SteamID or API Key." };
     // skip_unvetted_apps=false is REQUIRED: it defaults to true, which makes Steam
     // silently omit "unvetted" apps (a trust flag on many small/indie titles) from
-    // GetOwnedGames — so owned games like those never import.
+    // GetOwnedGames, so owned games like those never import.
     // include_played_free_games=true also pulls free-to-play games you've played.
     const base = `https://api.steampowered.com/IPlayerService/GetOwnedGames/v1/?key=${apiKey}&steamid=${steamId}&include_appinfo=true&skip_unvetted_apps=false`;
     try {
@@ -4350,7 +4350,7 @@ ipcMain.handle('sync-steam', async (event, steamId, apiKey) => {
                 let files; try { files = fs.readdirSync(dir); } catch { continue; }
                 for (const f of files) { const m = f.match(/^appmanifest_(\d+)\.acf$/); if (m) presentIds.add(m[1]); }
             }
-            // Only rows that are genuinely Steam-launched games — never a manual/physical
+            // Only rows that are genuinely Steam-launched games, never a manual/physical
             // entry that merely borrows a SteamAppID for artwork scraping.
             const steamRows = db.prepare(
                 "SELECT id, Store, LaunchCommand, LaunchCommands, SteamAppID, InstallerGameId FROM games WHERE LaunchCommand LIKE '%steam://rungameid%' OR LaunchCommands LIKE '%steam://rungameid%'"
@@ -4500,7 +4500,7 @@ ipcMain.handle('search-youtube', async (event, gameName) => {
             resolve(lines.map(line => { const parts = line.split('|'); return { id: parts[0], thumbnail: parts[1], title: parts.slice(2).join('|') }; }));
         });
     });
-    // Try "official trailer" first — broader and catches branded trailers; fall back to plain "trailer"
+    // Try "official trailer" first, broader and catches branded trailers; fall back to plain "trailer"
     let results = await runSearch(`${gameName} official trailer`);
     if (results.length === 0) results = await runSearch(`${gameName} trailer`);
     return results;
@@ -4670,7 +4670,7 @@ ipcMain.handle('auto-fetch', async (event, gameId, gameName, specificAppId) => {
         }
 
         // ── 2. STEAM DETAILS ──────────────────────────────────────────────
-        // Read existing local images — preserved if already set; never overwritten
+        // Read existing local images, preserved if already set; never overwritten
         const existing = db.prepare("SELECT CoverArt, HeroArt, Logo, Icon, Screenshot FROM games WHERE id=?").get(gameId) || {};
         const isLocal = (v) => v && String(v).startsWith('GameManagerConfig');
 
@@ -4761,7 +4761,7 @@ ipcMain.handle('auto-fetch', async (event, gameId, gameName, specificAppId) => {
             } catch(e) {}
         }
 
-        // ── 3. SGDB FALLBACK — Hero Art & Logo ───────────────────────────
+        // ── 3. SGDB FALLBACK, Hero Art & Logo ───────────────────────────
         const sgdbApiKey = db?.prepare("SELECT value FROM settings WHERE key='steamgriddb_api'").get()?.value;
         if (sgdbApiKey) {
             if (!dbHeroPath) dbHeroPath = await sgdbFetchFirst(gameName, sgdbApiKey, appId, 'hero') || "";
@@ -4782,7 +4782,7 @@ ipcMain.handle('auto-fetch', async (event, gameId, gameName, specificAppId) => {
             franchise = igdb.franchises?.[0]?.name || igdb.collection?.name || "";
             igdbTrailerId = igdb.videos?.[0]?.video_id || "";
 
-            // Fill gaps — used when Steam failed or game is non-Steam
+            // Fill gaps, used when Steam failed or game is non-Steam
             if (!desc   && igdb.summary)               desc    = igdb.summary;
             if (!dev    && igdb.involved_companies)     dev     = igdb.involved_companies.filter(c => c.developer).map(c => c.company.name).join(', ');
             if (!pub    && igdb.involved_companies)     pub     = igdb.involved_companies.filter(c => c.publisher).map(c => c.company.name).join(', ');
@@ -4802,14 +4802,14 @@ ipcMain.handle('auto-fetch', async (event, gameId, gameName, specificAppId) => {
                 }
             }
 
-            // Cover from IGDB (fallback) — skip if adult content or title mismatch
+            // Cover from IGDB (fallback), skip if adult content or title mismatch
             if (!dbCoverPath && igdb.cover?.url && !skipIgdbArtwork) {
                 const fn = `${safeName} - Cover.jpg`;
                 if (await downloadImage(igdbImg(igdb.cover.url, 'cover_big'), path.join(imagesDir, fn)))
                     dbCoverPath = `GameManagerConfig/images/${fn}`;
             }
 
-            // Screenshots from IGDB (fallback) — skip if adult content or title mismatch
+            // Screenshots from IGDB (fallback), skip if adult content or title mismatch
             if (!dbScreenPath && igdb.screenshots?.length && !skipIgdbArtwork) {
                 const saved = [];
                 for (let i = 0; i < Math.min(5, igdb.screenshots.length); i++) {
@@ -4833,7 +4833,7 @@ ipcMain.handle('auto-fetch', async (event, gameId, gameName, specificAppId) => {
     } catch (err) { return { success: false, message: `Scraping error: ${err.message}` }; }
 });
 
-// Text-only variant — same as auto-fetch but skips all image downloads
+// Text-only variant, same as auto-fetch but skips all image downloads
 ipcMain.handle('auto-fetch-text', async (event, gameId, gameName, specificAppId) => {
     try {
         let appId = specificAppId;
@@ -5217,7 +5217,7 @@ ipcMain.handle('run-shell-cmd', async (_, cmdStr) => {
 
         const fullCmd = [cmd, ...args].join(' ');
         // Keep terminal open after the command exits so TUIs that close naturally
-        // don't leave a ghost window — drop to an interactive shell instead.
+        // don't leave a ghost window, drop to an interactive shell instead.
         const bashInvoc = ['bash', '-c', `${fullCmd}; exec bash`];
         let termArgs;
         if (term === 'gnome-terminal') termArgs = ['--', ...bashInvoc];

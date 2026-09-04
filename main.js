@@ -1,6 +1,6 @@
 'use strict';
 /*
- * Clarity — unified suite entry point.
+ * Clarity, unified suite entry point.
  *
  * One Electron process, three faces, dispatched by argv:
  *   (default)              → Manager  (Clarity)      windowed library hub

@@ -1,6 +1,6 @@
 'use strict';
 /*
- * @clarity/core — Steam achievement completion scan for the Home dashboard.
+ * @clarity/core, Steam achievement completion scan for the Home dashboard.
  * Uses ISteamUserStats/GetPlayerAchievements (needs the user's steam_api_key +
  * steam_id, the same creds the Steam import uses). Network + opt-in (manual scan).
  * Defensive: a game with no achievements / a failed call is simply skipped.

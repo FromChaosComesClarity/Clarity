@@ -1,10 +1,10 @@
 'use strict';
 /*
- * @clarity/core — Installer engine (window-free).
+ * @clarity/core, Installer engine (window-free).
  *
  * The GOG/Epic install/uninstall/launch machinery, lifted out of Installer's
  * window-bound main.js so it can run in-process from any face of the suite
- * (the installer GUI, and — Phase 2b — the Manager's in-process installer).
+ * (the installer GUI, and, Phase 2b, the Manager's in-process installer).
  *
  * All interactive UI (OAuth login windows, file/dir pickers) stays in
  * installer/main.js IPC handlers; nothing here imports electron. Progress is
@@ -45,10 +45,10 @@ function init(ctx = {}) {
     // can tell the user instead of leaving them staring at a library that did nothing.
     _onLaunchIssue = ctx.onLaunchIssue || _onLaunchIssue || (() => {});
     // Called with true when a game process starts and false when it exits. The engine has no
-    // business knowing what a face does with that — holding off the screen lock, switching a
-    // power profile — so it just reports the fact.
+    // business knowing what a face does with that, holding off the screen lock, switching a
+    // power profile, so it just reports the fact.
     _onGameSession = ctx.onGameSession || _onGameSession || (() => {});
-    // Called while a game is still setting itself up — the compatibility runtime's one-time
+    // Called while a game is still setting itself up, the compatibility runtime's one-time
     // download and the per-game prefix build both take minutes with nothing on screen otherwise.
     _onLaunchProgress = ctx.onLaunchProgress || _onLaunchProgress || (() => {});
 
@@ -122,7 +122,7 @@ function ensureSchema(handle = db) {
     )`); } catch {}
 }
 
-// Progress sink — callers inject the real destination via init({ onProgress }).
+// Progress sink, callers inject the real destination via init({ onProgress }).
 function writeProgress(data) { _onProgress(data); }
 
 // ── Pure helpers ───────────────────────────────────────────────────────────────
@@ -143,7 +143,7 @@ function expandTilde(p) {
 function resolvePathCaseInsensitive(filePath) {
     if (!filePath) return filePath;
     if (fs.existsSync(filePath)) return filePath;
-    // Split and filter empty strings — leading '/' on absolute paths produces an
+    // Split and filter empty strings, leading '/' on absolute paths produces an
     // empty first element that would cause path.join to build a relative path.
     const isAbs = path.isAbsolute(filePath);
     const parts  = filePath.split(path.sep).filter(p => p !== '');
@@ -167,7 +167,7 @@ function resolvePathCaseInsensitive(filePath) {
 // Homebrew in it, so "is this installed" is not the same question on every platform.
 const which = (bin) => host.which(bin);
 
-// Tool paths resolved once — avoids re-running a PATH lookup on every launch/IPC call
+// Tool paths resolved once, avoids re-running a PATH lookup on every launch/IPC call
 let _legendary = null, _gogdl = null, _comet = null;
 let _activeInstallProc = null;   // the gogdl/legendary child currently downloading (for cancel)
 let _activeKillTimer   = null;
@@ -188,7 +188,7 @@ function cancelActiveInstall() {
     };
     killGroup('SIGTERM');
     if (_activeKillTimer) clearTimeout(_activeKillTimer);
-    _activeKillTimer = setTimeout(() => killGroup('SIGKILL'), 3000);  // uncatchable — guarantees exit
+    _activeKillTimer = setTimeout(() => killGroup('SIGKILL'), 3000);  // uncatchable, guarantees exit
     return true;
 }
 function findLegendary() {
@@ -212,7 +212,7 @@ const findWineCached = () => host.runtime.findWine();
 
 // ── Compatibility runtime ────────────────────────────────────────────────────
 // Discovering the runtime, choosing one for a given game, and reading a failure out of a
-// dead game's log are all host business — on Linux that is Proton driven by umu-run, and
+// dead game's log are all host business, on Linux that is Proton driven by umu-run, and
 // packages/core/platform/linux.js records why we always hand umu an explicit PROTONPATH.
 // These wrappers stay because the Installer face and the Manager both destructure them.
 const scanProtonVersions    = () => host.runtime.scan();
@@ -224,7 +224,7 @@ const diagnoseLaunchFailure = (log, runtimePath) => host.runtime.diagnose(log, r
 // The first Windows game on a machine doesn't start for minutes while the compatibility
 // runtime downloads itself and the game's prefix is built. None of that reaches the UI on
 // its own, so the app looks hung. We already send the launch output to a log file (see
-// spawnGame) — tailing that file is a safe way to follow along, with no pipe that could
+// spawnGame), tailing that file is a safe way to follow along, with no pipe that could
 // EPIPE a detached game later.
 //
 // What the phases ARE is the host's business (they match one particular runtime's output);
@@ -279,7 +279,7 @@ function watchStartup({ proc, gameId, title, logPath }) {
             const bytes = host.runtime.setupBytes();
             if (bytes > bytesAtPhase) {
                 bytesAtPhase = bytes;
-                emit({ message: `Downloading the compatibility runtime — ${(bytes / 1e6).toFixed(0)} MB so far. One-time setup.` });
+                emit({ message: `Downloading the compatibility runtime, ${(bytes / 1e6).toFixed(0)} MB so far. One-time setup.` });
             }
         }
     };
@@ -314,7 +314,7 @@ function syncSharedDb(appId, installed) {
         // ⚠️ games.db keys Installer games by InstallerGameId ('gog_<appId>'), and has no app_id
         // column at all. Asking for one threw on the first statement, so the whole function
         // failed inside its own try/catch and the LaunchCommand fallback below was never
-        // reachable — the shared library's Installed flag was simply never written here.
+        // reachable, the shared library's Installed flag was simply never written here.
         const byGid = sdb.prepare("UPDATE games SET Installed=? WHERE InstallerGameId=?")
                          .run(installed ? 1 : 0, `${storeOfAppId(appId)}_${appId}`);
         if (byGid.changes === 0) {
@@ -342,7 +342,7 @@ function ensureGameRow(store, appId, title, platform) {
 
 async function headlessInstall(store, appId, platform, installDir, opts = {}) {
     // The shared library knows the name even when library.db has never been synced, and it is
-    // what every progress message shows — without this the user watched "1207666353" download.
+    // what every progress message shows, without this the user watched "1207666353" download.
     const sharedTitle = () => {
         try {
             const sp = path.join(appImageDir, 'GameManagerConfig', 'games.db');
@@ -356,16 +356,16 @@ async function headlessInstall(store, appId, platform, installDir, opts = {}) {
     const title = (() => { try { return db?.prepare("SELECT title FROM games WHERE app_id=? AND store=?").get(appId, store)?.title; } catch { return null; } })()
         || sharedTitle() || appId;
     const base = { title, store, appId, done: false };
-    _installCancelled = false;   // fresh run — cleared so a prior cancel doesn't mislabel this one
+    _installCancelled = false;   // fresh run, cleared so a prior cancel doesn't mislabel this one
     // DLC directives (opts): withDlcs/dlcIds = add DLCs; skipDlcs = base only ("Reset DLCs").
     // `dlcOp` = any DLC-scoped operation.
     //
-    // SAFETY (learned the hard way — this caused base-game deletion):
+    // SAFETY (learned the hard way, this caused base-game deletion):
     //  • NEVER pass --dlc-only: it makes gogdl's target set ONLY the DLC files, so reconciliation
     //    DELETES every other tracked file, wiping the base game.
     //  • NEVER pass --dlcs <ids> to filter: that also narrows the target and deletes tracked files
     //    outside the list. Empirically, `--with-dlcs` (all owned, no filter) reconciles with
-    //    Deleted: 0 — it only ADDS missing DLC files and never removes the base. So every DLC-add
+    //    Deleted: 0, it only ADDS missing DLC files and never removes the base. So every DLC-add
     //    installs the game's *complete* owned DLC set. Per-DLC selection is not safely possible.
     //  • --skip-dlcs keeps the base in the target (safe) and strips DLC files (the intended reset).
     const dlcOp = !!(opts.withDlcs || opts.dlcIds?.length || opts.skipDlcs);
@@ -390,14 +390,14 @@ async function headlessInstall(store, appId, platform, installDir, opts = {}) {
         // Keep the manifest for DLC operations (gogdl reconciles against the existing install); wipe it only for a fresh base install.
         if (!dlcOp) { try { fs.rmSync(manifestPath, { force: true }); } catch {} }
 
-        // Refresh GOG token before writing auth config — avoids stale-token failures in headless mode
+        // Refresh GOG token before writing auth config, avoids stale-token failures in headless mode
         writeProgress({ ...base, step: 'auth', percent: 0, message: 'Refreshing authentication...' });
         await getGogToken().catch(() => {});
         const authPath = writeGogAuthConfig();
 
         // ── Stall watchdog ───────────────────────────────────────────────────
         // A download can keep its process alive, its sockets open and its transfer rate up
-        // while making no actual progress — a corrupt chunk on one of GOG's CDNs did exactly
+        // while making no actual progress, a corrupt chunk on one of GOG's CDNs did exactly
         // that, and the only symptom was a percentage that never changed. Nothing in the app
         // noticed for over an hour; the user did.
         //
@@ -451,7 +451,7 @@ async function headlessInstall(store, appId, platform, installDir, opts = {}) {
                     writeProgress({
                         ...base, step: 'downloading', percent: lastPercent >= 0 ? lastPercent : 0,
                         stalled: true, stalledMinutes: mins,
-                        message: `[${plat}] Stuck at ${lastPercent >= 0 ? lastPercent.toFixed(2) : '0'}% for ${mins} min — GOG may be serving a bad file. Cancelling and starting again usually clears it.`,
+                        message: `[${plat}] Stuck at ${lastPercent >= 0 ? lastPercent.toFixed(2) : '0'}% for ${mins} min, GOG may be serving a bad file. Cancelling and starting again usually clears it.`,
                     });
                 }, STALL_TICK_MS);
 
@@ -488,8 +488,8 @@ async function headlessInstall(store, appId, platform, installDir, opts = {}) {
 
         try {
             // ⚠️ Rows in library.db are created by the owned-library sync, NOT by installing.
-            // On a machine where that sync has never run — a rebuilt library.db beside a
-            // restored library, which is exactly what a host migration leaves behind — there
+            // On a machine where that sync has never run, a rebuilt library.db beside a
+            // restored library, which is exactly what a host migration leaves behind, there
             // was nothing to update. This was `if (game)` with no else: the files downloaded,
             // the bookkeeping and the redistributables were skipped, "Installation complete!"
             // was still reported, and the game then refused to start with
@@ -557,7 +557,7 @@ async function headlessUninstall(store, appId) {
 
     const installPath = expandTilde(game.install_path || '');
     // Safe bases: the configured install folder AND the built-in default. Both, because the
-    // folder is user-changeable — a game installed under the old base must still be removable
+    // folder is user-changeable, a game installed under the old base must still be removable
     // after the setting is pointed somewhere else.
     const bases = [
         db?.prepare("SELECT value FROM settings WHERE key='default_install_dir'").get()?.value,
@@ -610,7 +610,7 @@ function prefixPathForGame(game, opts = {}) {
 //   • GOG's Quake ships 3dfx's "Voodoo Quake Driver" as opengl32.dll. Against Wine's
 //     builtin, GLQuake dies on a stack overflow before a window appears.
 //   • Resident Evil 2's Classic REbirth patch is a ddraw.dll. Shadowed by Wine's builtin
-//     it never loads, so the game runs untranslated and stops at a Japanese dialog —
+//     it never loads, so the game runs untranslated and stops at a Japanese dialog,
 //     confirmed by WINEDEBUG=+loaddll reporting "builtin" for a file that is right there.
 //
 // Deliberately a short list of *wrappers*. d3d9, dxgi and d3d11 are excluded on purpose:
@@ -619,7 +619,7 @@ function prefixPathForGame(game, opts = {}) {
 // dinput8 earns its place for a third reason: it is what almost every modern ASI loader
 // installs itself as, so a game folder containing one is nearly always a game someone has
 // patched. OutRun2006Tweaks is the case in hand, and its own documentation tells Linux
-// players to set exactly this override by hand — which is a thing a library ought to do
+// players to set exactly this override by hand, which is a thing a library ought to do
 // for them.
 const SHIPPED_WRAPPERS = ['opengl32.dll', 'ddraw.dll', 'dsound.dll', 'dinput.dll', 'dinput8.dll'];
 
@@ -640,7 +640,7 @@ function findShippedWrappers(resolvedExe, installPath) {
 }
 
 // ── GOG play tasks ───────────────────────────────────────────────────────────
-// A GOG release often ships more than one way to start. Quake: The Offering has three —
+// A GOG release often ships more than one way to start. Quake: The Offering has three,
 // GLQuake (the primary, and the one with no music, being redbook-CD-only), WinQuake, and
 // the DOS build that actually plays the soundtrack. Which one you get is not a detail the
 // store makes visible, and picking the wrong default is not something we can fix for the
@@ -652,7 +652,7 @@ function findShippedWrappers(resolvedExe, installPath) {
 // A path alone does not identify a task, which is why launch_task_index exists. Quake ships
 // seven, and three of them are the same executable: the primary Glquake.exe, plus both
 // mission packs as glquake.exe with -game hipnotic and -game rogue. Keyed on the path, the
-// two packs are indistinguishable and the first one listed wins — so choosing Dissolution
+// two packs are indistinguishable and the first one listed wins, so choosing Dissolution
 // of Eternity would quietly start Scourge of Armagon.
 //
 // The index is a disambiguator, never the source of truth: a game update can reorder
@@ -674,7 +674,7 @@ function gogPlayTaskList(game) {
         .filter(({ t }) => t.type === 'FileTask' && t.path)
         .map(({ t, index }) => ({
             index,
-            // GOG leaves the primary task unnamed — it is "the game". The title beats
+            // GOG leaves the primary task unnamed. It is "the game". The title beats
             // repeating the filename, which the picker already shows underneath.
             name: t.name || (t.isPrimary ? (game.title || t.path) : t.path.replace(/\\/g, '/')),
             path: t.path.replace(/\\/g, '/'),
@@ -736,21 +736,21 @@ async function launchGame(gameId, opts = {}) {
     const resolvedExe = resolvePathCaseInsensitive((() => {
         if (game.custom_exe) return expandTilde(game.custom_exe);
         if (!installPath) return '';
-        // opts.executable is a one-off override chosen at the moment of pressing Play —
+        // opts.executable is a one-off override chosen at the moment of pressing Play,
         // which engine to run a game on, when its folder holds more than one.
         const rel = opts.executable || game.launch_target || game.executable;
         return rel ? path.join(installPath, ...rel.replace(/\\/g, '/').split('/')) : '';
     })());
 
-    // The active playTask from goggame-*.info (GOG only) — it carries both the launch
+    // The active playTask from goggame-*.info (GOG only), it carries both the launch
     // arguments and the working directory the game expects to be started from. Resolved
     // through the same helper the pickers use, so what the gamepage says will start is
     // exactly what starts, mission packs included.
     const gogTask = activeGogPlayTask(game, gogPlayTaskList(game));
 
     // Put back the config files GOG's installer would have copied out of gog-support/.
-    // Early, because everything below — the arguments, the working directory, the DOSBox
-    // decision — assumes those files are where the game expects them.
+    // Early, because everything below, the arguments, the working directory, the DOSBox
+    // decision, assumes those files are where the game expects them.
     if (game.store === 'gog' && installPath && game.app_id) {
         try { applyGogSupportFiles(installPath, game.app_id); }
         catch (e) { console.error('[launch] gog-support restore failed:', e.message); }
@@ -759,7 +759,7 @@ async function launchGame(gameId, opts = {}) {
     // GOG's workingDir is not decoration: DOS games are started from their DOSBOX folder and
     // their config mounts the drive with `mount C ".."`, which only points at the game when
     // the process really is one level down. Launching from the install root instead mounted
-    // the *parent* of the game folder as C:, so DOSBox came up, found no game and quit —
+    // the *parent* of the game folder as C:, so DOSBox came up, found no game and quit,
     // indistinguishable from a crash.
     const launchCwd = (() => {
         const rel = (gogTask?.workingDir || '').replace(/\\/g, '/').trim();
@@ -768,7 +768,7 @@ async function launchGame(gameId, opts = {}) {
         return fs.existsSync(dir) ? dir : installPath;
     })();
 
-    // GOG stores launch arguments in playTasks — without them mods/configs don't load.
+    // GOG stores launch arguments in playTasks, without them mods/configs don't load.
     const gogTaskArgs = (() => {
         try {
             const task = gogTask;
@@ -786,7 +786,7 @@ async function launchGame(gameId, opts = {}) {
         } catch { return []; }
     })();
 
-    // User-defined additional arguments — appended after auto-detected playTask args.
+    // User-defined additional arguments, appended after auto-detected playTask args.
     // opts.launchArgs overrides the stored line for this launch only, which is how a
     // choice made at the moment of pressing Play (which Doom to run a mod on) reaches the
     // command line without being written back to the database.
@@ -813,7 +813,7 @@ async function launchGame(gameId, opts = {}) {
 
     // A game that ships its own opengl32.dll beside the executable gets that file on Windows,
     // where the application directory is searched first. Wine reverses this for DLLs it
-    // implements itself, so the bundled one is shadowed by a modern OpenGL — and the games
+    // implements itself, so the bundled one is shadowed by a modern OpenGL, and the games
     // that bundle one are 3dfx MiniGL wrappers from the nineties that cannot survive talking
     // to a modern driver. GOG's Quake ships 3dfx's "Voodoo Quake Driver" as opengl32.dll and
     // nGlide as glide2x/glide3x; GLQuake against Wine's builtin dies on a stack overflow
@@ -822,13 +822,13 @@ async function launchGame(gameId, opts = {}) {
     // the game the driver stack GOG shipped it with (MiniGL → nGlide → D3D → DXVK).
     const wrappers = usingProton ? findShippedWrappers(resolvedExe, installPath) : [];
     if (wrappers.length) {
-        // Entries are separated by ';' — ',' separates load orders for one DLL, so a
+        // Entries are separated by ';', ',' separates load orders for one DLL, so a
         // comma-joined list silently sets only the first and mangles the rest.
         const already = (customEnv.WINEDLLOVERRIDES || '');
         const add = wrappers
             .map(w => w.replace(/\.dll$/, ''))
             .filter(n => !new RegExp(`\\b${n}\\b`, 'i').test(already))
-            // "n,b" — native first, builtin as fallback — not bare "n". These DLLs are
+            // "n,b", native first, builtin as fallback, not bare "n". These DLLs are
             // wrappers: Classic REbirth's ddraw forwards the calls it does not implement on
             // to the real one, and with only "native" allowed there is nothing to forward
             // to, so the game called through a null pointer and crashed at address zero.
@@ -849,7 +849,7 @@ async function launchGame(gameId, opts = {}) {
         if (named) {
             const { applied } = gameFixes.applySettings(resolvedExe, installPath);
             for (const line of applied) console.log(`[launch] ${named.title}: set ${line}`);
-            // Never over the user's own custom_env — someone who set a variable by hand
+            // Never over the user's own custom_env, someone who set a variable by hand
             // has already overruled us on purpose.
             for (const [k, v] of Object.entries(named.env || {})) {
                 if (k === 'WINEDLLOVERRIDES') {
@@ -897,7 +897,7 @@ async function launchGame(gameId, opts = {}) {
 
     // Verbose mode: pipe the child's output to onOutput line by line. The child still gets
     // `detached: true` + unref() exactly like a normal launch, so the game keeps running (and
-    // survives quitting Clarity) whether or not anyone is watching the log — piping only
+    // survives quitting Clarity) whether or not anyone is watching the log, piping only
     // changes where its output goes, never its lifetime.
     const streamOutput = (proc, header) => {
         onOutput(header);
@@ -908,12 +908,12 @@ async function launchGame(gameId, opts = {}) {
             for (const l of parts) if (l) onOutput(l);
         };
         proc.stdout?.on('data', feed); proc.stderr?.on('data', feed);
-        proc.on('close', c => { if (tail) onOutput(tail); onOutput(`\n[process exited — code ${c}]`); });
+        proc.on('close', c => { if (tail) onOutput(tail); onOutput(`\n[process exited, code ${c}]`); });
         proc.on('error', e => onOutput(`[spawn error] ${e.message}`));
     };
 
     // A normal launch is detached with its output thrown away, so a game that dies on the spot
-    // (bad Proton, missing prefix, broken exe) used to be completely silent — the library just
+    // (bad Proton, missing prefix, broken exe) used to be completely silent, the library just
     // sat there. Send output to a per-game file instead of /dev/null: a real fd, not a pipe, so
     // nothing can fill a buffer and the game is never hit with EPIPE once the app exits. If it
     // then exits non-zero within a few seconds we read the tail back and tell the user.
@@ -941,7 +941,7 @@ async function launchGame(gameId, opts = {}) {
         if (logFd !== null) { try { fs.closeSync(logFd); } catch {} }   // the child holds its own copy
 
         // ⚠️ Every launch funnels through here, which is why the session signal lives here and
-        // not at the call sites — there are several of those and they drift. Both edges are
+        // not at the call sites. There are several of those and they drift. Both edges are
         // reported, and 'exit' fires for a crash as well as a clean quit, so nothing the face
         // holds on the strength of it can be left held forever.
         try { _onGameSession(true, { gameId, title: game.title || '' }); } catch {}
@@ -955,7 +955,7 @@ async function launchGame(gameId, opts = {}) {
             const startedAt = Date.now();
             proc.once('exit', (code) => {
                 if (code === 0 || code === null) return;                    // clean exit, or signalled
-                if (Date.now() - startedAt > EARLY_EXIT_MS) return;         // played then quit — not our business
+                if (Date.now() - startedAt > EARLY_EXIT_MS) return;         // played then quit, not our business
                 let log = '';
                 try { log = fs.readFileSync(launchLogPath, 'utf8').slice(-4000); } catch {}
                 _onLaunchIssue({
@@ -993,16 +993,16 @@ async function launchGame(gameId, opts = {}) {
         throw new Error(`Executable not found: ${resolvedExe || '(not set)'}`);
     }
 
-    // .bat files must be launched via Wine's Z: drive Windows path — Proton/wine
+    // .bat files must be launched via Wine's Z: drive Windows path, Proton/wine
     // can't run .bat from a raw Linux path. Z: maps to the filesystem root.
     const isBat = resolvedExe.toLowerCase().endsWith('.bat');
     const launchExe = isBat ? host.runtime.toWindowsPath(resolvedExe) : resolvedExe;
 
     // A DOS game can skip Proton entirely when a native DOSBox is installed: it reads the
     // very same GOG config, so the game's own tweaks are kept and only the emulator changes.
-    // Checked before the Proton gate — a DOS game handled natively must not be refused for
+    // Checked before the Proton gate, a DOS game handled natively must not be refused for
     // want of a Proton it is never going to use.
-    //   dosbox_mode: 'auto' (default — native when present) · 'native' · 'bundled'
+    //   dosbox_mode: 'auto' (default, native when present) · 'native' · 'bundled'
     const dosboxMode = String(engineSetting('dosbox_mode', 'auto') || 'auto').toLowerCase();
 
     // Give the game its CD back before either DOSBox route is chosen: the extra -conf goes
@@ -1034,7 +1034,7 @@ async function launchGame(gameId, opts = {}) {
         // 'auto' with nothing installed → fall through to GOG's bundled DOSBox via Proton.
     }
 
-    // A build native to THIS host needs no compatibility layer at all — checked BEFORE the
+    // A build native to THIS host needs no compatibility layer at all, checked BEFORE the
     // runtime gate, or a native title would be blocked on a Proton it never uses.
     if (game.platform === host.nativeOsKey) {
         const native = host.launchNative({ exe: resolvedExe, args: userArgs });
@@ -1219,7 +1219,7 @@ async function injectGogRegistry(game, prefix, proton) {
 
 // ── Per-game fix: Fallout: New California (GOG 1168267909) ───────────────────
 // ── GOG bonus manuals ────────────────────────────────────────────────────────
-// GOG sells the extras alongside the game — manuals, cluebooks, reference cards — and
+// GOG sells the extras alongside the game, manuals, cluebooks, reference cards, and
 // exposes them through the same authenticated API Installer already uses for installs. They
 // are the scanned originals, so a game whose folder ships nothing can still get its manual.
 //
@@ -1249,7 +1249,7 @@ async function gogListManuals(appId) {
 }
 
 // Download one bonus item and hand back the documents inside it. GOG serves these as ZIPs
-// even when the payload is a single PDF, so the archive is unpacked and thrown away —
+// even when the payload is a single PDF, so the archive is unpacked and thrown away,
 // what the library ends up pointing at is a plain readable file.
 async function gogDownloadManual(appId, bonusId, destDir, onProgress) {
     const token = await getGogToken();
@@ -1332,7 +1332,7 @@ async function gogDownloadManual(appId, bonusId, destDir, onProgress) {
 // faster, gets working sound and fullscreen without Proton's help, and is still maintained.
 //
 // The reason this is even possible is that GOG's per-game .conf files are ordinary DOSBox
-// configuration — the same format a native build reads — and their paths are relative:
+// configuration, the same format a native build reads, and their paths are relative:
 //
 //     [autoexec]
 //     mount C ".."
@@ -1344,7 +1344,7 @@ async function gogDownloadManual(appId, bonusId, destDir, onProgress) {
 // that actually starts it) is preserved exactly. We change what runs the config, not the
 // config. Nothing is rewritten on disk.
 //
-// WHICH native DOSBox, and how a person installs one, is the host's business — see the
+// WHICH native DOSBox, and how a person installs one, is the host's business, see the
 // platform backend. Everything above is about GOG's own files and is true everywhere.
 
 // Installer's own settings table, read the same way the GOG credentials are.
@@ -1353,7 +1353,7 @@ function engineSetting(key, fallback = null) {
     catch { return fallback; }
 }
 
-// { cmd, args, label } or null — args is non-empty only for a sandboxed form (Flatpak).
+// { cmd, args, label } or null, args is non-empty only for a sandboxed form (Flatpak).
 const findNativeDosbox  = () => host.dosbox.find();
 const dosboxInstallHint = () => host.dosbox.installHint();
 
@@ -1369,7 +1369,7 @@ function isGogDosGame(game, resolvedExe) {
 const nativeDosboxArgs = (gogArgs) => host.dosbox.translateArgs(gogArgs);
 
 // ── CD audio for GOG's DOS games ─────────────────────────────────────────────
-// A lot of GOG's classic releases ship the original disc as a CD image beside the game —
+// A lot of GOG's classic releases ship the original disc as a CD image beside the game,
 // a cue sheet plus its binary, where the binary is renamed .gog so nobody burns it. When
 // the disc carried redbook audio, that image is the only copy of the soundtrack in the
 // release, and the game plays its music from the CD or not at all.
@@ -1381,7 +1381,7 @@ const nativeDosboxArgs = (gogArgs) => host.dosbox.translateArgs(gogArgs);
 // Quake's does it per campaign, inside the launcher menu in dosbox_quake_single.conf
 // (:quake → game.cue, :mp1 → gamea.cue, :mp2 → gamed.cue). Both are detected and both
 // are left completely alone. This exists for the releases where they did not bother, and
-// as of today it fires for nothing in the tested library — that is the intended resting
+// as of today it fires for nothing in the tested library. That is the intended resting
 // state, not a bug. Verify against the real .conf before concluding a game needs it:
 // they are ISO-8859 with CRLF, so plain grep calls them binary and prints nothing (use
 // grep -a), and GOG passes a second -conf that plain dosbox_<game>.conf gives no hint of.
@@ -1391,7 +1391,7 @@ const nativeDosboxArgs = (gogArgs) => host.dosbox.translateArgs(gogArgs);
 // GOG's own runs its imgmount first and GOG's autoexec still starts the game. Every
 // setting in GOG's config wins, because a later -conf overrides an earlier one.
 //
-// Paths inside are relative and backslashed, the same convention GOG's own configs use —
+// Paths inside are relative and backslashed, the same convention GOG's own configs use,
 // DOSBox rewrites those separators for the host, so one file serves both the native
 // binary and the bundled Windows DOSBox under Proton.
 const CD_AUDIO_CONF = 'dosbox_clarity_cdaudio.conf';
@@ -1432,7 +1432,7 @@ function findGogCdAudioImages(installPath) {
 }
 
 // The .conf files GOG's launch command names, resolved against the working directory the
-// game actually starts from — the paths in those arguments are relative to it.
+// game actually starts from, the paths in those arguments are relative to it.
 function gogConfPaths(gogArgs, launchCwd) {
     const out = [];
     for (let i = 0; i < gogArgs.length; i++) {
@@ -1468,7 +1468,7 @@ function gogCdAudioConfArgs(installPath, launchCwd, gogArgs) {
         const texts = confs.map(p => { try { return fs.readFileSync(p, 'utf8'); } catch { return ''; } });
 
         // GOG already mounts a disc for this game (Albion, and every release where they
-        // bothered) — leave it entirely alone. Mounting a second copy would only shift
+        // bothered), leave it entirely alone. Mounting a second copy would only shift
         // the drive letters the game was configured against.
         if (texts.some(t => /^\s*imgmount\s/im.test(t))) return [];
 
@@ -1483,7 +1483,7 @@ function gogCdAudioConfArgs(installPath, launchCwd, gogArgs) {
         const rel = p => path.relative(launchCwd, p).replace(/\//g, '\\');
         const discs = images.map(i => `"${rel(i.path)}"`).join(' ');
         const body =
-            `# Generated by Clarity — regenerated on every launch, edits will be lost.\n` +
+            `# Generated by Clarity, regenerated on every launch, edits will be lost.\n` +
             `# Mounts the CD image(s) GOG ships with this game so its soundtrack plays.\n` +
             (images.length > 1 ? `# Several discs on one letter: press Ctrl+F4 in DOSBox to swap.\n` : '') +
             `\n[autoexec]\n` +
@@ -1516,7 +1516,7 @@ function gogCdAudioConfArgs(installPath, launchCwd, gogArgs) {
 // exited on the spot. Blade of Destiny, Star Trail and Albion all fail this way.
 //
 // Only plain files, only one level, and only where nothing of that name is already in
-// place — after the first run these hold the player's own settings (screen mode, sound,
+// place, after the first run these hold the player's own settings (screen mode, sound,
 // cycles), and re-copying them on every launch would quietly undo their choices. Unlike
 // running .script itself, which can execute bundled .exe files, copying a config is safe
 // to do for every GOG game rather than one title at a time.
@@ -1542,8 +1542,8 @@ function applyGogSupportFiles(installPath, appId) {
     return copied;
 }
 
-// GOG ships post-install steps in goggame-<id>.script — registry values, plus config
-// files copied out of the game's own gog-support/ folder — that only Galaxy's installer
+// GOG ships post-install steps in goggame-<id>.script, registry values, plus config
+// files copied out of the game's own gog-support/ folder, that only Galaxy's installer
 // performs. gogdl downloads the depot and nothing else, so a title that depends on those
 // steps installs perfectly and then misbehaves. We deliberately don't run .script
 // generically (its actions include executing bundled .exe files), so affected titles are
@@ -1578,7 +1578,7 @@ async function applyFalloutNewCaliforniaFix(installPath, prefix, proton) {
 
     // Seed config into every real user directory in the prefix: Proton runs games as
     // `steamuser`, while a prefix built by bare wine uses the unix login name. Only files
-    // that are genuinely absent get written — after the first run these hold the player's
+    // that are genuinely absent get written, after the first run these hold the player's
     // own settings, and re-copying them every launch would reset the game each time.
     const usersRoot = path.join(prefix, 'drive_c', 'users');
     let userDirs = [];
@@ -1595,7 +1595,7 @@ async function applyFalloutNewCaliforniaFix(installPath, prefix, proton) {
             const dst = path.join(userDir, ...to.split('/'));
             // Case-insensitive check: the game writes FALLOUT.INI, which on a
             // case-sensitive filesystem is a different name from the Fallout.ini we would
-            // copy — leaving wine two files to pick between.
+            // copy, leaving wine two files to pick between.
             if (!fs.existsSync(src) || fs.existsSync(resolvePathCaseInsensitive(dst))) continue;
             try {
                 fs.mkdirSync(path.dirname(dst), { recursive: true });
@@ -1607,8 +1607,8 @@ async function applyFalloutNewCaliforniaFix(installPath, prefix, proton) {
 
     // Reading system.reg directly keeps the common case free: once the value is in the
     // prefix we never spawn wine for this again. A missing system.reg means the prefix was
-    // never built — runRedist returns early for a game GOG lists no dependencies for, so
-    // this is reachable on a first launch — and we go ahead and let wine create it rather
+    // never built, runRedist returns early for a game GOG lists no dependencies for, so
+    // this is reachable on a first launch, and we go ahead and let wine create it rather
     // than skip, or the player meets the launcher's dead end exactly once before it heals.
     const systemReg = path.join(prefix, 'system.reg');
     const prefixBuilt = fs.existsSync(systemReg);
@@ -1619,7 +1619,7 @@ async function applyFalloutNewCaliforniaFix(installPath, prefix, proton) {
     }
 
     // Trailing backslash matches the {app}\ GOG writes. FalloutNV.exe and its launcher are
-    // both 32-bit, so on a win64 prefix they read HKLM\Software through the WoW64 view —
+    // both 32-bit, so on a win64 prefix they read HKLM\Software through the WoW64 view,
     // the Wow6432Node copy is the one they actually see.
     const winPath = host.runtime.toWindowsPath(installPath) + '\\';
     const escaped = winPath.replace(/\\/g, '\\\\');
@@ -1641,7 +1641,7 @@ async function applyFalloutNewCaliforniaFix(installPath, prefix, proton) {
     await new Promise(resolve => {
         const finish = () => { try { fs.unlinkSync(regFile); } catch {} resolve(); };
         const proc = spawn(reg.cmd, reg.args, { env: reg.env, stdio: 'ignore' });
-        // A wedged wine must never hold the game hostage — give up and launch anyway. Merging
+        // A wedged wine must never hold the game hostage, give up and launch anyway. Merging
         // into a built prefix takes seconds; building one from scratch is a wineboot, so don't
         // pull the plug on that half way through.
         const timer = setTimeout(() => { try { proc.kill('SIGKILL'); } catch {} finish(); },
@@ -1711,7 +1711,7 @@ function writeGogAuthConfig() {
 // The interactive OAuth window is owned by the calling face's main process; these
 // functions take the extracted auth code and do the token exchange / CLI auth. That
 // lets GOG and Epic sign-in work identically whether it happens inside Installer or
-// headlessly from the Manager / Couch — so the average user never has to open the
+// headlessly from the Manager / Couch, so the average user never has to open the
 // Installer GUI to connect their stores.
 
 // Exchange a GOG OAuth `code` for tokens, persist them in library.db and return the
@@ -1799,7 +1799,7 @@ async function syncOwnedLibrary() {
     if (!db) return result;
 
     // Drop store rows the user no longer owns (refunds/removals). Only NOT-installed rows
-    // are pruned — a still-installed title is left alone so its on-disk files are never
+    // are pruned, a still-installed title is left alone so its on-disk files are never
     // orphaned. Guarded by the caller on a non-empty owned list. Returns the removed installer
     // ids (store_appid) so the caller can drop the matching Clarity library rows too.
     const pruneUnowned = (store, ownedSet) => {
@@ -1842,7 +1842,7 @@ async function syncOwnedLibrary() {
                 }
             } catch { result.epic.error = 'Failed to parse legendary output.'; }
         } else {
-            // Not logged in / legendary error — surface quietly (loggedIn stays false).
+            // Not logged in / legendary error, surface quietly (loggedIn stays false).
             result.epic.error = (r.error || r.stderr || '').trim() || 'Not logged in to Epic.';
         }
     }
@@ -1865,7 +1865,7 @@ async function syncOwnedLibrary() {
                     // GOG's public catalog API calls a macOS installer's os "mac"; gogdl's own
                     // --platform flag (and therefore host.nativeOsKey / games.platform / every
                     // launch-time comparison against it) calls the same host "osx". Two GOG
-                    // APIs, two vocabularies for the same OS — translate before matching, or
+                    // APIs, two vocabularies for the same OS, translate before matching, or
                     // every Mac-native game in the library silently looks Windows-only.
                     const GOG_CATALOG_OS_ALIAS = { mac: 'osx' };
                     const oses      = [...new Set((item.downloads?.installers || [])
@@ -2012,7 +2012,7 @@ async function gogListDlcs(baseAppId, platform) {
     });
 }
 
-// Which owned DLCs are ACTUALLY installed, from gogdl's manifest HGLdlcs field — the only reliable
+// Which owned DLCs are ACTUALLY installed, from gogdl's manifest HGLdlcs field, the only reliable
 // signal. A completed --with-dlcs install records each installed DLC there (verified). We deliberately
 // do NOT fall back to products[]/depots[]: those hold the full OWNED/planned set whenever --with-dlcs
 // is passed, so they list DLCs that were only planned, not downloaded → false "installed" badges.

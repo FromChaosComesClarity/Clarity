@@ -2,7 +2,7 @@ const { contextBridge, ipcRenderer, webFrame, clipboard } = require('electron');
 
 // ⚠️ Read here, synchronously, purely so the pre-paint script in index.html can know it. The
 // compact-chrome default depends on being on Omarchy, and everything else that knows that is
-// an async IPC away — which is one round trip too late to avoid the window being shown with a
+// an async IPC away, which is one round trip too late to avoid the window being shown with a
 // title bar it is about to remove. A cached value covers every later run; this covers the
 // first one, when there is nothing cached yet.
 const _isOmarchy = (() => {
@@ -91,11 +91,11 @@ contextBridge.exposeInMainWorld('api', {
                                 // --- UI SCALING ---
                                 setZoomLevel: (level) => webFrame.setZoomFactor(level),
                                 // Support details are shown in-app rather than opened in a browser,
-                                // so copying has to actually work — Electron's own clipboard does it
+                                // so copying has to actually work, Electron's own clipboard does it
                                 // without needing a secure context.
                                 copyText: (t) => { try { clipboard.writeText(String(t ?? '')); return true; } catch { return false; } },
                                 // Work area of the display this window belongs on, plus a
-                                // signature of the whole monitor set — see 'ui-screen-info'
+                                // signature of the whole monitor set, see 'ui-screen-info'
                                 // in main.js for why `window.screen` is the wrong source.
                                 getScreenInfo: () => ipcRenderer.invoke('ui-screen-info'),
 
@@ -193,7 +193,7 @@ contextBridge.exposeInMainWorld('api', {
                                 // --- in-process install (no Installer window) ---
                                 installerInstall:   (payload) => ipcRenderer.invoke('installer-install', payload),
                                 dlcList:          (installerGameId, platform) => ipcRenderer.invoke('dlc-list', installerGameId, platform),
-                                // Reinstall a GOG game's redistributables into its prefix — see
+                                // Reinstall a GOG game's redistributables into its prefix, see
                                 // 'installer-run-redist' in main.js for why this exists.
                                 runRedist:        (installerGameId) => ipcRenderer.invoke('installer-run-redist', installerGameId),
                                 onRedistProgress: (cb) => ipcRenderer.on('redist-progress', (_e, d) => cb(d)),
@@ -204,7 +204,7 @@ contextBridge.exposeInMainWorld('api', {
                                 displayOptions:  () => ipcRenderer.invoke('display-options'),
                                 setGameDisplay:  (i) => ipcRenderer.invoke('set-game-display', i),
                                 installerSetEnvVar: (payload) => ipcRenderer.invoke('installer-set-env-var', payload),
-                                // Per-game compatibility — what Installer's setup modal used to own.
+                                // Per-game compatibility, what Installer's setup modal used to own.
                                 installerCompatGet: (gid) => ipcRenderer.invoke('installer-compat-get', gid),
                                 installerCompatSet: (payload) => ipcRenderer.invoke('installer-compat-set', payload),
                                 installerSetLaunchTarget: (payload) => ipcRenderer.invoke('installer-set-launch-target', payload),

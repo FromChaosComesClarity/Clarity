@@ -24,7 +24,7 @@ const font = params.get('font') || '';
 if (font) document.documentElement.style.setProperty('--ui-font', `'${font}'`);
 
 // Identity: prefer the game's logo art, fall back to its title.
-document.title = 'Manual — ' + title;
+document.title = 'Manual, ' + title;
 const titleEl = document.getElementById('m-title');
 const logoEl  = document.getElementById('m-logo');
 titleEl.textContent = title;
@@ -39,7 +39,7 @@ if (store) {
     badge.style.display = 'inline-block';
 }
 
-// Chromium's built-in viewer handles the PDF — page nav, zoom, search and thumbnails
+// Chromium's built-in viewer handles the PDF, page nav, zoom, search and thumbnails
 // all come free. The hash options are ignored harmlessly by non-PDF documents.
 function show(path) {
     document.getElementById('m-doc').src =

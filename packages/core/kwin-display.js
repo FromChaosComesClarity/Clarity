@@ -1,5 +1,5 @@
 // ── Which monitor games open on (KDE / KWin) ─────────────────────────────────
-// On a Wayland session nothing inside the game decides where its window lands — the
+// On a Wayland session nothing inside the game decides where its window lands, the
 // compositor does. gamescope's --prefer-output belongs to its DRM backend, so under a
 // normal KDE session it has no say either. That leaves KWin, which offers two ways in.
 //
@@ -11,7 +11,7 @@
 // has the considerable virtue of not writing to the user's KDE configuration at all.
 //
 // One script for every game rather than one per game, because umu gives every non-Steam
-// title the same window class — steam_app_0 — deriving it from GAMEID, and GAMEID is what
+// title the same window class, steam_app_0, deriving it from GAMEID, and GAMEID is what
 // umu looks its compatibility fixes up by, so it is not ours to fake for a window match.
 //
 // ⚠️ A loaded KWin script lives as long as the KWin session, not as long as this app, and
@@ -48,7 +48,7 @@ function isSupported() {
     return desktop.includes('kde') && !!which('kscreen-doctor') && !!qdbusBin();
 }
 
-// The monitors KWin can place a window on, in the order KWin numbers them — which is the
+// The monitors KWin can place a window on, in the order KWin numbers them, which is the
 // order kscreen reports. The name is what the script matches on: an index shifts when a
 // monitor is unplugged, a connector name does not.
 function listDisplays() {
@@ -69,7 +69,7 @@ function listDisplays() {
                 index: i,
                 name: o.name || `Screen ${i + 1}`,
                 // Resolution and refresh are how someone recognises which physical monitor
-                // this is — the connector name alone tells them nothing.
+                // this is, the connector name alone tells them nothing.
                 mode: size.width && size.height ? `${size.width}x${size.height}` : '',
                 hz: cur && cur.refreshRate ? Math.round(cur.refreshRate) : null,
                 type: o.type || '',
@@ -84,7 +84,7 @@ function listDisplays() {
 // ── Where the choice lives ───────────────────────────────────────────────────
 // Beside our own settings, not in KDE's: this is a Clarity preference that happens
 // to be enacted through KWin. The app's settings folder travels with the AppImage rather
-// than living in $HOME, so the host must say where it is — guessing would strand the
+// than living in $HOME, so the host must say where it is, guessing would strand the
 // setting behind when someone moves their library to another machine.
 let _configDir = path.join(os.homedir(), 'GameManagerConfig');
 function configure(dir) { if (dir) _configDir = dir; migrateLegacyChoice(); }
@@ -152,7 +152,7 @@ function place(w) {
     if (!out || !isGame(w)) return;
     if (w.output && w.output.name === TARGET) return;   // already there; don't fight it
 
-    // sendClientToScreen is the API for this and keeps a fullscreen window fullscreen —
+    // sendClientToScreen is the API for this and keeps a fullscreen window fullscreen,
     // it re-fits it to the new monitor instead of stranding it at the old one's size.
     if (typeof workspace.sendClientToScreen === "function") workspace.sendClientToScreen(w, out);
 
@@ -169,7 +169,7 @@ function place(w) {
 }
 
 // Games routinely open a small window and go fullscreen a moment later, and going
-// fullscreen is exactly when a game re-picks its monitor — so watch for it rather than
+// fullscreen is exactly when a game re-picks its monitor, so watch for it rather than
 // placing the window once and hoping.
 function watch(w) {
     if (!isGame(w)) return;
@@ -205,7 +205,7 @@ function load(file) {
 }
 
 // Put the stored choice into effect. Called at startup, because a loaded script does not
-// survive a logout — without this the setting would quietly stop working after a reboot.
+// survive a logout, without this the setting would quietly stop working after a reboot.
 function apply() {
     if (!isSupported()) return { ok: false, error: 'This needs KDE with kscreen-doctor and qdbus.' };
     const choice = readChoice();

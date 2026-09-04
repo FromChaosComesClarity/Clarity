@@ -1,4 +1,4 @@
-# Clarity 1.10.0 — "At home on Omarchy"
+# Clarity 1.10.0, "At home on Omarchy"
 
 **Experimental, Linux only.** The 1.9.0 `.dmg` remains the current macOS build.
 
@@ -25,7 +25,7 @@ the app's personality, and the Omarchy palette bridge maps into that same table.
 
 ## Settings are pages now
 
-Two new ones — **Ports & Mods** and **Desktop** — joining Library, Appearance, Behavior,
+Two new ones, **Ports & Mods** and **Desktop**, joining Library, Appearance, Behavior,
 Connections, System and Danger Zone.
 
 ⚠️ Seven of the twenty settings cards were never filed into a page, and because a hidden pane
@@ -40,20 +40,20 @@ settings had no shape.
 
 Everything its window did now lives in the Manager:
 
-- **Compatibility** (per game) — Proton/runtime, Wine prefix, launch arguments, custom
+- **Compatibility** (per game), Proton/runtime, Wine prefix, launch arguments, custom
   executable, environment variables, winetricks verbs, Esync/Fsync/DXVK-NVAPI/BattlEye/EAC,
   notes, and the GOG launch-target selector for titles with several play tasks.
-- **Manage Storage** — installed games by size on disk, biggest first, with a total.
+- **Manage Storage**, installed games by size on disk, biggest first, with a total.
 - **Refresh GOG / Epic** now syncs in place instead of opening a second window.
 
 ⚠️ `installer://launch/…` and the `installer` CLI are unchanged. Headless means no window, not no
-entry point — every installed game's launch command depends on that scheme.
+entry point, every installed game's launch command depends on that scheme.
 
 ## First boot reads the machine before it asks anything
 
 The welcome screen opens with **What This Machine Has**, measured when it opens: which gaming
 tools are present (with one click to install exactly the missing ones), whether GOG and Epic
-are connected and under which account, and whether your Steam credentials are already saved —
+are connected and under which account, and whether your Steam credentials are already saved,
 in which case the fields come pre-filled.
 
 ## Two things only this desktop needed
@@ -74,10 +74,10 @@ in which case the fields come pre-filled.
   panel colour was being taken from `selection`, which is a text-highlight colour and is often
   pure white. Surfaces are now validated against the page they sit on.
 - **"Open in Steam" only appears for games you own on Steam.** The scrapers attach a Steam id
-  to anything they can match by name, so GOG-only titles were offering it — 224 of them in one
+  to anything they can match by name, so GOG-only titles were offering it, 224 of them in one
   library. The same bug made "Uninstall via Steam" appear for games Steam never installed.
 - **The interface scale is 100% for everyone.** It used to derive a scale per screen and pick
-  75% for anything it judged small — including a monitor rotated to portrait, so one install
+  75% for anything it judged small, including a monitor rotated to portrait, so one install
   disagreed with itself across two displays. It is a plain default now and yours to change;
   a scale you pick is kept. Existing installs are reset once, because almost none of those
   saved values were ever a choice.

@@ -11,8 +11,8 @@
 
 </div>
 
-Every game you own — Steam, GOG, Epic, itch, PICO-8, emulators, fan games, source ports and
-mods — in one place. One AppImage, three faces, no cloud, no launcher farm.
+Every game you own, Steam, GOG, Epic, itch, PICO-8, emulators, fan games, source ports and
+mods, in one place. One AppImage, three faces, no cloud, no launcher farm.
 
 **2.0 is what this is becoming.** What you can download today is the experimental line: used
 daily on the machine it is built on, and rough in places. There is no date on 2.0.
@@ -42,7 +42,7 @@ copying it, gone when you delete it.
 ## On Omarchy
 
 There is a [companion plugin](https://github.com/FromChaosComesClarity/omarchy-clarity):
-a bar widget showing what is installed and what is playing, and a launcher overlay — type a few
+a bar widget showing what is installed and what is playing, and a launcher overlay, type a few
 letters, press Enter, play. The app reads your actual Omarchy theme, opens games fullscreen on
 the screen you chose, and stays out of the way otherwise.
 

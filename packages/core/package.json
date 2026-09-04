@@ -1,7 +1,7 @@
 {
   "name": "@clarity/core",
   "version": "0.1.0",
-  "description": "Shared core for the Clarity suite — db, metadata, installer engine, trailers, settings, i18n (populated in Phase 1+)",
+  "description": "Shared core for the Clarity suite, db, metadata, installer engine, trailers, settings, i18n (populated in Phase 1+)",
   "private": true,
   "main": "index.js"
 }

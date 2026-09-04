@@ -1,10 +1,10 @@
 'use strict';
 /*
- * @clarity/core — platform backend selector.
+ * @clarity/core, platform backend selector.
  *
  * One backend per host OS, chosen once at require time. Everything that is shaped by the
- * operating system — where files live, what runs a Windows game, how a URL scheme is
- * opened, where Steam keeps its library — lives behind this boundary so the rest of the
+ * operating system, where files live, what runs a Windows game, how a URL scheme is
+ * opened, where Steam keeps its library, lives behind this boundary so the rest of the
  * suite can stay host-agnostic.
  *
  * The contract is grouped by concern rather than flattened, because the concerns have

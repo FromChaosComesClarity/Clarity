@@ -78,7 +78,7 @@ let overlayItems = [];
 let recentGamesCount = 9;
 let _couchHidePico8 = false; // when true, PICO-8 games show only inside the PICO-8 category
 let _couchHideFree = false;  // when true, Steam free-to-play games (FreeToPlay==1) are hidden everywhere
-let _couchGallerySort = 'alpha'; // gallery sort (X in gallery) — mirrors the Manager's sort dropdown
+let _couchGallerySort = 'alpha'; // gallery sort (X in gallery), mirrors the Manager's sort dropdown
 let numRecentInList = 0;
 
 let trailerTimeout = null, screenshotInterval = null, bgmFadeInterval = null;
@@ -116,7 +116,7 @@ const RECENTLY_IMPORTED_LIMIT = 50;
 const PLAYLIST_CAT_PREFIX = "≡ ";
 // Genre is a FILTER, not a category. Putting one entry per genre in the category strip
 // would have added forty-odd stops to a list you walk with a d-pad; instead a genre
-// narrows whatever category you are already in — GOG *and* CRPG — and is chosen from
+// narrows whatever category you are already in, GOG *and* CRPG, and is chosen from
 // its own menu (System ▸ Filter by Genre). Session-only on purpose: a filter that
 // survived a restart would be an invisible reason the library looks half empty.
 let genreCats = [];              // [{ slug, label, count }], biggest first
@@ -199,13 +199,13 @@ const THEMES = {
   "DAYBREAK": {bg: "#fff9f0", bg_panel: "rgba(255,236,205,0.75)", bg_menu: "#ffefd8", accent: "#c05b18", accent_menu: "#d47820", text_main: "#3a2510", text_sec: "#6a4520", text_dim: "#b08060", border: "rgba(192,91,24,0.18)", border_solid: "#e8c898"},
   "OAKANIZER LIGHT": {bg: "#f5f0f8", bg_panel: "rgba(228,219,237,0.75)", bg_menu: "#e4dbed", accent: "#46295a", accent_menu: "#46295a", text_main: "#1e0a30", text_sec: "#6b547b", text_dim: "#907f9c", border: "rgba(70,41,90,0.12)", border_solid: "#c0b4cc"},
   "OAKANIZER DARK": {bg: "#120a1a", bg_panel: "rgba(35,20,45,0.6)", bg_menu: "#23142d", accent: "#b5a9bd", accent_menu: "#b5a9bd", text_main: "#dad4de", text_sec: "#907f9c", text_dim: "#6b547b", border: "rgba(181,169,189,0.2)", border_solid: "#46295a"},
-  // BrewBalance (imported from the BrewBalance app — espresso & latte brand set)
+  // BrewBalance (imported from the BrewBalance app, espresso & latte brand set)
   "BREWBALANCE DARK": {bg: "#17100a", bg_panel: "rgba(30, 21, 13, 0.6)", bg_menu: "#1e150d", accent: "#d4a373", accent_menu: "#d4a373", text_main: "#efe3d2", text_sec: "#b89b7d", text_dim: "#7a5f45", border: "rgba(212, 163, 115, 0.2)", border_solid: "#3f2d1c"},
   "BREWBALANCE LIGHT": {bg: "#fbf7ef", bg_panel: "rgba(243, 235, 221, 0.75)", bg_menu: "#f3ebdd", accent: "#b5651d", accent_menu: "#b5651d", text_main: "#2a241c", text_sec: "#7c6b53", text_dim: "#9a8a72", border: "rgba(181, 101, 29, 0.12)", border_solid: "#d6c6ab"},
   "MOCHA": {bg: "#1a1210", bg_panel: "rgba(36, 24, 19, 0.6)", bg_menu: "#241813", accent: "#c98a5e", accent_menu: "#c98a5e", text_main: "#f0dfcf", text_sec: "#c7a98f", text_dim: "#8a6a54", border: "rgba(201, 138, 94, 0.2)", border_solid: "#4a3226"},
   "FLAT WHITE": {bg: "#f6f1e9", bg_panel: "rgba(253, 250, 244, 0.75)", bg_menu: "#fdfaf4", accent: "#8a5a2b", accent_menu: "#8a5a2b", text_main: "#33291f", text_sec: "#6b5a48", text_dim: "#a4917a", border: "rgba(138, 90, 43, 0.12)", border_solid: "#e0d4c0"},
   "MATCHA": {bg: "#12160f", bg_panel: "rgba(26, 32, 21, 0.6)", bg_menu: "#1a2015", accent: "#9bbf6b", accent_menu: "#9bbf6b", text_main: "#e6efd8", text_sec: "#b3c79b", text_dim: "#6d8556", border: "rgba(155, 191, 107, 0.2)", border_solid: "#33422a"},
-  // Systems (imported from LatteWrite) — retro-OS palettes; each carries its era `font` (applied as --ui-font while active)
+  // Systems (imported from LatteWrite), retro-OS palettes; each carries its era `font` (applied as --ui-font while active)
   "MS-DOS": {bg: "#0a0a0a", bg_panel: "rgba(0, 0, 0, 0.6)", bg_menu: "#000000", accent: "#ffffff", accent_menu: "#ffffff", text_main: "#d2d2d2", text_sec: "#a2a2a2", text_dim: "#7e7e7e", border: "rgba(255, 255, 255, 0.25)", border_solid: "#4a4a4a", font: 'PxPlus IBM VGA8'},
   "COMMODORE 64": {bg: "#0000aa", bg_panel: "rgba(0, 0, 170, 0.6)", bg_menu: "#0000aa", accent: "#b9b6ff", accent_menu: "#b9b6ff", text_main: "#d0ccff", text_sec: "#9e9beb", text_dim: "#7976db", border: "rgba(185, 182, 255, 0.25)", border_solid: "#4341c5", font: 'C64 Pro Mono'},
   "MACOS 1.0": {bg: "#ffffff", bg_panel: "rgba(255, 255, 255, 0.6)", bg_menu: "#ffffff", accent: "#000000", accent_menu: "#000000", text_main: "#000000", text_sec: "#3d3d3d", text_dim: "#6b6b6b", border: "rgba(0, 0, 0, 0.25)", border_solid: "#adadad", font: 'Chicago'},
@@ -246,7 +246,7 @@ function isVideoActive() { const vid = document.getElementById('video-player'); 
 function applyTheme(themeName) {
   activeTheme = THEMES[themeName] ? themeName : "Couch (DEFAULT)";
   const t = THEMES[activeTheme]; const root = document.documentElement;
-  // `font` is not a colour token — it's the theme's era typeface, applied through --ui-font below.
+  // `font` is not a colour token, it's the theme's era typeface, applied through --ui-font below.
   Object.keys(t).forEach(key => { if (key !== 'font') root.style.setProperty(`--${key}`, t[key]); });
   applyUiFont();
 }
@@ -259,7 +259,7 @@ function applyTheme(themeName) {
 const UI_FONTS = ['Poppins', 'Raleway', 'Sora', 'Inter', 'Fraunces', 'Chicago', 'PxPlus IBM VGA8'];
 const FONT_LABELS = { 'Chicago': 'CHICAGOFLF' };   // display name where it differs from the family
 const fontLabel = f => FONT_LABELS[f] || f.toUpperCase();
-let _uiFont = '';   // the resolved family — whatever Couch is currently painting with
+let _uiFont = '';   // the resolved family, whatever Couch is currently painting with
 
 function applyUiFont() {
   const themeFont = THEMES[activeTheme] && THEMES[activeTheme].font;
@@ -287,7 +287,7 @@ async function resolveAndApplyFont() {
 const FOLLOW_MANAGER_LABEL = 'FOLLOW THE MANAGER';
 
 // The Manager can be wearing the user's live Omarchy palette, which is not one of the shipped
-// themes — it is generated from their desktop. Registering it here under the same name is what
+// themes. It is generated from their desktop. Registering it here under the same name is what
 // keeps "follow The Manager" honest on Omarchy: without it, mapManagerThemeToCouch() finds no
 // 'OMARCHY' in this face's table, returns null, and the couch face quietly drops back to its
 // own default while the Manager matches the desktop.
@@ -379,7 +379,7 @@ function rebuildCategories() {
   if (galleryCatIndex >= categories.length) galleryCatIndex = 0;
 }
 
-// The genres worth offering, biggest first — the menu scrolls, so every non-empty genre
+// The genres worth offering, biggest first, the menu scrolls, so every non-empty genre
 // is listed, unlike the category strip which had to stay short.
 async function loadGenreCategories() {
   try {
@@ -388,7 +388,7 @@ async function loadGenreCategories() {
       .filter(g => g.count > 0)
       .sort((a, b) => b.count - a.count || a.label.localeCompare(b.label));
   } catch (e) { genreCats = []; }
-  // A genre can empty out (games hidden, a re-scan) — drop a filter that now matches
+  // A genre can empty out (games hidden, a re-scan), drop a filter that now matches
   // nothing rather than leaving the library looking mysteriously empty.
   if (activeGenreFilter && !genreCats.some(g => g.slug === activeGenreFilter)) activeGenreFilter = null;
 }
@@ -479,7 +479,7 @@ function _fpGradient(ctx, w, h, r, g, b, dir) {
     grad.addColorStop(0, d1); grad.addColorStop(1, d2);
     ctx.fillStyle = grad; ctx.fillRect(0, 0, w, h);
     const glow = ctx.createRadialGradient(w/2,h/2,0, w/2,h/2, Math.max(w,h)*.55);
-    glow.addColorStop(0, `rgba(${r},${g},${b},.32)`); glow.addColorStop(1, 'rgba(0,0,0,0)');
+    glow.addColorStop(0, `rgba(${r},${g},${b}.32)`); glow.addColorStop(1, 'rgba(0,0,0,0)');
     ctx.fillStyle = glow; ctx.fillRect(0, 0, w, h);
 }
 
@@ -641,7 +641,7 @@ function setupOptions() {
       { id: 'GRID',     img: 'assets/setup/start_grid.png',     name: t('start_screen.grid'),     desc: 'Your cover art in a mosaic grid. Your entire collection at a glance.' },
     ],
     browse: [
-      { id: 'LIST',    img: 'assets/setup/browse_list.png',    name: t('browse.list'),    desc: '1-click play. A focused side-by-side layout — game list on the left, screenshots and metadata on the right.' },
+      { id: 'LIST',    img: 'assets/setup/browse_list.png',    name: t('browse.list'),    desc: '1-click play. A focused side-by-side layout, game list on the left, screenshots and metadata on the right.' },
       { id: 'GALLERY', img: 'assets/setup/browse_gallery.png', name: t('browse.gallery'), desc: 'An immersive cover art grid. Select any game to open its full dedicated gamepage with rich details.' },
     ]
   };
@@ -737,9 +737,9 @@ async function completeSetup() {
 }
 
 // ════════════════════════════════════════════════════════════════════════════
-//  HOME — "Marquee" couch dashboard (optional start screen, precedes the library)
+//  HOME, "Marquee" couch dashboard (optional start screen, precedes the library)
 //  Data comes from the shared core engine (window.api.getHomeStats), the same
-//  one The Manager uses — so the numbers never drift between the two faces.
+//  one The Manager uses, so the numbers never drift between the two faces.
 // ════════════════════════════════════════════════════════════════════════════
 let homeRows = [];                 // [{ key, cells:[{type,game?,id,el}] }]
 let homeFocus = { row: 0, col: 0 };
@@ -750,7 +750,7 @@ function _che(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').repl
 function _chImg(t, hero) { if (!t) return ''; const p = hero ? (t.HeroArt || t.Screenshot || t.CoverArt) : (t.CoverArt || t.HeroArt || t.Logo); return p ? convertSafePath(String(p).split('|')[0]) : ''; }
 function _chFmt(amount, currency) { if (amount == null) return ''; const a = Number(amount); if (!isFinite(a)) return ''; if (currency === 'USD' || currency === 'CAD' || currency === 'AUD') return '$' + a.toFixed(2); if (currency === 'EUR') return '€' + a.toFixed(2); if (currency === 'GBP') return '£' + a.toFixed(2); if (currency === 'BRL') return 'R$' + a.toFixed(2); return a.toFixed(2) + (currency ? (' ' + currency) : ''); }
 
-// Home footer — real glyph footer like every other screen; L3/R3 music appears only
+// Home footer, real glyph footer like every other screen; L3/R3 music appears only
 // while custom music is actually playing. Rebuilt on input-method/layout changes and
 // on bgm play/pause (via _chUpdateJbTile → updateHomeFooter).
 function _homeFooterHtml() {
@@ -836,8 +836,8 @@ async function renderHomeScreen() {
   const enabled = audioCfg.homeRows || ['recent', 'gems', 'played'];
   const wantProton = enabled.includes('protonwatch');
   const myToken = ++_homeRenderToken;
-  // Fast path — only cheap/cached reads (no network) so the Marquee paints instantly.
-  // Every source is .catch-guarded — one rejection must never blank the whole Home.
+  // Fast path, only cheap/cached reads (no network) so the Marquee paints instantly.
+  // Every source is .catch-guarded, one rejection must never blank the whole Home.
   const [snap, achRes, protonRes] = await Promise.all([
     window.api.getHomeStats({ hidePico8: _couchHidePico8 }).then(s => s || {}).catch(() => ({})),
     window.api.achGet().catch(() => null),
@@ -870,7 +870,7 @@ async function renderHomeScreen() {
   aHtml += `<div class="ch-act" id="che-a1"><div class="ai">${_CH_DICE}</div><div><div class="at">Surprise Me</div><div class="asub">Random pick</div></div></div>`;
   aCells.push({ type: 'roulette', id: 'che-a1' });
   if (snap.continuePlaying) { const cg = snap.continuePlaying, cov = _chImg(cg, false); aHtml += `<div class="ch-act" id="che-a2">${cov ? `<img class="cov" src="${cov}">` : `<div class="ai">${_CH_LIB}</div>`}<div><div class="at">Continue</div><div class="asub">${_che(cg.Game)}</div></div></div>`; aCells.push({ type: 'game', game: cg, id: 'che-a2' }); }
-  // Jukebox tile — rendered idle here; _chUpdateJbTile() (also wired to bgmAudio
+  // Jukebox tile, rendered idle here; _chUpdateJbTile() (also wired to bgmAudio
   // play/pause events) patches in the live now-playing state from boot onwards.
   aHtml += `<div class="ch-act ch-act-jb" id="che-aj">`
     + `<div class="ai" id="che-aj-art">${_CH_NOTE}</div>`
@@ -920,7 +920,7 @@ async function renderHomeScreen() {
       rh += '</div></div>'; html += rh; rows.push({ key: 'protonwatch', cells });
     }
   }
-  html += `<div id="home-foot" style="display:none"></div>`;   // invisible anchor — online rows insert before it; the real footer is the fixed #home-footer-bar
+  html += `<div id="home-foot" style="display:none"></div>`;   // invisible anchor, online rows insert before it; the real footer is the fixed #home-footer-bar
   html += '</div>';
   document.getElementById('home-content').innerHTML = html;
   rows.forEach(r => r.cells.forEach(cell => { cell.el = document.getElementById(cell.id); }));
@@ -1013,7 +1013,7 @@ function homeHandleInput(action) {
 
 async function homeSpin() { const g = await window.api.getRandomGame({ hidePico8: _couchHidePico8 }); if (g) couchOpenGame(g); }
 
-// ── TV READER — in-app article view for the news rows (themed, big fonts, gamepad) ──
+// ── TV READER, in-app article view for the news rows (themed, big fonts, gamepad) ──
 // Fetches the page's raw HTML via IPC, extracts the readable content with DOMParser
 // (no external browser on the couch), sanitizes it to a strict tag whitelist.
 let _readerUrl = '';
@@ -1079,7 +1079,7 @@ async function openReader(url, title, source) {
 function closeReader() {
   document.getElementById('reader-screen').classList.add('hidden');
   document.getElementById('home-screen')?.classList.remove('hidden');
-  gameState = 'HOME';   // Home DOM is untouched — no re-render needed
+  gameState = 'HOME';   // Home DOM is untouched, no re-render needed
 }
 function readerHandleInput(action) {
   const sc = document.getElementById('reader-scroll');
@@ -1121,7 +1121,7 @@ function openHomeMenu() {
   renderGenericOverlay('HOME SCREEN', items);
 }
 
-// ── Cinematic "Wrapped" — full-screen, gamepad-paged library year-in-review ──
+// ── Cinematic "Wrapped", full-screen, gamepad-paged library year-in-review ──
 const _CH_STAR = `<svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M12 2l2.9 6.3 6.9.6-5.2 4.6 1.6 6.8L12 17.3 5.8 20.9l1.6-6.8L2.2 8.9l6.9-.6z"/></svg>`;
 let wrappedSlides = [], wrappedIndex = 0;
 function buildWrappedSlides(w) {
@@ -1190,7 +1190,7 @@ let inputDebounce = false; let navRepeatDelay = 180; let lastSelectionTime = 0; 
 // Every store a row can be played or installed from, each with its install state (Steam
 // appmanifest / GOG-Epic library.db). Main resolves this from the row's store fields, not
 // just LaunchCommands, so a mixed-store row that never got the plural column written still
-// lists both stores. [] on failure — callers fall back to the single-launcher path.
+// lists both stores. [] on failure, callers fall back to the single-launcher path.
 async function launcherStatesFor(game) {
   try { return await window.api.launcherStates(game.id) || []; } catch (e) { return []; }
 }
@@ -1218,13 +1218,13 @@ async function tryInstall(game, fallback) {
 // store always offers Play and an uninstalled one always offers Install.
 function showLauncherPicker(game, states, mode = 'launch') {
   // An untracked launcher (flatpak / custom / emulator) has no install state to read, so
-  // it counts as playable — its command is the only thing we know about it.
+  // it counts as playable, its command is the only thing we know about it.
   _lpGame = game; _lpIndex = 0;
   _lpList = states.map(st => ({ ...st, installed: st.installed !== false || st.store === null }));
   document.getElementById('lp-game-title').textContent = game.Game;
   const prompt = document.getElementById('lp-prompt');
   if (prompt) prompt.textContent = mode === 'install'
-    ? 'Available on multiple stores — choose one to install'
+    ? 'Available on multiple stores, choose one to install'
     : 'Available on multiple stores';
   renderLpList();
   document.getElementById('launcher-pick-backdrop').classList.remove('hidden');
@@ -1291,7 +1291,7 @@ window.api.onGameLaunchProgress?.(p => {
   if (p.done) {
     if (_sleepSetupSeen) {
       document.getElementById('sleep-bar').style.width = '100%';
-      document.getElementById('sleep-progress-msg').textContent = p.phase === 'running' ? 'Ready — starting the game…' : '';
+      document.getElementById('sleep-progress-msg').textContent = p.phase === 'running' ? 'Ready, starting the game…' : '';
       setTimeout(() => { wrap.style.display = 'none'; }, 2500);
     }
     _sleepSetupSeen = false;
@@ -1464,7 +1464,7 @@ function handleInput(action) {
     if (action === 'DOWN') { currentGameIndex = (currentGameIndex + 1) % filteredGames.length; playSound(sfxNav); updateGameSelection(); } else if (action === 'UP') { currentGameIndex = (currentGameIndex - 1 + filteredGames.length) % filteredGames.length; playSound(sfxNav); updateGameSelection(); } else if (action === 'L1' || action === 'R1') { jumpPages(action); } else if (action === 'L2') { currentGameIndex = 0; playSound(sfxNav); updateGameSelection(); } else if (action === 'R2') { currentGameIndex = Math.max(0, filteredGames.length - 1); playSound(sfxNav); updateGameSelection(); } else if (action === 'LEFT') { currentCategoryIndex = (currentCategoryIndex - 1 + categories.length) % categories.length; playSound(sfxNav); transitionToMain(); } else if (action === 'RIGHT') { currentCategoryIndex = (currentCategoryIndex + 1) % categories.length; playSound(sfxNav); transitionToMain(); } else if (action === 'BACK') { playSound(sfxBack); if (_homeOrigin) { transitionToHome(); } else { transitionToStart(); } } else if (action === 'START') { openOverlay("MAIN_MENU"); } else if (action === 'SELECT_BTN') { openOverlay("GAME_MENU"); } else if (action === 'Y_BUTTON') { openOSK('SEARCH', t('html.osk_search_title'), searchQuery); }
     else if (action === 'X_BUTTON') {
       // Swaps the trailer and the screenshots. ⚠️ Phase 4: with no trailer this used to open
-      // a YouTube search and download one — fetching media is the Manager's job now, so the
+      // a YouTube search and download one, fetching media is the Manager's job now, so the
       // button simply has nothing to swap.
       if (gameHasTrailer) { playSound(sfxSelect); mediaSwapped = !mediaSwapped; const md = document.getElementById('media-container'), mn = document.getElementById('mini-dock'), v = document.getElementById('video-player'), s = document.getElementById('screenshot-player'), wp = !v.paused; if (mediaSwapped) { md.appendChild(s); mn.appendChild(v); } else { md.appendChild(v); mn.appendChild(s); } if (wp) v.play().catch(e=>{}); }
     }
@@ -1551,7 +1551,7 @@ function handleInput(action) {
     else if (action === 'BACK') { playSound(sfxBack); hideInstallerConfirm(); }
     else if (action === 'Y_BUTTON') { hideInstallerConfirm(); openOSK('INSTALL_DIR', 'Install Directory', _installerInstallDir); }
   }
-  // Any button dismisses the launch-failure notice — it is read-only, and a state missing from
+  // Any button dismisses the launch-failure notice. It is read-only, and a state missing from
   // this router is indistinguishable from the whole app freezing.
   else if (gameState === 'LAUNCH_FAIL') { hideLaunchFailure(); }
   else if (gameState === 'LAUNCHER_PICK') {
@@ -1561,7 +1561,7 @@ function handleInput(action) {
       playSound(sfxSelect);
       const chosen = _lpList[_lpIndex]; const g = _lpGame; hideLauncherPicker();
       if (chosen.installed === false) {
-        // Uninstalled store — route to its installer rather than a dead launch.
+        // Uninstalled store, route to its installer rather than a dead launch.
         if (chosen.store === 'gog' || chosen.store === 'epic') showInstallerConfirm(g);
         else if (chosen.store === 'steam' && g.SteamAppID && String(g.SteamAppID) !== 'None') showSteamInstallConfirm(g);
         else enterSleepMode({ ...g, LaunchCommand: chosen.cmd });
@@ -1591,7 +1591,7 @@ function handleInput(action) {
     else if (action === 'DOWN')  { document.getElementById('cfgpd-text').scrollBy({ top: 140, behavior: 'smooth' }); }
   }
   else if (gameState === 'JUKEBOX' || gameState === 'JUKEBOX_OVERLAY') { handleJukeboxInput(action); }
-  // NOTE: every overlay-menu gameState must be listed here or it receives no input at all —
+  // NOTE: every overlay-menu gameState must be listed here or it receives no input at all,
   // the overlay draws, then d-pad/A/B do nothing and there is no way back out.
   else if (['OVERLAY', 'THEME_CATS', 'THEMES', 'FONTS', 'MUSIC_STYLE', 'GAMEPAD_MENU', 'WAKE_METHOD_MENU', 'START_SCREEN_MENU', 'LANGUAGE_MENU', 'BROWSE_MODE_MENU', 'GAMEPAGE_STYLE_MENU', 'GENRE_MENU', 'PLAYLIST_ASSIGN'].includes(gameState)) {
     if (action === 'DOWN') { currentOverlayIndex = nextOverlayIndex(currentOverlayIndex, 1); playSound(sfxNav); updateOverlaySelection(); } else if (action === 'UP') { currentOverlayIndex = nextOverlayIndex(currentOverlayIndex, -1); playSound(sfxNav); updateOverlaySelection(); }
@@ -1729,17 +1729,17 @@ function handleOSKInput(action) {
   }
 }
 
-// Steam installs go through the desktop Steam client — warn before leaving the couch UI.
+// Steam installs go through the desktop Steam client, warn before leaving the couch UI.
 let _steamInstallGame = null;
 function showSteamInstallConfirm(game) {
   _steamInstallGame = game;
   if (['START', 'HOME', 'MAIN', 'GALLERY', 'GALLERY_GAMEPAGE', 'Couch_FGP'].includes(gameState)) previousGameState = gameState;
   gameState = 'OVERLAY'; currentOverlayType = 'STEAM_INSTALL_CONFIRM'; setBlur(true); playSound(sfxSelect);
-  renderGenericOverlay('INSTALL VIA STEAM', ['§Steam will open on your desktop to install this game.', 'CONTINUE — OPEN STEAM', t('common.close_menu')]);
+  renderGenericOverlay('INSTALL VIA STEAM', ['§Steam will open on your desktop to install this game.', 'CONTINUE, OPEN STEAM', t('common.close_menu')]);
 }
 
 // Gallery sort (ported from the Manager's sort dropdown; same six modes).
-const Couch_SORTS = [['A — Z','alpha'],['Last Played','played'],['Favourites First','favs'],['Want to Play First','want'],['Recently Added','added'],['Scraped First','scraped']];
+const Couch_SORTS = [['A, Z','alpha'],['Last Played','played'],['Favourites First','favs'],['Want to Play First','want'],['Recently Added','added'],['Scraped First','scraped']];
 function sortCouchGallery(games) {
   const byTitle = (a, b) => String(a.Game || '').localeCompare(String(b.Game || ''), undefined, { sensitivity: 'base' });
   const scraped = g => !!(g.CoverArt || g.Description);
@@ -1848,7 +1848,7 @@ async function refreshDatabase() {
     }
   }
   // `categories` is dynamic now (playlists / Recently Imported), so if a refresh
-  // changed the set while we're on the start screen, rebuild it — otherwise the
+  // changed the set while we're on the start screen, rebuild it, otherwise the
   // carousel/list DOM desyncs from the category count.
   if (gameState === 'START') refreshStartScreen();
 }
@@ -1876,7 +1876,7 @@ function renderGenericOverlay(title, items, hintText = "") {
     if (isOverlaySection(item)) { div.className = 'overlay-section'; div.innerText = item.slice(1); }
     else {
       div.className = 'overlay-item'; div.innerText = item; div.id = `overlay-${i}`;
-      // In the font picker, show each face in itself — you pick a font by looking at it.
+      // In the font picker, show each face in itself, you pick a font by looking at it.
       if (gameState === 'FONTS') {
         const fam = UI_FONTS.find(f => fontLabel(f) === String(item).replace('★ ', ''));
         if (fam) div.style.fontFamily = `'${fam}', sans-serif`;
@@ -1937,7 +1937,7 @@ async function openOverlay(type) {
   else if (type === "GAME_MENU") {
     // ⚠️ Phase 4: this menu holds opinions about a game, not maintenance of it. Downloading
     // and deleting trailers, renaming, scraping, typing a launch command and uninstalling all
-    // moved to the Manager — they edit the library, and this is the face you use from a sofa.
+    // moved to the Manager, they edit the library, and this is the face you use from a sofa.
     const game = filteredGames[currentGameIndex];
     const favStr = game.FAV === "YES" ? t('game_menu.remove_fav') : t('game_menu.add_fav'); const wantStr = game.WANT_TO_PLAY === "YES" ? t('game_menu.remove_want') : t('game_menu.add_want'); const playedStr = game.kb_played == 1 ? 'UNMARK PLAYED' : 'MARK AS PLAYED';
     const storeL = (game.Store || '').toLowerCase();
@@ -2072,7 +2072,7 @@ function executeOverlayAction() {
   if (currentOverlayType === 'GALLERY_PL_MENU') {
     if (action === t('common.close_menu')) { closeOverlay(); return; }
     if (action === '+ NEW PLAYLIST') {
-      _plAssignGame = null;             // creating from the gallery — nothing to auto-assign
+      _plAssignGame = null;             // creating from the gallery, nothing to auto-assign
       _newPlFromGallery = true;
       document.getElementById('overlay-backdrop').classList.add('hidden');
       openOSK('NEW_GAME_PLAYLIST', 'NEW PLAYLIST NAME', '');
@@ -2086,7 +2086,7 @@ function executeOverlayAction() {
   }
 
   if (currentOverlayType === 'STEAM_INSTALL_CONFIRM') {
-    if (action === 'CONTINUE — OPEN STEAM') {
+    if (action === 'CONTINUE, OPEN STEAM') {
       const g = _steamInstallGame;
       const appid = g && g.SteamAppID ? String(g.SteamAppID).replace(/\.0+$/, '') : '';
       if (appid) window.api.openInstallUrl('steam://install/' + appid);
@@ -2236,7 +2236,7 @@ else if (action === t('menu.history')) { document.getElementById('overlay-backdr
       openOverlay("GAME_MENU"); return;
     }
     if (action === '+ NEW PLAYLIST') { _newPlFromGallery = false; document.getElementById('overlay-backdrop').classList.add('hidden'); openOSK('NEW_GAME_PLAYLIST', 'NEW PLAYLIST NAME', ''); return; }
-    // The first gamePlaylists.length items map 1:1 to gamePlaylists — toggle by index
+    // The first gamePlaylists.length items map 1:1 to gamePlaylists, toggle by index
     // rather than parsing the (★-prefixed) label.
     if (currentOverlayIndex < gamePlaylists.length && _plAssignGame) {
       const pl = gamePlaylists[currentOverlayIndex];
@@ -2282,7 +2282,7 @@ function openKeybindingsOverlay() {
   }
   const kb = document.getElementById('gb-keyboard');
   if (kb) {
-    kb.innerHTML = `<strong>[ENTER] / [SPACE]</strong> - ${t('keybindings.kb_select')}<br><strong>[ESC] / [BKSP]</strong> - ${t('keybindings.kb_back')}<br><strong>[ARROWS]</strong> - ${t('keybindings.kb_navigate')}<br><strong>[PG UP] / [PG DN]</strong> - ${t('keybindings.kb_page')}<br><strong>[ , ] / [ . ]</strong> - ${t('keybindings.kb_prev_next')}<br><strong>[TAB]</strong> - ${t('keybindings.kb_options')}<br><strong>[M]</strong> - ${t('keybindings.kb_menu')}<br><strong>[X]</strong> - ${t('keybindings.kb_media')}<br><strong>[Y]</strong> - ${t('keybindings.kb_search')}`;
+    kb.innerHTML = `<strong>[ENTER] / [SPACE]</strong> - ${t('keybindings.kb_select')}<br><strong>[ESC] / [BKSP]</strong> - ${t('keybindings.kb_back')}<br><strong>[ARROWS]</strong> - ${t('keybindings.kb_navigate')}<br><strong>[PG UP] / [PG DN]</strong> - ${t('keybindings.kb_page')}<br><strong>[, ] / [ . ]</strong> - ${t('keybindings.kb_prev_next')}<br><strong>[TAB]</strong> - ${t('keybindings.kb_options')}<br><strong>[M]</strong> - ${t('keybindings.kb_menu')}<br><strong>[X]</strong> - ${t('keybindings.kb_media')}<br><strong>[Y]</strong> - ${t('keybindings.kb_search')}`;
   }
   bd.classList.remove('hidden');
 }
@@ -2341,7 +2341,7 @@ function openGenreFilterMenu() {
   renderGenericOverlay('FILTER BY GENRE', items);
 }
 
-// Map a chosen menu row back to its slug — labels carry a star and a count.
+// Map a chosen menu row back to its slug, labels carry a star and a count.
 function _genreSlugFromMenuItem(item) {
   const clean = String(item).replace('★ ', '').replace(/\s*\(\d+\)\s*$/, '').trim();
   return genreCats.find(g => g.label === clean)?.slug || null;
@@ -2358,7 +2358,7 @@ function applyGenreFilter(slug) {
   refreshGenreTag();
 }
 
-// The headers are painted on view transitions, and changing the filter is not one —
+// The headers are painted on view transitions, and changing the filter is not one,
 // without this the badge would not appear until the next category change.
 function refreshGenreTag() {
   const tag = document.getElementById('gallery-genre-tag');
@@ -2377,7 +2377,7 @@ function refreshGenreTag() {
 
 function openThemeCategoryMenu() { gameState = 'THEME_CATS'; const follow = (audioCfg.themeSource === 'MANAGER' ? '★ ' : '') + FOLLOW_MANAGER_LABEL; let cats = [follow, '§BY CATEGORY', ...Object.keys(THEME_CATEGORIES)]; cats.push(t('common.back_to_menu')); renderGenericOverlay("THEME CATEGORIES", cats); }
 function openThemeMenu(category) { gameState = 'THEMES'; activeThemeCategory = category; let themes = THEME_CATEGORIES[category].map(th => th === activeTheme ? "★ " + th : th); themes.push(t('common.back')); renderGenericOverlay(category.toUpperCase(), themes); }
-// Interface Font — same shape as the theme picker: "follow The Manager" on top, then the faces.
+// Interface Font, same shape as the theme picker: "follow The Manager" on top, then the faces.
 // The starred row is whichever is actually in force, so the current font is always visible.
 function openFontMenu() {
   gameState = 'FONTS';
@@ -2437,7 +2437,7 @@ function updateHeroMosaic(catName) { fillMosaicIn(catName, 'hero-icon', 'hero-mo
 function transitionToStart() {
   gameState = 'START'; clearMediaLoaders();
   clearGalleryMedia();
-  _homeOrigin = false;   // user is browsing the library proper now — B follows normal flow
+  _homeOrigin = false;   // user is browsing the library proper now, B follows normal flow
   document.getElementById('splash-screen').classList.add('hidden');
   document.getElementById('main-screen').classList.add('hidden');
   document.getElementById('gallery-screen').classList.add('hidden');
@@ -2746,7 +2746,7 @@ function formatJbTime(sec) {
  * the element that is actually producing sound.
  *
  * ⚠️ createMediaElementSource can be called ONCE per element, and it REROUTES that
- * element's audio through the graph — forget to connect to the destination and the music
+ * element's audio through the graph, forget to connect to the destination and the music
  * goes silent. Both are why the node is created lazily, kept in a module-level handle, and
  * always wired source → analyser → destination.
  *
@@ -2764,7 +2764,7 @@ function _jbEnsureAnalyser() {
         _jbAudioCtx = new Ctx();
         _jbSourceNode = _jbAudioCtx.createMediaElementSource(bgmAudio);
         _jbAnalyser = _jbAudioCtx.createAnalyser();
-        _jbAnalyser.fftSize = 128;              // 64 bins — plenty at TV distance
+        _jbAnalyser.fftSize = 128;              // 64 bins, plenty at TV distance
         _jbAnalyser.smoothingTimeConstant = 0.78;
         _jbSourceNode.connect(_jbAnalyser);
         _jbAnalyser.connect(_jbAudioCtx.destination);   // ⚠️ or the music stops
@@ -3102,7 +3102,7 @@ function toggleJbFullscreen() {
   if (!fsView) {
     fsView = document.createElement('div');
     fsView.id = 'jb-fs-view';
-    // ⚠️ Phase 4 W4: the same Cliamp identity as the jukebox behind it — flat ground,
+    // ⚠️ Phase 4 W4: the same Cliamp identity as the jukebox behind it, flat ground,
     // monospace, box-drawing rules, a real spectrum. The three blurred "xmb-wave" gradients
     // it replaces were a PS3 pastiche sitting inside a terminal-styled player.
     fsView.style.cssText = "position: absolute; top:0; left:0; width:100%; height:100%; box-sizing: border-box; z-index: 50; display: flex; flex-direction: column; justify-content: center; background: var(--bg); padding: clamp(28px, 5vw, 90px); font-family: 'JetBrains Mono', 'Fira Code', ui-monospace, monospace;";
@@ -3112,8 +3112,8 @@ function toggleJbFullscreen() {
     <div style="display: flex; align-items: center; gap: clamp(24px, 3vw, 56px); width: 100%; box-sizing: border-box; min-width: 0;">
       <img id="jb-fs-cover" src="" style="width: clamp(180px, 20vw, 340px); aspect-ratio: 1; border: 1px solid var(--border_solid); background: rgba(0,0,0,0.5); object-fit: cover; flex: none;">
       <div style="flex: 1; min-width: 0;">
-        <div id="jb-fs-title" style="font-size: clamp(30px, 4vw, 68px); font-weight: 700; color: var(--text_main); letter-spacing: -0.01em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">—</div>
-        <div id="jb-fs-artist" style="font-size: clamp(16px, 1.8vw, 32px); color: var(--accent); letter-spacing: 0.08em; margin-top: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">—</div>
+        <div id="jb-fs-title" style="font-size: clamp(30px, 4vw, 68px); font-weight: 700; color: var(--text_main); letter-spacing: -0.01em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">-</div>
+        <div id="jb-fs-artist" style="font-size: clamp(16px, 1.8vw, 32px); color: var(--accent); letter-spacing: 0.08em; margin-top: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">-</div>
 
         <div style="height: 1px; background: var(--text_dim); opacity: 0.25; margin: clamp(18px, 3vh, 44px) 0 clamp(12px, 2vh, 26px);"></div>
 
@@ -3516,7 +3516,7 @@ function updateGallerySelection(animate = true) {
 
   if (scroller) {
     if (inRecentSection || atVeryTopNoRecent) {
-      // Navigated to the recent section or top — scroll smoothly to reveal section header
+      // Navigated to the recent section or top, scroll smoothly to reveal section header
       if (animate) scroller.scrollTo({ top: 0, behavior: 'smooth' });
       else scroller.scrollTop = 0;
     } else {
@@ -3536,7 +3536,7 @@ function updateGallerySelection(animate = true) {
   if (game) {
     updateGalleryBg(game);
   } else {
-    // Empty category — clear every hero element so no stale image lingers
+    // Empty category, clear every hero element so no stale image lingers
     const heroImg = document.getElementById('gallery-hero-img');
     if (heroImg) { heroImg.src = ''; heroImg.style.display = 'none'; }
     const heroLogo = document.getElementById('gallery-hero-logo');
@@ -3700,7 +3700,7 @@ function openCouchAchievementsOverlay() {
   const game    = galleryCurrentGame;
   const isMulti = Object.keys(_cAchStores).length > 1;
   document.getElementById('couch-ach-game-title').textContent =
-    isMulti ? `${game?.Game || ''} — ${_cAchCurrentLabel}` : (game?.Game || '');
+    isMulti ? `${game?.Game || ''}, ${_cAchCurrentLabel}` : (game?.Game || '');
   _cAchUpdateHint();
 
   const total    = _cAchAll.length;
@@ -3752,7 +3752,7 @@ function cAchSwitchStore(dir) {
   _cAchCurrentLabel = storeLabels[(idx + dir + storeLabels.length) % storeLabels.length];
   _cAchAll = _cAchStores[_cAchCurrentLabel];
   const game = galleryCurrentGame;
-  document.getElementById('couch-ach-game-title').textContent = `${game?.Game || ''} — ${_cAchCurrentLabel}`;
+  document.getElementById('couch-ach-game-title').textContent = `${game?.Game || ''}, ${_cAchCurrentLabel}`;
   const total    = _cAchAll.length;
   const unlocked = _cAchAll.filter(a => a.date_unlocked).length;
   const pct      = total ? Math.round(unlocked / total * 100) : 0;
@@ -3865,7 +3865,7 @@ function closeGalleryGamepage() {
   ggpSlideshowOpen = false;
   clearGalleryMedia();
   // Re-render the grid so changes made on the gamepage (install→play, fav/want/played,
-  // playlist membership) are reflected immediately — keep the user on the same game.
+  // playlist membership) are reflected immediately, keep the user on the same game.
   const keepId = galleryCurrentGame ? galleryCurrentGame.id : null;
   applyGalleryFilter();
   if (keepId != null) {
@@ -3892,7 +3892,7 @@ function galleryGamepageNavigate(delta) {
 }
 
 function updateGalleryGamepageContent(game) {
-  // Hero image — natural proportions, no Ken Burns
+  // Hero image, natural proportions, no Ken Burns
   const heroSrc = game.HeroArt ? convertSafePath(game.HeroArt)
     : game.Screenshot ? convertSafePath(String(game.Screenshot).split('|')[0])
     : game.CoverArt ? convertSafePath(game.CoverArt) : '';
@@ -3928,7 +3928,7 @@ function updateGalleryGamepageContent(game) {
   const oldBadge = document.getElementById('ggp-store-badge');
   if (oldBadge) oldBadge.style.display = 'none';
 
-  // Store/category logo — top-left corner of the hero
+  // Store/category logo, top-left corner of the hero
   const cornerL = document.getElementById('ggp-corner-logo');
   if (cornerL) {
     const lg = getGalleryStoreLogo((game.Store || '').split(',')[0]);
@@ -3991,7 +3991,7 @@ function updateGalleryGamepageContent(game) {
   ggpBuildButtonList();
   ggpUpdateButtonFocus();
 
-  // Stats — vertical list
+  // Stats, vertical list
   const statsEl = document.getElementById('ggp-stats-row');
   if (statsEl) {
     const stats = [
@@ -4058,7 +4058,7 @@ function updateGalleryGamepageContent(game) {
 
   loadCouchAchievements(game);
 
-  // Screenshots banner — Ken Burns cycling like Clarity
+  // Screenshots banner, Ken Burns cycling like Clarity
   galleryScreenshots = game.Screenshot ? String(game.Screenshot).split('|').filter(s => s.trim()) : [];
   galleryScreenIndex = 0;
   const ssBanner = document.getElementById('ggp-ss-banner');
@@ -4174,7 +4174,7 @@ function ggpActivateButton() {
       previousGameState = 'GALLERY_GAMEPAGE';
       currentOverlayType = 'NEEDS_MANAGER';
       renderGenericOverlay('SET THIS UP IN THE MANAGER', ['OK'],
-        'This game has no launch command yet. Open Clarity on your desk and add it there — ' +
+        'This game has no launch command yet. Open Clarity on your desk and add it there, ' +
         'Couch plays what the Manager has set up.');
     } else if (playBtnEl?.dataset?.installMode === '1') {
       tryInstall(game, () => {
@@ -4311,7 +4311,7 @@ function openCfgpDescOverlay() {
   playSound(sfxSelect);
   gameState = 'CFGP_DESC';
   document.getElementById('cfgpd-title').textContent = game.Game || '';
-  // Short description first, then the full Steam HTML — exactly like the classic gamepage.
+  // Short description first, then the full Steam HTML, exactly like the classic gamepage.
   const txt = document.getElementById('cfgpd-text');
   txt.innerHTML = '';
   if (desc) { const d = document.createElement('div'); d.className = 'cfgpd-short'; d.textContent = desc; txt.appendChild(d); }
@@ -4348,7 +4348,7 @@ async function openCouchFlatGamepage(game) {
   // Store tag + title
   document.getElementById('cfgp-store-tag').textContent =
     (game.Store || '').split(',')[0].trim().toUpperCase();
-  // Store/category logo — bottom-right corner
+  // Store/category logo, bottom-right corner
   const _cCorner = document.getElementById('cfgp-corner-logo');
   if (_cCorner) {
     const lg = getGalleryStoreLogo((game.Store || '').split(',')[0]);
@@ -4370,7 +4370,7 @@ async function openCouchFlatGamepage(game) {
   if (game.METACRITIC) chips.push(['METACRITIC', game.METACRITIC]);
   if (game.ProtonTier) chips.push(['PROTONDB', String(game.ProtonTier).toUpperCase()]);
   meta.innerHTML = chips.map(([l, v]) => `<div class="cfgp-chip"><div class="cl">${_che(l)}</div><div class="cv">${_che(String(v))}</div></div>`).join('');
-  // Similar games — single dim line under the description
+  // Similar games, single dim line under the description
   const simEl = document.getElementById('cfgp-similar');
   if (simEl) {
     const sim = (game.SimilarGames || '').trim();
@@ -4437,7 +4437,7 @@ async function openCouchFlatGamepage(game) {
   // Fav / Want buttons
   _cfgpUpdateBadges(game);
 
-  // Play / Install button — same logic as the classic gamepage
+  // Play / Install button, same logic as the classic gamepage
   const playBtn = document.getElementById('cfgp-btn-play');
   const _pHasCmd = game.LaunchCommand && String(game.LaunchCommand).trim();
   const _pInst2 = game.Installed == null || game.Installed == 1;
@@ -4538,7 +4538,7 @@ function _cfgpActivateBtn() {
       previousGameState = 'Couch_FGP';
       currentOverlayType = 'NEEDS_MANAGER';
       renderGenericOverlay('SET THIS UP IN THE MANAGER', ['OK'],
-        'This game has no launch command yet. Open Clarity on your desk and add it there — ' +
+        'This game has no launch command yet. Open Clarity on your desk and add it there, ' +
         'Couch plays what the Manager has set up.');
     } else if (mode === '1') {
       tryInstall(game, () => {
@@ -4551,7 +4551,7 @@ function _cfgpActivateBtn() {
   }
 }
 
-// Keyboard/gamepad handler for Couch_FGP state — wired into the existing input handler
+// Keyboard/gamepad handler for Couch_FGP state, wired into the existing input handler
 // ══════════════════════════════════════════════════════════════════════════
 // BROWSE MODE MENU
 // ══════════════════════════════════════════════════════════════════════════
@@ -4642,7 +4642,7 @@ function showInstallerConfirm(game) {
         if (!_sz) return;
 
         // ⚠️ The size comes back null far more often because the store is signed out than
-        // because anything is broken — and "Size info unavailable" told you neither. Say which
+        // because anything is broken, and "Size info unavailable" told you neither. Say which
         // it is, and where it is fixed. Couch never offers the login itself.
         if (!info) {
             const store = (game.Store || '').toLowerCase().includes('epic') ? 'Epic' : 'GOG';
@@ -4668,7 +4668,7 @@ function showInstallerConfirm(game) {
             // install ran until the disk filled. If it cannot fit, it does not start.
             if (need && free < need) {
                 _gcBlocked = 'Not enough space';
-                _sz.innerHTML = `${parts.join('   ·   ')}<br><span style="color:#ef9a9a;">Only ${_fmtB(free)} free — this needs ${_fmtB(need)}.</span>` +
+                _sz.innerHTML = `${parts.join('   ·   ')}<br><span style="color:#ef9a9a;">Only ${_fmtB(free)} free. This needs ${_fmtB(need)}.</span>` +
                     `<br><span style="color:var(--text_dim);">Press [ Y ] to install somewhere else.</span>`;
                 _gcPaintActions();
                 return;
@@ -4703,7 +4703,7 @@ function showLaunchFailure(info) {
     document.getElementById('lf-game-title').textContent = info.title || '';
     document.getElementById('lf-message').textContent    = info.message || 'The game could not be started.';
     document.getElementById('lf-hint').textContent = isProton
-        ? 'Windows games need Proton, a compatibility layer. Open Clarity on the desktop — it can install GE-Proton for you in one click.'
+        ? 'Windows games need Proton, a compatibility layer. Open Clarity on the desktop. It can install GE-Proton for you in one click.'
         : 'Open Clarity on the desktop for details, or try "Play with Log" there to see what happened.';
     // Exiting sleep/"now playing" mode can also set gameState, so remember where we came from
     // only the first time this opens.
@@ -4747,7 +4747,7 @@ function hideInstallerProgress() {
 }
 
 // Percent over elapsed time. ⚠️ Deliberately crude: the engine reports no rate, and a
-// download's speed is not steady enough for a precise figure to stay true — so this rounds
+// download's speed is not steady enough for a precise figure to stay true, so this rounds
 // hard and disappears entirely until there is enough progress to mean anything.
 function _installEta(percent) {
     if (!_gpStarted || !percent || percent < 3 || percent >= 100) return '';
@@ -4782,7 +4782,7 @@ async function pollInstallerProgress(isUninstall) {
             });
         } else {
             // ⚠️ Anything that is not 'done' is a failure, and it used to leave the error on
-            // screen with the only hint hidden — no percentage, no cause, no way out stated.
+            // screen with the only hint hidden, no percentage, no cause, no way out stated.
             document.getElementById('gp-message').innerHTML =
                 escHtmlCouch(p.message || 'The install stopped.') +
                 '<br><span style="color:var(--text_dim);">Nothing was installed. Press [ B ] to close, or set it up from the Manager on your desk.</span>';
@@ -4798,7 +4798,7 @@ function escHtmlCouch(v) {
 }
 
 // Every way an install can fail ends here, saying what happened and what to do about it.
-// ⚠️ There is no "open Installer" any more — Installer lost its window in Phase 2B — so an
+// ⚠️ There is no "open Installer" any more, Installer lost its window in Phase 2B, so an
 // instruction to open it is one the user cannot follow.
 function showInstallFailure(game, headline, detail) {
     hideInstallerConfirm();
@@ -4818,7 +4818,7 @@ async function triggerInstallerInstall() {
     const storeL = (game.Store || '').toLowerCase();
     const store = storeL.includes('gog') ? 'gog' : 'epic';
 
-    // app_id may be missing for older/imported rows — extract it from the LaunchCommand
+    // app_id may be missing for older/imported rows, extract it from the LaunchCommand
     let appId = game.app_id;
     if (!appId && game.LaunchCommand) {
         const m = game.LaunchCommand.match(/installer:\/\/launch\/(?:gog|epic)\/([^\s"]+)/i);

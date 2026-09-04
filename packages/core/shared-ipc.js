@@ -1,6 +1,6 @@
 'use strict';
 /*
- * @clarity/core — shared IPC handlers that are byte-identical across the
+ * @clarity/core, shared IPC handlers that are byte-identical across the
  * suite's faces (Manager today; Couch in Phase 3). Single source of truth so a
  * fix here can never drift between faces.
  *
@@ -30,13 +30,13 @@ function registerSharedHandlers(ctx) {
     const { db, baseDir, trailersDir, ytDlpPath, ytDlpConfigPath, ffmpegPath,
             getBeautifulName, getOldCrushedName } = ctx;
 
-    // Genre tables live here rather than in each face's migration block — both faces
+    // Genre tables live here rather than in each face's migration block, both faces
     // share this DB and the schema must not drift between them.
     genreStore.ensureGenreSchema(db);
     smartPlaylists.ensureSmartSchema(db);
     manuals.ensureManualSchema(db);
 
-    // Wishlist of UN-OWNED games (Phase 2) — distinct from WANT_TO_PLAY (owned).
+    // Wishlist of UN-OWNED games (Phase 2), distinct from WANT_TO_PLAY (owned).
     try { db.prepare(`CREATE TABLE IF NOT EXISTS wishlist (id INTEGER PRIMARY KEY AUTOINCREMENT, itad_id TEXT UNIQUE, title TEXT, slug TEXT, cover TEXT, appid TEXT, added_at INTEGER DEFAULT 0, target_price REAL)`).run(); } catch (e) {}
 
     // Tiny TTL memo so the online Home widgets don't refetch on every Home open
@@ -50,7 +50,7 @@ function registerSharedHandlers(ctx) {
 
     ipcMain.handle('get-basedir', () => baseDir);
 
-    // Suite version (package.json) — shown in the About dialog of every face.
+    // Suite version (package.json), shown in the About dialog of every face.
     ipcMain.handle('get-app-version', () => { try { return require('electron').app.getVersion(); } catch { return ''; } });
 
     ipcMain.handle('get-games', () => {
@@ -74,7 +74,7 @@ function registerSharedHandlers(ctx) {
         };
     });
 
-    // Manual override from the edit dialog — locks the row against future scans.
+    // Manual override from the edit dialog, locks the row against future scans.
     // slugs[0] is the primary. An empty list clears the override and unlocks.
     ipcMain.handle('set-game-genres', (e, gameId, slugs) => {
         if (!db) return false;
@@ -107,7 +107,7 @@ function registerSharedHandlers(ctx) {
     // Shared rather than Manager-only, and that is a correctness matter, not tidiness:
     // Couch mirrors the Manager's theme by name when themeSource is MANAGER, resolving it
     // against its OWN theme table. A theme the Manager knows about and Couch does not
-    // resolves to null there and the couch face silently falls back to its default — so a
+    // resolves to null there and the couch face silently falls back to its default, so a
     // user matching their desktop on one face would stop matching it on the other.
     //
     // ⚠️ Null on macOS, and self-gating on Linux: on a host that is not Omarchy this
@@ -130,7 +130,7 @@ function registerSharedHandlers(ctx) {
 
     ipcMain.handle('set-setting', (e, key, val) => { try { db.prepare("INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)").run(key, val); return true; } catch(e) { return false; } });
 
-    // ── Home dashboard (Phase 1) — one snapshot, rendered by both faces' Home screens. ──
+    // ── Home dashboard (Phase 1), one snapshot, rendered by both faces' Home screens. ──
     ipcMain.handle('get-home-stats', (e, opts) => {
         if (!db) return null;
         try {
@@ -149,7 +149,7 @@ function registerSharedHandlers(ctx) {
         catch (err) { return null; }
     });
 
-    // ── Wishlist + IsThereAnyDeal deals (Phase 2) — all opt-in (no key → no network). ──
+    // ── Wishlist + IsThereAnyDeal deals (Phase 2), all opt-in (no key → no network). ──
     const _itadKey = () => { try { return db.prepare("SELECT value FROM settings WHERE key='itad_api_key'").get()?.value || ''; } catch { return ''; } };
     const _itadCountry = () => { try { return db.prepare("SELECT value FROM settings WHERE key='itad_country'").get()?.value || 'US'; } catch { return 'US'; } };
 
@@ -168,7 +168,7 @@ function registerSharedHandlers(ctx) {
             return { ok: true };
         } catch (err) { return { ok: false, error: err.message }; }
     });
-    // List + live prices/historical-low (network — only if a key is set). Cached ~20 min.
+    // List + live prices/historical-low (network, only if a key is set). Cached ~20 min.
     ipcMain.handle('wishlist-deals', () => _cached('wishlist:' + _itadCountry(), 20 * 60000, async () => {
         let rows = []; try { rows = db.prepare("SELECT * FROM wishlist ORDER BY added_at DESC").all(); } catch {}
         const key = _itadKey();
@@ -179,7 +179,7 @@ function registerSharedHandlers(ctx) {
     // Free games this week (Epic public endpoint, no key). Cached ~30 min.
     ipcMain.handle('free-games', () => _cached('free:' + _itadCountry(), 30 * 60000, async () => { try { return await freebies.freeGames(_itadCountry()); } catch { return []; } }));
 
-    // Gaming news (RSS/Atom) — sources from `news_sources` or curated defaults. Cached ~15 min (key = sources).
+    // Gaming news (RSS/Atom), sources from `news_sources` or curated defaults. Cached ~15 min (key = sources).
     ipcMain.handle('get-news', () => {
         let urls = [];
         try { const raw = db.prepare("SELECT value FROM settings WHERE key='news_sources'").get()?.value; if (raw) urls = raw.split(/[\n,]+/).map(s => s.trim()).filter(Boolean); } catch {}
@@ -187,7 +187,7 @@ function registerSharedHandlers(ctx) {
         return _cached('news:' + urls.join('|'), 15 * 60000, () => rss.fetchNews(urls, 14).catch(() => []));
     });
 
-    // Raw page HTML for the in-app TV Reader (Couch) — extraction/sanitizing happens in
+    // Raw page HTML for the in-app TV Reader (Couch), extraction/sanitizing happens in
     // the renderer via DOMParser, so main stays DOM-free. Same fetch path as rss/freebies.
     ipcMain.handle('fetch-article', async (_, url) => {
         try {
@@ -210,10 +210,10 @@ function registerSharedHandlers(ctx) {
         try { return await steamnews.gameNews(targets, { limit: 24, total: 14 }); } catch { return []; }
     }));
 
-    // Achievement completion — cached scan result (the scan itself runs in the Manager).
+    // Achievement completion, cached scan result (the scan itself runs in the Manager).
     ipcMain.handle('ach-get', () => { try { const raw = db.prepare("SELECT value FROM settings WHERE key='ach_stats'").get()?.value; return raw ? JSON.parse(raw) : null; } catch { return null; } });
 
-    // ProtonDB tier watch — last cached result + an on-demand library sweep.
+    // ProtonDB tier watch, last cached result + an on-demand library sweep.
     ipcMain.handle('proton-watch-get', () => { try { const raw = db.prepare("SELECT value FROM settings WHERE key='proton_watch'").get()?.value; return raw ? JSON.parse(raw) : null; } catch { return null; } });
     ipcMain.handle('proton-check', async () => {
         let games = [];

@@ -3,14 +3,14 @@
 // downloaded. Deliberately a catalogue of *specific* recipes rather than one clever
 // generic importer: the folders these projects ship are not consistent enough for a
 // heuristic to get right, and getting it wrong is invisible. Brutal Doom is the example
-// that settles the argument — the .bat beside gzdoom.exe carries the whole mod command
+// that settles the argument, the .bat beside gzdoom.exe carries the whole mod command
 // line, so a generic "find the exe" importer launches vanilla Doom and looks like it
 // worked.
 //
 // Two halves, and only the second one is ours to be clever about:
-//   1. The port itself — the user downloads it. We say exactly where to get it and what
+//   1. The port itself, the user downloads it. We say exactly where to get it and what
 //      the file is called, then identify and unpack whatever they hand us.
-//   2. The game data — this is the part worth automating. A source port is useless
+//   2. The game data. This is the part worth automating. A source port is useless
 //      without id1/pak0.pak, and the user very likely already owns Quake in the library
 //      CN is already managing. We find it and wire it up rather than asking.
 'use strict';
@@ -32,11 +32,11 @@ const RECIPES = [
         title: 'Ironwail',
         kind: 'Source port',
         game: 'Quake',
-        blurb: 'A fast, modern Quake engine — high frame rates, widescreen, and the original look kept intact.',
+        blurb: 'A fast, modern Quake engine, high frame rates, widescreen, and the original look kept intact.',
         source: {
-            name: 'GitHub — andrei-drexler/ironwail',
+            name: 'GitHub, andrei-drexler/ironwail',
             url: 'https://github.com/andrei-drexler/ironwail/releases/latest',
-            hint: 'On the Releases page, download the Windows zip — it is named like ironwail-0.8.2-win64.zip.',
+            hint: 'On the Releases page, download the Windows zip. It is named like ironwail-0.8.2-win64.zip.',
         },
         archive: /ironwail.*\.(zip|7z)$/i,
         samples: ['ironwail-0.8.2-win64.zip'],
@@ -52,9 +52,9 @@ const RECIPES = [
         game: 'Quake',
         blurb: 'Vulkan-based Quake port with modern rendering, water warp and scaling fixes.',
         source: {
-            name: 'GitHub — Novum/vkQuake',
+            name: 'GitHub, Novum/vkQuake',
             url: 'https://github.com/Novum/vkQuake/releases/latest',
-            hint: 'On the Releases page, download the Windows zip — it is named like vkQuake-1.35.0_windows_x64.zip.',
+            hint: 'On the Releases page, download the Windows zip. It is named like vkQuake-1.35.0_windows_x64.zip.',
         },
         archive: /vkquake(?![-_]rt).*\.(zip|7z)$/i,
         samples: ['vkQuake-1.35.0_windows_x64.zip'],
@@ -70,9 +70,9 @@ const RECIPES = [
         game: 'Quake',
         blurb: 'Quake with full path tracing. Wants a ray-tracing capable GPU.',
         source: {
-            name: 'GitHub — sultim-t/vkquake-rt',
+            name: 'GitHub, sultim-t/vkquake-rt',
             url: 'https://github.com/sultim-t/vkquake-rt/releases/latest',
-            hint: 'On the Releases page, download the Windows zip — it is named like quake-rt-1_0_1.zip.',
+            hint: 'On the Releases page, download the Windows zip. It is named like quake-rt-1_0_1.zip.',
         },
         archive: /(quake[-_]rt|vkquake[-_]rt).*\.(zip|7z)$/i,
         samples: ['quake-rt-1_0_1.zip'],
@@ -86,11 +86,11 @@ const RECIPES = [
         title: 'GZDoom',
         kind: 'Source port',
         game: 'Doom',
-        blurb: 'The Doom engine everything else is built on — mouselook, high resolutions, and the engine nearly every Doom mod expects.',
+        blurb: 'The Doom engine everything else is built on, mouselook, high resolutions, and the engine nearly every Doom mod expects.',
         source: {
-            name: 'GitHub — ZDoom/gzdoom',
+            name: 'GitHub, ZDoom/gzdoom',
             url: 'https://github.com/ZDoom/gzdoom/releases/latest',
-            hint: 'On the Releases page, download the Windows zip — it is named like gzdoom-4-14-2-windows.zip.',
+            hint: 'On the Releases page, download the Windows zip. It is named like gzdoom-4-14-2-windows.zip.',
         },
         archive: /gzdoom.*\.(zip|7z)$/i,
         samples: ['gzdoom-4-14-2-windows.zip'],
@@ -104,11 +104,11 @@ const RECIPES = [
         title: 'UZDoom',
         kind: 'Source port',
         game: 'Doom',
-        blurb: 'A fork of GZDoom made in late 2025, continuing the same 4.x line. Same command line and the same mods — GZDoom still has the larger ecosystem, so either works.',
+        blurb: 'A fork of GZDoom made in late 2025, continuing the same 4.x line. Same command line and the same mods, GZDoom still has the larger ecosystem, so either works.',
         source: {
-            name: 'GitHub — UZDoom/UZDoom',
+            name: 'GitHub, UZDoom/UZDoom',
             url: 'https://github.com/UZDoom/uzdoom/releases/latest',
-            hint: 'On the Releases page, download the Windows zip — it is named like Windows-UZDoom-4.14.3.zip.',
+            hint: 'On the Releases page, download the Windows zip. It is named like Windows-UZDoom-4.14.3.zip.',
         },
         archive: /uzdoom.*\.(zip|7z)$/i,
         samples: ['Windows-UZDoom-4.14.3.zip'],
@@ -122,9 +122,9 @@ const RECIPES = [
         title: 'Mini Doom 2',
         kind: 'Fan game',
         game: '',
-        blurb: 'A standalone Doom-flavoured action platformer. Complete in itself — no Doom data needed.',
+        blurb: 'A standalone Doom-flavoured action platformer. Complete in itself, no Doom data needed.',
         source: {
-            name: 'ModDB — Mini Doom 2',
+            name: 'ModDB, Mini Doom 2',
             url: 'https://www.moddb.com/games/mini-doom-2/downloads',
             hint: 'Download the Windows build; the file is named like miniDoom2 v3-1.zip.',
         },
@@ -140,9 +140,9 @@ const RECIPES = [
         title: 'Mini Doom',
         kind: 'Fan game',
         game: '',
-        blurb: 'The original standalone Mini Doom. Complete in itself — no Doom data needed.',
+        blurb: 'The original standalone Mini Doom. Complete in itself, no Doom data needed.',
         source: {
-            name: 'ModDB — MiniDoom',
+            name: 'ModDB, MiniDoom',
             url: 'https://www.moddb.com/games/mini-doom/downloads',
             hint: 'Download the Windows build; the file is named like MiniDoom_v1_3.zip.',
         },
@@ -163,9 +163,9 @@ const RECIPES = [
         game: 'Wolfenstein 3D',
         blurb: 'Wolfenstein 3D and Spear of Destiny with modern resolutions, mouselook and mod support, built on the ZDoom lineage.',
         source: {
-            name: 'maniacsvault.net — ECWolf',
+            name: 'maniacsvault.net, ECWolf',
             url: 'https://maniacsvault.net/ecwolf/download.php',
-            hint: 'Download the Windows x86-64 zip — it is named like ecwolf-1.4.1_x64.zip.',
+            hint: 'Download the Windows x86-64 zip. It is named like ecwolf-1.4.1_x64.zip.',
         },
         archive: /ecwolf.*\.(zip|7z)$/i,
         samples: ['ecwolf-1.4.1_x64.zip'],
@@ -179,17 +179,17 @@ const RECIPES = [
         title: 'Raze',
         kind: 'Source port',
         game: 'Build engine games',
-        blurb: 'One engine for Duke Nukem 3D, Blood, Shadow Warrior, Redneck Rampage and Powerslave — from the GZDoom team. Install it once; the games below then install separately, each with its own entry. Opening this entry shows Raze\'s game picker once you have more than one Build game — with a single one it just starts it, and holding Shift as it launches forces the picker. Raze\'s settings live in the in-game menu, reachable from any of the games.',
+        blurb: 'One engine for Duke Nukem 3D, Blood, Shadow Warrior, Redneck Rampage and Powerslave, from the GZDoom team. Install it once; the games below then install separately, each with its own entry. Opening this entry shows Raze\'s game picker once you have more than one Build game, with a single one it just starts it, and holding Shift as it launches forces the picker. Raze\'s settings live in the in-game menu, reachable from any of the games.',
         source: {
-            name: 'GitHub — ZDoom/Raze',
+            name: 'GitHub, ZDoom/Raze',
             url: 'https://github.com/ZDoom/Raze/releases/latest',
-            hint: 'On the Releases page, download the Windows zip — it is named like Raze-1.11.0b-windows.zip.',
+            hint: 'On the Releases page, download the Windows zip. It is named like Raze-1.11.0b-windows.zip.',
         },
         archive: /raze.*\.(zip|7z)$/i,
         samples: ['Raze-1.11.0b-windows.zip'],
         dirName: 'Raze',
         entry: { exe: /^raze\.exe$/i, platform: 'windows' },
-        // No data. The engine entry is the engine — clicking it opens Raze's own front end,
+        // No data. The engine entry is the engine, clicking it opens Raze's own front end,
         // where the options live. Games are separate entries (see BUILD_GAMES below), each
         // in its own folder, which is also the only way two Build games can coexist without
         // fighting over tiles000.art. Linking data here made "Raze" boot straight into
@@ -204,9 +204,9 @@ const RECIPES = [
         game: 'Build engine games',
         blurb: 'Java port covering the Build games Raze does not, including Witchaven I and II, TekWar and Legend of the Seven Paladins. It asks you to point it at each game folder itself the first time.',
         source: {
-            name: 'm210.duke4.net — BuildGDX',
+            name: 'm210.duke4.net, BuildGDX',
             url: 'https://m210.duke4.net/index.php/downloads/download/8-java/53-buildgdx',
-            hint: 'Download the Windows build — the bundle with a JRE included is named like BuildGDX_with_JRE.zip.',
+            hint: 'Download the Windows build, the bundle with a JRE included is named like BuildGDX_with_JRE.zip.',
         },
         archive: /buildgdx.*\.(zip|7z)$/i,
         samples: ['BuildGDX_with_JRE.zip'],
@@ -223,11 +223,11 @@ const RECIPES = [
         title: 'CannonBall',
         kind: 'Custom engine',
         game: 'OutRun',
-        blurb: 'OutRun rewritten in C++ — 60fps, true widescreen, time trial and continuous modes. Not an emulator.',
+        blurb: 'OutRun rewritten in C++, 60fps, true widescreen, time trial and continuous modes. Not an emulator.',
         source: {
-            name: 'GitHub — djyt/cannonball',
+            name: 'GitHub, djyt/cannonball',
             url: 'https://github.com/djyt/cannonball/releases',
-            hint: 'Download the Windows build from the Releases page. It needs the original OutRun arcade ROM set, which you must place in the folder yourself — nothing in a game library provides it.',
+            hint: 'Download the Windows build from the Releases page. It needs the original OutRun arcade ROM set, which you must place in the folder yourself, nothing in a game library provides it.',
         },
         archive: /cannonball.*\.(zip|7z|rar)$/i,
         samples: ['cannonball.zip'],
@@ -235,7 +235,7 @@ const RECIPES = [
         entry: { exe: /^cannonball\.exe$/i, platform: 'windows' },
         // Requiring the ROMs is what stops this installing into something that opens and
         // closes in the same second. Nothing in a game library provides them, so the
-        // install asks for a folder — which is the only honest answer here.
+        // install asks for a folder, which is the only honest answer here.
         data: 'outrun',
     },
     {
@@ -244,22 +244,22 @@ const RECIPES = [
         title: 'SWOS 2020',
         kind: 'Fan game',
         game: '',
-        blurb: 'Sensible World of Soccer rebuilt for modern machines by SWOS United — widescreen, USB controllers and updated team data.',
+        blurb: 'Sensible World of Soccer rebuilt for modern machines by SWOS United, widescreen, USB controllers and updated team data.',
         source: {
-            name: 'sensiblesoccer.de — SWOS 2020',
+            name: 'sensiblesoccer.de, SWOS 2020',
             url: 'https://sensiblesoccer.de/swos-2020',
-            hint: 'Download the Windows build from the SWOS 2020 page — it is an installer named like swos2020_v7.7_setup.exe. It is unpacked rather than run, so no wizard.',
+            hint: 'Download the Windows build from the SWOS 2020 page. It is an installer named like swos2020_v7.7_setup.exe. It is unpacked rather than run, so no wizard.',
         },
-        // Shipped as an NSIS setup.exe, not an archive — see findExtractor.
+        // Shipped as an NSIS setup.exe, not an archive, see findExtractor.
         archive: /swos.*\.(zip|7z|rar|exe)$/i,
         samples: ['swos2020_v7.7_setup.exe'],
         dirName: 'SWOS 2020',
-        // Six executables ship here and most are traps — a DLC manager, a database browser,
+        // Six executables ship here and most are traps, a DLC manager, a database browser,
         // an uninstaller, a VC redistributable. Only gameLauncher.exe starts the game.
         entry: { exe: /^gameLauncher\.exe$/i, platform: 'windows' },
         data: null,
     },
-    // Quake mods are folders — pak0.pak, progs.dat, maps — loaded with `-game <folder>`
+    // Quake mods are folders, pak0.pak, progs.dat, maps, loaded with `-game <folder>`
     // from the engine's own directory. Hundreds exist and they all work the same way, so
     // one entry serves them all rather than a recipe per mod. Generic, so it is only ever
     // chosen deliberately and never claims someone else's download.
@@ -273,18 +273,18 @@ const RECIPES = [
         onEngine: true,
         needsArchive: true,
         generic: true,
-        blurb: 'Dwell, Arcane Dimensions, Alkaline, Copper — any mod that ships as a folder. It gets its own entry with Quake\'s data and every installed Quake engine beside it, so you pick the engine when you press Play.',
+        blurb: 'Dwell, Arcane Dimensions, Alkaline, Copper, any mod that ships as a folder. It gets its own entry with Quake\'s data and every installed Quake engine beside it, so you pick the engine when you press Play.',
         source: {
             name: 'Quaddicted / ModDB / Slipseer',
             url: 'https://www.quaddicted.com/reviews/',
-            hint: 'Download the mod archive — dwellv2p2.zip, ad_v1_80final.zip and so on. The folder inside it is what the engine loads.',
+            hint: 'Download the mod archive, dwellv2p2.zip, ad_v1_80final.zip and so on. The folder inside it is what the engine loads.',
         },
         archive: /\.(zip|7z|rar|pak)$/i,
         dirName: 'Quake Mod',
         data: 'quake',
     },
     // A folder you already have, rather than a download. The catalogue lists it so it is
-    // findable — Decadence, Duake and an assembled Dwell setup are all self-contained
+    // findable, Decadence, Duake and an assembled Dwell setup are all self-contained
     // folders with their own engine, and no recipe can improve on simply registering them.
     {
         id: 'folder',
@@ -293,7 +293,7 @@ const RECIPES = [
         kind: 'Folder',
         game: '',
         folder: true,
-        blurb: 'Point at any folder holding a Windows game and it joins your library, staying where it is. Best for anything self-contained — a fan game that ships its own engine, a mod setup you assembled yourself, or a port with no recipe here yet. Nothing is copied or moved.',
+        blurb: 'Point at any folder holding a Windows game and it joins your library, staying where it is. Best for anything self-contained, a fan game that ships its own engine, a mod setup you assembled yourself, or a port with no recipe here yet. Nothing is copied or moved.',
         source: {
             name: 'Your own disk',
             url: '',
@@ -319,9 +319,9 @@ const RECIPES = [
         kind: 'Mod',
         game: 'Doom',
         engine: ['gzdoom', 'uzdoom'],
-        blurb: 'The famous overhaul — reworked weapons, gore and enemy behaviour, on top of the original maps.',
+        blurb: 'The famous overhaul, reworked weapons, gore and enemy behaviour, on top of the original maps.',
         source: {
-            name: 'ModDB — Brutal Doom',
+            name: 'ModDB, Brutal Doom',
             url: 'https://www.moddb.com/mods/brutal-doom/downloads',
             hint: 'Download the latest release; the file is named like brutalv22.zip, and a bare .pk3 works too.',
         },
@@ -343,7 +343,7 @@ const RECIPES = [
         engine: ['gzdoom', 'uzdoom'],
         blurb: 'A darker, heavily reworked take on Brutal Doom, with its own lighting and effects.',
         source: {
-            name: 'ModDB — Brutal Doom: Black Edition',
+            name: 'ModDB, Brutal Doom: Black Edition',
             url: 'https://www.moddb.com/mods/brutal-doom/downloads/brutal-doom-v20b-black-edition',
             hint: 'Download the latest release; the file is named like BDBE_v3.5.zip.',
         },
@@ -355,7 +355,7 @@ const RECIPES = [
         data: 'doom',
     },
     // A shape rather than a title, and honest about it. There is no single "DOOM Ultra HD"
-    // download — HD texture work is spread across DHTP, Hoover1979's pack, brightmap and
+    // download, HD texture work is spread across DHTP, Hoover1979's pack, brightmap and
     // sprite projects, and most people end up with an assembled folder of numbered .pk3s.
     // A recipe naming one of those would be pretending to a precision it does not have, so
     // this one accepts any Doom mod archive, shows what is inside, and lets the user choose
@@ -369,9 +369,9 @@ const RECIPES = [
         game: 'Doom',
         engine: ['gzdoom', 'uzdoom'],
         generic: true,
-        blurb: 'For anything else that loads into GZDoom or UZDoom — HD texture packs like DHTP, brightmaps, sprite fixes, map sets. Pick the archive and choose which .pk3 and .wad files to load; several can be stacked and they load in name order.',
+        blurb: 'For anything else that loads into GZDoom or UZDoom, HD texture packs like DHTP, brightmaps, sprite fixes, map sets. Pick the archive and choose which .pk3 and .wad files to load; several can be stacked and they load in name order.',
         source: {
-            name: 'ModDB — Doom mods',
+            name: 'ModDB, Doom mods',
             url: 'https://www.moddb.com/games/doom/mods',
             hint: 'Any .zip, .7z, .rar, .pk3 or .wad. You will be shown everything loadable inside it and can tick as many as you want.',
         },
@@ -381,7 +381,7 @@ const RECIPES = [
         data: 'doom',
     },
     // Not a title but a shape. Every OpenBOR game is the same engine renamed, sitting
-    // beside Paks/<game>.pak — so one recipe covers all of them, and the archive is
+    // beside Paks/<game>.pak, so one recipe covers all of them, and the archive is
     // identified by what is inside rather than by whatever the download was called.
     // This is the same argument that made native DOSBox worth supporting: one engine,
     // one rigid layout, nothing to curate per game.
@@ -392,11 +392,11 @@ const RECIPES = [
         kind: 'OpenBOR',
         game: '',
         dynamic: true,
-        blurb: 'Any OpenBOR game — Streets of Rage X, Streets of Vendetta and the rest. Drop in the archive you downloaded and the name is taken from the game itself.',
+        blurb: 'Any OpenBOR game, Streets of Rage X, Streets of Vendetta and the rest. Drop in the archive you downloaded and the name is taken from the game itself.',
         source: {
-            name: 'ChronoCrash — the OpenBOR community',
+            name: 'ChronoCrash, the OpenBOR community',
             url: 'https://www.chronocrash.com/forum/resources/',
-            hint: 'Download the Windows build of any OpenBOR game — a zip or rar containing the game exe and a Paks folder.',
+            hint: 'Download the Windows build of any OpenBOR game, a zip or rar containing the game exe and a Paks folder.',
         },
         archive: /\.(zip|7z|rar)$/i,
         contains: { pak: /(^|\/)Paks\/[^/]+\.pak$/i },
@@ -431,7 +431,7 @@ const DATA_SPECS = {
 
         // The soundtrack, from a *different* product. The 1996 release keeps its music on
         // the CD, which is why GLQuake is silent and why every port ships a note about
-        // needing external tracks. The 2021 re-release ships the same music as ogg — so a
+        // needing external tracks. The 2021 re-release ships the same music as ogg, so a
         // player who owns both (very common: GOG bundles them) already has, legitimately
         // on disk, exactly the files these engines want.
         //
@@ -462,7 +462,7 @@ const DATA_SPECS = {
         owned: 'You own Doom but it is not installed. Install it first and this will find the IWAD automatically.',
     },
 
-    // Wolfenstein's whole data set shares one extension per release — VSWAP, MAPHEAD,
+    // Wolfenstein's whole data set shares one extension per release, VSWAP, MAPHEAD,
     // GAMEMAPS, AUDIOHED, AUDIOT, VGAHEAD, VGADICT, VGAGRAPH are all .WL6 for the full
     // game, .WL1 for shareware, .SOD/.SD1-3 for Spear of Destiny. So one pattern per
     // release takes the complete set and there is no list of filenames to get wrong.
@@ -477,8 +477,8 @@ const DATA_SPECS = {
     },
 
     // Build games keep everything in one or two big containers: DUKE3D.GRP, SW.GRP,
-    // BLOOD.RFF and its companions. Blood is the fussy one — it wants its .ART tiles and
-    // BLOOD.INI beside the RFF — so those are taken too when present.
+    // BLOOD.RFF and its companions. Blood is the fussy one. It wants its .ART tiles and
+    // BLOOD.INI beside the RFF, so those are taken too when present.
     build: {
         label: 'a Build engine game (Duke 3D, Blood, Shadow Warrior, Powerslave…)',
         files: [
@@ -518,7 +518,7 @@ const BUILD_GAMES = {
     },
     powerslave: {
         // The DOS original keeps everything in STUFF.DAT. Nightdive's 2022 remaster is a
-        // different game entirely and is excluded — it has no Build data at all.
+        // different game entirely and is excluded. It has no Build data at all.
         label: 'PowerSlave / Exhumed (the 1996 DOS game)', main: /^stuff\.dat$/i, extra: [/\.dat$/i, /\.art$/i],
         titles: [/^powerslave$/i, /^exhumed$/i],
         exclude: [/exhumed|remaster/i],
@@ -527,7 +527,7 @@ const BUILD_GAMES = {
         label: 'Redneck Rampage', main: /^redneck\.grp$/i, extra: [/\.grp$/i, /\.art$/i],
         titles: [/redneck rampage/i], exclude: [],
     },
-    // Witchaven never used a .GRP — its data is loose files, and GOG never unpacks them:
+    // Witchaven never used a .GRP, its data is loose files, and GOG never unpacks them:
     // the release is a DOSBox setup around a 275MB .iso. Only BuildGDX plays these, and
     // only once the disc has been opened, which is what `imageDir` is for.
     witchaven: {
@@ -570,19 +570,19 @@ DATA_SPECS.outrun = {
     titles: [],          // no storefront sells these; the folder picker is the only route
     exclude: [],
     userSupplied: true,
-    owned: 'CannonBall needs the original OutRun Revision B arcade ROM set. No game library provides it — point at the folder holding your own copy.',
+    owned: 'CannonBall needs the original OutRun Revision B arcade ROM set. No game library provides it, point at the folder holding your own copy.',
 };
 
 // Each Build game is its own catalogue entry, running on whichever engine is installed.
 // Nobody wants "Raze" in their library; they want Blood, and Duke Nukem 3D, each with its
 // own name and its own cover.
 const BUILD_BLURB = {
-    blood: 'Monolith\'s 1997 shooter — cultists, a pitchfork, and the best voice acting of the era. Runs on Raze.',
+    blood: 'Monolith\'s 1997 shooter, cultists, a pitchfork, and the best voice acting of the era. Runs on Raze.',
     duke3d: 'Hail to the king. The 1996 original with all four episodes, running on Raze.',
-    shadowwarrior: 'Lo Wang, katanas and sticky bombs — the 1997 original, running on Raze.',
+    shadowwarrior: 'Lo Wang, katanas and sticky bombs, the 1997 original, running on Raze.',
     powerslave: 'The 1996 DOS original (Exhumed in Europe), not the 2022 remaster. Egyptian tombs and a genuinely strange structure.',
     redneck: 'Cuss, Bubba and a hillbilly arsenal, from 1997.',
-    witchaven: 'The 1995 sword-and-sorcery Build game. GOG never unpacks it — the data is lifted straight out of the disc image. Plays on BuildGDX.',
+    witchaven: 'The 1995 sword-and-sorcery Build game. GOG never unpacks it. The data is lifted straight out of the disc image. Plays on BuildGDX.',
     witchaven2: 'The 1996 sequel, bloodier and better lit. Data lifted out of the disc image; plays on BuildGDX.',
 };
 for (const [id, g] of Object.entries(BUILD_GAMES)) {
@@ -593,10 +593,10 @@ for (const [id, g] of Object.entries(BUILD_GAMES)) {
         kind: 'Game',
         game: 'Build engine games',
         engine: g.engines || ['raze', 'buildgdx'],
-        onEngine: true,                       // no download of its own — engine + data
+        onEngine: true,                       // no download of its own, engine + data
         blurb: BUILD_BLURB[id],
         source: {
-            name: 'GitHub — ZDoom/Raze',
+            name: 'GitHub, ZDoom/Raze',
             url: 'https://github.com/ZDoom/Raze/releases/latest',
             hint: 'No download needed for the game itself. If Raze is not installed yet you will be asked for its Windows zip once, and every Build game after that reuses it.',
         },
@@ -631,14 +631,14 @@ for (const [id, g] of Object.entries(BUILD_GAMES)) {
 // was guessed rather than checked (UZDoom ships Windows-UZDoom-4.14.3.zip, so /^uzdoom/
 // rejected the only file it was meant to accept).
 //
-// So every recipe carries `samples` — filenames actually observed from that project —
+// So every recipe carries `samples`, filenames actually observed from that project,
 // and this asserts each one matches its own recipe and nothing else. Run it whenever a
 // recipe is added or a pattern changed.
 function selfCheck() {
     const problems = [];
     for (const r of RECIPES) {
         // Every recipe declares the hosts it is valid on. The catalogue is a Linux one today
-        // — each entry points at a Windows download run through a compatibility layer — and a
+        //, each entry points at a Windows download run through a compatibility layer, and a
         // macOS catalogue built from native source-port releases will live alongside it here
         // rather than in a fork. An untagged recipe would silently be offered on both.
         if (!Array.isArray(r.hosts) || !r.hosts.length) { problems.push(`${r.id}: no hosts declared`); continue; }
@@ -672,7 +672,7 @@ function dirHasProbe(dir, probe) {
 // and only covers zip.
 //
 // Windows installers are the exception. Plenty of projects ship a setup.exe rather than an
-// archive — SWOS 2020 is an NSIS installer — and bsdtar cannot read those at all, while 7z
+// archive, SWOS 2020 is an NSIS installer, and bsdtar cannot read those at all, while 7z
 // unpacks them happily without running anything. Running the installer under Proton would
 // be the alternative, and it would mean a wizard, an install path we do not control, and a
 // registry write for something that is meant to sit in its own folder.
@@ -696,13 +696,13 @@ function findExtractor(archivePath) {
 // redistributables setups bundle for the benefit of Windows.
 // The leading $ is required, not optional. NSIS names its scratch folders $PLUGINSDIR and
 // $TEMP; a plain "temp" is the game's own working directory and deleting it breaks the
-// game — SWOS writes its pitch and background data there and refuses to start without it.
+// game, SWOS writes its pitch and background data there and refuses to start without it.
 const INSTALLER_JUNK = /^\$(PLUGINSDIR|TEMP)$|^(vc_?redist|dxwebsetup|dotnet).*\.exe$/i;
 const INSTALLER_JUNK_PATH = /(^|\/)\$(PLUGINSDIR|TEMP)\//i;
 
 // Unpack a Windows installer by naming the members we want. Asking 7z for the whole thing
-// fails on NSIS-2 with E_NOTIMPL partway through — it stumbles over the installer's own
-// script and scratch entries — but extracting the payload by name succeeds cleanly. So:
+// fails on NSIS-2 with E_NOTIMPL partway through, it stumbles over the installer's own
+// script and scratch entries, but extracting the payload by name succeeds cleanly. So:
 // list, drop the plumbing, take the rest.
 function extractInstaller(archivePath, target) {
     const sevenZip = which('7z') || which('7za') || which('7zz');
@@ -724,7 +724,7 @@ function extractInstaller(archivePath, target) {
     return { ok: true };
 }
 
-// An installer often carries the payload as a second archive inside itself — SWOS 2020's
+// An installer often carries the payload as a second archive inside itself, SWOS 2020's
 // setup.exe holds an 83MB data.7z. One level of unwrapping, and only when the first pass
 // produced no executable, so this never fires for a normal download.
 function unwrapNestedArchive(dir) {
@@ -811,7 +811,7 @@ function inspectArchive(archivePath) {
 
 // Depth-limited recursive search for data files. Used by the specs that name a file
 // (DOOM.WAD) rather than a folder, because storefronts nest those differently and often
-// move them between releases — searching is what makes one spec survive all the layouts.
+// move them between releases, searching is what makes one spec survive all the layouts.
 function findFiles(root, pattern, maxDepth = 4) {
     const out = [];
     const walk = (dir, depth) => {
@@ -835,7 +835,7 @@ function findFiles(root, pattern, maxDepth = 4) {
     return out;
 }
 
-// Depth-limited hunt for the entry point. Shallow on purpose — an .exe buried four levels
+// Depth-limited hunt for the entry point. Shallow on purpose, an .exe buried four levels
 // down is a redistributable or a tool, not the game.
 // The executable that lives beside a marker directory. OpenBOR's engine is renamed to the
 // game, so position is the only thing that identifies it.
@@ -909,7 +909,7 @@ function detectRecipe(fileName) {
 // database handle of its own.
 // ── Data sealed inside a disc image ──────────────────────────────────────────
 // GOG ships several of its DOSBox releases as an .iso the bundled DOSBox mounts, so the
-// game's files never exist loose on disk — Witchaven II is 275MB of exactly that. A source
+// game's files never exist loose on disk, Witchaven II is 275MB of exactly that. A source
 // port cannot mount an image, so the files have to come out of it. bsdtar reads ISO9660
 // directly, which means no mounting, no root, and no loop device.
 const DISC_IMAGE = /\.(iso|cue|bin|gog|img|mdf)$/i;
@@ -930,7 +930,7 @@ function findDataImage(root, spec, maxDepth = 3) {
     return '';
 }
 
-// Pull every file a spec wants out of a disc image. Real copies, not symlinks — there is
+// Pull every file a spec wants out of a disc image. Real copies, not symlinks. There is
 // nothing on disk to point at. Extracted flat: these images are one game per disc and the
 // engine expects its data beside it.
 function extractFromImage(img, spec, target) {
@@ -938,7 +938,7 @@ function extractFromImage(img, spec, target) {
     const bsdtar = which('bsdtar');
     if (!bsdtar) return { ok: false, error: 'bsdtar (libarchive) is needed to read disc images.' };
 
-    // A disc usually holds the whole game directory — Witchaven's WHAVEN2/ carries its
+    // A disc usually holds the whole game directory, Witchaven's WHAVEN2/ carries its
     // maps, palettes and sound banks in subfolders. When the spec names that directory,
     // take it entire and keep its shape; picking files out flat would strip the folders
     // the game reads its sounds from. Otherwise fall back to matching by filename.
@@ -983,11 +983,11 @@ function extractFromImage(img, spec, target) {
 // ── Games whose data is a whole directory ────────────────────────────────────
 // Some games are not one container file but a folder of loose parts. Witchaven's are
 // TILES000.ART, TABLES.DAT, PALETTE.DAT, LOOKUP.DAT, the LEVEL*.MAP set, and two
-// extension-less files named SONGS and JOESND — so any spec written as a list of
+// extension-less files named SONGS and JOESND, so any spec written as a list of
 // extensions misses half of it, which is precisely what BuildGDX reported.
 //
 // Naming the directory solves the other half too. TILES000.ART is generic Build data and
-// appears in every one of these games, so it cannot tell Witchaven from Witchaven II —
+// appears in every one of these games, so it cannot tell Witchaven from Witchaven II,
 // both specs happily accepted the other's files. WHAVEN/ and WHAVEN2/ can.
 function findDataDir(root, spec, maxDepth = 4) {
     if (!spec.dataDir) return '';
@@ -1030,7 +1030,7 @@ function mirrorTree(src, dst, copy) {
 }
 
 // Does this folder actually hold the data a spec needs? The same test whether the folder
-// came from the library or the user pointed at it — a shelf of DOS files they still have
+// came from the library or the user pointed at it, a shelf of DOS files they still have
 // is every bit as valid a source as a storefront install, and quite often the only one.
 function folderSatisfies(spec, root) {
     if (!root || !fs.existsSync(root)) return false;
@@ -1044,12 +1044,12 @@ function folderSatisfies(spec, root) {
     if (spec.requireAllOf) return dirsOk && missingFrom(spec, root).length === 0;
 
     // A named data directory is the strictest test and the one that tells sibling games
-    // apart, so it wins when a spec has one — on disk, or inside a disc image.
+    // apart, so it wins when a spec has one, on disk, or inside a disc image.
     if (spec.dataDir) {
         return dirsOk && (!!findDataDir(root, spec) || !!findDataImage(root, spec));
     }
 
-    // A named container settles it on its own when the spec has one — loose on disk, or
+    // A named container settles it on its own when the spec has one, loose on disk, or
     // sealed inside a disc image the release never unpacked.
     if (spec.mainFile) {
         return dirsOk && (findFiles(root, spec.mainFile).length > 0 || !!findDataImage(root, spec));
@@ -1079,7 +1079,7 @@ function resolveDataFolder(dataId, folder) {
             // and deserves a different sentence.
             return { ok: false, message: missing.length === spec.requireAllOf.length
                 ? `No part of ${spec.label} is in that folder.`
-                : `That set is incomplete — ${missing.length} of ${spec.requireAllOf.length} ROMs are missing: ${missing.slice(0, 6).join(', ')}${missing.length > 6 ? `, and ${missing.length - 6} more` : ''}. CannonBall needs the full Revision B set or it will not start.` };
+                : `That set is incomplete, ${missing.length} of ${spec.requireAllOf.length} ROMs are missing: ${missing.slice(0, 6).join(', ')}${missing.length > 6 ? `, and ${missing.length - 6} more` : ''}. CannonBall needs the full Revision B set or it will not start.` };
         }
         const want = (spec.files || []).map(f => f.find.source.replace(/[\\^$()?:]/g, '').replace(/\|/g, ', '))
             .concat((spec.dirs || []).filter(d => d.required).map(d => `${d.name}/`)).join(' or ');
@@ -1113,14 +1113,14 @@ function resolveGameData(dataId, rows) {
 
     const owned = named.map(g => g.title);
     if (owned.length) return { ok: false, owned, message: spec.owned || 'Install it first.' };
-    // Some data was never sold in a form a library can hold — arcade ROMs, files off an
+    // Some data was never sold in a form a library can hold, arcade ROMs, files off an
     // old disc. Reporting that as a failed library search reads like something is wrong
     // and invites the user to go looking for a purchase that does not exist.
     if (spec.userSupplied) return { ok: false, userSupplied: true, message: spec.owned || `You provide ${spec.label} yourself.` };
     return { ok: false, message: `No copy of ${spec.label} found in your library.` };
 }
 
-// A second product in the library that can contribute optional files — the re-release's
+// A second product in the library that can contribute optional files, the re-release's
 // ogg soundtrack being the case this exists for. Returns null when nothing suitable is
 // installed, which is never an error: the port still works, it is just quieter.
 function resolveExtra(extra, rows) {
@@ -1142,13 +1142,13 @@ function resolveExtra(extra, rows) {
 
 // Link the data into the port's own folder rather than pointing the engine at the original
 // install. Symlinking the pak files (not the folders) means the port writes its configs and
-// saves into its own id1/ while the multi-gigabyte data stays in one place — and the game
+// saves into its own id1/ while the multi-gigabyte data stays in one place, and the game
 // CN installed for you is never written into by something else.
 // `copy` decides how data is attached, and the rule is about who owns the source, not
 // about size. Data resolved from the library lives in a folder Clarity installed
 // and manages, so a symlink is safe and saves duplicating gigabytes. Data the user pointed
-// at is theirs — a USB stick, a folder they extracted to look inside, somewhere they will
-// tidy up next week — so it is copied. A game that stops working because a folder moved is
+// at is theirs, a USB stick, a folder they extracted to look inside, somewhere they will
+// tidy up next week, so it is copied. A game that stops working because a folder moved is
 // not a game that was really installed.
 function linkGameData(dataId, sourceRoot, targetRoot, extraSource, { copy = false } = {}) {
     const spec = DATA_SPECS[dataId];
@@ -1173,7 +1173,7 @@ function linkGameData(dataId, sourceRoot, targetRoot, extraSource, { copy = fals
         }
     }
 
-    // Nothing loose to link, but a disc image that holds it — extract instead. Copies, not
+    // Nothing loose to link, but a disc image that holds it, extract instead. Copies, not
     // symlinks, because there is no file on disk to point at.
     if (spec.mainFile && !roots.some(r => findFiles(r, spec.mainFile).length)) {
         for (const root of roots) {
@@ -1192,7 +1192,7 @@ function linkGameData(dataId, sourceRoot, targetRoot, extraSource, { copy = fals
     for (const f of (spec.files || [])) {
         for (const root of roots) {
             // Shallowest wins. Blood: Fresh Supply keeps the base game's tiles at its root
-            // and Cryptic Passage's replacements in addons/, under the same filenames — so
+            // and Cryptic Passage's replacements in addons/, under the same filenames, so
             // whichever the directory walk happened to reach first would silently decide
             // which tileset the game loads. Depth is the rule that gets it right.
             const found = findFiles(root, f.find)
@@ -1214,7 +1214,7 @@ function linkGameData(dataId, sourceRoot, targetRoot, extraSource, { copy = fals
 
     const extra = spec.extras && spec.extras[0];
     for (const d of (spec.dirs || [])) {
-        // Search every root, not the parameter — callers pass an array of them now, and
+        // Search every root, not the parameter, callers pass an array of them now, and
         // resolving a folder against an array silently finds nothing. This is why a Quake
         // port could no longer link id1: the check failed on the array itself.
         let src = '';
@@ -1255,7 +1255,7 @@ function linkGameData(dataId, sourceRoot, targetRoot, extraSource, { copy = fals
 
 // ── Where installs are allowed to land ───────────────────────────────────────
 // ⚠️ `installRoot` arrives from a user setting, and that setting is stored the way it was
-// typed — `~/Games/Clarity`. path.join() does not know what a tilde is, so an
+// typed, `~/Games/Clarity`. path.join() does not know what a tilde is, so an
 // unexpanded root produced a real directory literally named "~" inside the home folder:
 //
 //     /home/jose/~/Games/Clarity/GZDoom/gzdoom.exe
@@ -1276,7 +1276,7 @@ function resolveRoot(root) {
 }
 
 // Unpack a download into its own folder under `installRoot` and work out how to start it.
-// Does not touch any database — the caller decides how to register the result.
+// Does not touch any database, the caller decides how to register the result.
 function installFromArchive({ recipeId, archivePath, installRoot, dataRows, dataPath, reserved = [], overwrite = false }) {
     installRoot = resolveRoot(installRoot);   // never create a literal "~" directory
     const recipe = getRecipe(recipeId);
@@ -1297,7 +1297,7 @@ function installFromArchive({ recipeId, archivePath, installRoot, dataRows, data
         const entries = inspectArchive(archivePath);
         if (!entries.length) return { ok: false, error: 'Could not read that archive. Install bsdtar (libarchive) if it is a .rar.' };
         const pak = entries.find(e => recipe.contains.pak.test(e));
-        if (!pak) return { ok: false, error: `That archive does not look like an OpenBOR game — it has no Paks folder inside. ${recipe.source.hint}` };
+        if (!pak) return { ok: false, error: `That archive does not look like an OpenBOR game. It has no Paks folder inside. ${recipe.source.hint}` };
         title = path.basename(pak).replace(/\.pak$/i, '').replace(/[_]+/g, ' ').trim() || recipe.title;
         dirName = title.replace(/[/\\:*?"<>|]/g, '').trim().slice(0, 64) || recipe.dirName;
         key = `${recipe.id}_${title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')}`;
@@ -1305,7 +1305,7 @@ function installFromArchive({ recipeId, archivePath, installRoot, dataRows, data
 
     // Resolve the data before unpacking anything: an install that cannot be played is
     // worse than a refusal, and this is the failure the user can actually act on.
-    // A folder the user pointed at wins over the library — they know which copy they meant,
+    // A folder the user pointed at wins over the library, they know which copy they meant,
     // and for anything the storefronts never sold (their own DOS files) it is the only way.
     let data = null;
     if (recipe.data) {
@@ -1341,7 +1341,7 @@ function installFromArchive({ recipeId, archivePath, installRoot, dataRows, data
     dropInstallerJunk(target);
     flattenSingleRoot(target);
 
-    // Nothing runnable yet, but an archive inside — an installer carrying its payload as a
+    // Nothing runnable yet, but an archive inside, an installer carrying its payload as a
     // second archive. Unwrap once and look again.
     if (!recipe.contains && !findEntry(target, recipe.entry.exe) && unwrapNestedArchive(target)) {
         dropInstallerJunk(target);
@@ -1364,7 +1364,7 @@ function installFromArchive({ recipeId, archivePath, installRoot, dataRows, data
     if (recipe.data) {
         const spec = DATA_SPECS[recipe.data];
         if (spec && spec.extras) extra = resolveExtra(spec.extras[0], dataRows);
-        // Link beside the executable — that is the engine's basedir, which is not always
+        // Link beside the executable. That is the engine's basedir, which is not always
         // the top of the archive.
         linked = linkGameData(recipe.data, data.paths || data.path, path.dirname(exe), extra, { copy: !!dataPath });
         if (!linked.ok) return { ok: false, error: linked.error };
@@ -1389,7 +1389,7 @@ function installFromArchive({ recipeId, archivePath, installRoot, dataRows, data
 // unpacked, and until now the only route was Installer's importer, which scans one level deep
 // and so finds nothing in the many releases that put the executable in a subfolder.
 //
-// Nothing is copied or moved — the folder is registered where it sits.
+// Nothing is copied or moved. The folder is registered where it sits.
 
 // Executables that are never the game. Not used to hide anything, only to sort: the aim is
 // to put the right answer at the top, not to decide for the user and be wrong about SWOS,
@@ -1410,7 +1410,7 @@ function scanFolderEntries(folder, maxDepth = 3) {
                 out.push({
                     rel, name: e.name, dir: path.dirname(rel) === '.' ? '' : path.dirname(rel),
                     size, junk: NOT_THE_GAME.test(e.name),
-                    // A .bat beside an .exe usually *is* the entry point — it carries the
+                    // A .bat beside an .exe usually *is* the entry point, it carries the
                     // command line the game needs (Brutal Doom's launcher, DOSBox wrappers).
                     bat: /\.(bat|cmd)$/i.test(e.name),
                     depth,
@@ -1424,7 +1424,7 @@ function scanFolderEntries(folder, maxDepth = 3) {
 
     // Best guess first: never-the-game last, then shallower, then bigger. Depth beats
     // everything because the real entry point lives at the top of a release far more often
-    // than not — sorting batch files first instead put SWOS's sysinfo.bat above its actual
+    // than not, sorting batch files first instead put SWOS's sysinfo.bat above its actual
     // gameLauncher.exe. Batch files are flagged rather than promoted: sometimes the .bat is
     // the game (Brutal Doom's launcher carries the whole -iwad/-file line) and sometimes it
     // is a utility, so the list says which is which and lets the user decide.
@@ -1435,18 +1435,18 @@ function scanFolderEntries(folder, maxDepth = 3) {
 // ── Never write over a game that is already there ────────────────────────────
 // Custom installs share one folder with the library's own installs, and the names
 // collide: GOG puts Witchaven in <root>/Witchaven, and a recipe called Witchaven wants
-// exactly the same place. The install then clears its target before unpacking — and
+// exactly the same place. The install then clears its target before unpacking, and
 // clears somebody's game.
 //
 // `reserved` is every path the library already claims. A target that lands on one is
 // renamed rather than emptied, and nothing reserved is ever deleted.
 // The suffix says *why* there are two, which "(2)" does not. A collision here means the
-// user owns the same game in their library — GOG's Witchaven runs under DOSBox, this one
-// runs on a source port — so naming it after that is the useful distinction.
+// user owns the same game in their library, GOG's Witchaven runs under DOSBox, this one
+// runs on a source port, so naming it after that is the useful distinction.
 // `spaceless` matters more than it looks. BuildGDX.exe re-parses its own command line and
 // drops the quoting, so a -path containing a space arrives truncated: passing
 // "…/Witchaven (Source Port)" got it "…/Witchaven", which is the GOG install, and it
-// failed trying to write there. GZDoom quotes correctly and is unaffected — this is one
+// failed trying to write there. GZDoom quotes correctly and is unaffected. This is one
 // launcher's behaviour, so only the recipes whose folder is handed to it pay the cost.
 function safeTarget(installRoot, dirName, reserved = [], { suffix = 'Source Port', spaceless = false } = {}) {
     const taken = new Set(reserved.filter(Boolean).map(p => path.resolve(p)));
@@ -1499,7 +1499,7 @@ function addFromFolder({ folder, executable, title }) {
 }
 
 // The folder inside a Quake mod archive that the engine will load. Identified by what it
-// holds — pak0.pak or progs.dat — rather than by position, because archives vary: some wrap
+// holds, pak0.pak or progs.dat, rather than by position, because archives vary: some wrap
 // everything in a version folder, some do not.
 function findModFolderName(archivePath) {
     const entries = inspectArchive(archivePath).map(e => e.replace(/\\/g, '/'));
@@ -1540,13 +1540,13 @@ function extractModFolder(archivePath, modDir, target) {
 
 // ── A game running on a shared engine ────────────────────────────────────────
 // Raze plays a dozen different games and BuildGDX a dozen more, but nobody wants "Raze" in
-// their library — they want Blood, and Duke Nukem 3D, and Shadow Warrior, each with its own
+// their library, they want Blood, and Duke Nukem 3D, and Shadow Warrior, each with its own
 // name and cover. And they cannot all share one folder: Duke and Blood both ship tiles000.art,
 // so whichever landed last would decide what the other one loaded.
 //
 // So each game gets its own folder with the engine **symlinked in** and only that game's
 // data beside it. No duplicated engine, no filename collisions, and no guessing at command
-// line switches — the engine starts in a directory containing exactly one game and finds it.
+// line switches, the engine starts in a directory containing exactly one game and finds it.
 // Verified: a fully symlinked engine folder launches and runs.
 
 // Engine files are everything that is not game data. raze.pk3 is the engine's own archive
@@ -1576,7 +1576,7 @@ function mirrorEngine(engineRoot, target) {
 }
 
 // A ZDoom-family engine with no game data beside it prints "Unable to find any game data"
-// and quits — which is what an engine entry became once the games moved into folders of
+// and quits, which is what an engine entry became once the games moved into folders of
 // their own. It has a real front end though: a game picker at startup and the whole options
 // tree behind it. Pointing it at the folders where the games now live gets that back, and
 // turns the engine entry into a menu of everything you have installed.
@@ -1601,7 +1601,7 @@ function installGameOnEngine({ recipeId, archivePath, engineRoot, engineExe, eng
     installRoot = resolveRoot(installRoot);   // never create a literal "~" directory
     const recipe = getRecipe(recipeId);
     if (!recipe) return { ok: false, error: `Unknown recipe "${recipeId}".` };
-    if (!engineRoot || !fs.existsSync(engineRoot)) return { ok: false, error: 'The engine folder is missing — reinstall it.' };
+    if (!engineRoot || !fs.existsSync(engineRoot)) return { ok: false, error: 'The engine folder is missing, reinstall it.' };
 
     // Data before anything is created: a game folder with no game in it is worse than a
     // refusal, and "you own it but it is not installed" is something the user can act on.
@@ -1668,14 +1668,14 @@ function installGameOnEngine({ recipeId, archivePath, engineRoot, engineExe, eng
 
     // BuildGDX keeps a configured folder per game and does not look in its own directory,
     // so it reports every resource missing even with the data sitting beside it, and -path
-    // on the command line did not change that. It stores the folder in a per-game ini —
-    // WitchavenGDX.ini, Witchaven2GDX.ini — under a [Main] section with a Path key, which
+    // on the command line did not change that. It stores the folder in a per-game ini,
+    // WitchavenGDX.ini, Witchaven2GDX.ini, under a [Main] section with a Path key, which
     // is what its launcher reads when deciding whether the resources are there.
     // (Names and keys read out of the jar: WHEntry names the ini and the required files,
     // GameConfig has gamePath/Path, ConfigContext writes [Main].)
     // BuildGDX's own help settles it: `-game "name"` forces the game to start without
     // showing the launcher, and "should be used with -path". That is why -path alone did
-    // nothing — on its own it is ignored, and the launcher went on reading its stored
+    // nothing, on its own it is ignored, and the launcher went on reading its stored
     // configuration, which had no folder for this game.
     //
     // The names come from its Game enum (WITCHAVEN, WITCHAVEN_2, BLOOD, …); parseGame
@@ -1691,7 +1691,7 @@ function installGameOnEngine({ recipeId, archivePath, engineRoot, engineExe, eng
         } catch {}
     }
     // C:, not Z:. Java asks Wine whether the folder is writable and Wine says no for its
-    // unix drive, however writable it actually is — so the launcher is handed a path on the
+    // unix drive, however writable it actually is, so the launcher is handed a path on the
     // prefix's own C: drive, which the Manager maps to this folder before every launch.
     const launchArgs = (usesGdx && recipe.gdxGame)
         ? `-game "${recipe.gdxGame}" -path "C:\\cn\\${path.basename(target)}"`
@@ -1714,12 +1714,12 @@ function installGameOnEngine({ recipeId, archivePath, engineRoot, engineExe, eng
 }
 
 // Install a mod alongside an engine that is already on disk. The engine is shared rather
-// than copied per mod — that is how ZDoom-family ports are designed to work, and it keeps
+// than copied per mod. That is how ZDoom-family ports are designed to work, and it keeps
 // four Doom mods from meaning four copies of the same 50MB engine. Each mod still becomes
 // its own library entry, distinguished by the -file line it carries.
 // The loadable files inside a mod archive, read from the listing without unpacking. Mod
-// packs routinely ship the mod plus a pile of optional extras — Black Edition's download
-// carries the 199MB mod alongside thirty-odd alternate footstep and voice packs — so
+// packs routinely ship the mod plus a pile of optional extras, Black Edition's download
+// carries the 199MB mod alongside thirty-odd alternate footstep and voice packs, so
 // "take the first .pk3" picks a hero voice and produces something that installs cleanly
 // and plays nothing. Which file is the mod is the user's call, not a heuristic's.
 function listModCandidates(archivePath, recipe) {
@@ -1742,7 +1742,7 @@ function listModCandidates(archivePath, recipe) {
 }
 
 // The IWADs sitting beside the engine, with names a person recognises. Anything unknown
-// is offered under its filename rather than hidden — a mod set can legitimately ship its
+// is offered under its filename rather than hidden, a mod set can legitimately ship its
 // own IWAD, and Freedoom is a real answer for someone who owns nothing.
 const IWAD_LABELS = [
     [/^doom2\.wad$/i,        'Doom II: Hell on Earth'],
@@ -1769,7 +1769,7 @@ function listIwads(engineRoot) {
 }
 
 // launch_args is a shell-ish string because that is what the engine parses. Splitting it
-// the same way lets the IWAD be changed after the fact without reinstalling the mod —
+// the same way lets the IWAD be changed after the fact without reinstalling the mod,
 // swapping which Doom you play on should not mean re-extracting an 83MB pk3.
 function parseArgs(str) {
     const out = [];
@@ -1808,12 +1808,12 @@ function installMod({ recipeId, archivePath, engineRoot, engineExe, dataRows, se
     const recipe = getRecipe(recipeId);
     if (!recipe) return { ok: false, error: `Unknown recipe "${recipeId}".` };
     if (!archivePath || !fs.existsSync(archivePath)) return { ok: false, error: 'That file no longer exists.' };
-    if (!engineRoot || !fs.existsSync(engineRoot)) return { ok: false, error: 'The engine folder is missing — reinstall GZDoom or UZDoom.' };
+    if (!engineRoot || !fs.existsSync(engineRoot)) return { ok: false, error: 'The engine folder is missing, reinstall GZDoom or UZDoom.' };
     if (!recipe.archive.test(path.basename(archivePath))) {
         return { ok: false, error: `That file does not look like ${recipe.title}. ${recipe.source.hint}` };
     }
 
-    // Which Doom to play on is asked at *launch*, not here — see _iwadForLaunch in the
+    // Which Doom to play on is asked at *launch*, not here, see _iwadForLaunch in the
     // renderer. It is a per-session decision, like picking a disc off a shelf, and asking
     // once at install time answers it for all time. The recipe's preference is written in
     // as the starting default so that dialog opens somewhere sensible.
@@ -1855,7 +1855,7 @@ function installMod({ recipeId, archivePath, engineRoot, engineExe, dataRows, se
         try {
             const bsdtar = which('bsdtar');
             if (!bsdtar) return { ok: false, error: 'No archive tool available. Install bsdtar (libarchive).' };
-            // Extract only the chosen members — these archives run to hundreds of megabytes
+            // Extract only the chosen members, these archives run to hundreds of megabytes
             // and unpacking the other thirty addons to throw them away is pure waste.
             const res = spawnSync(bsdtar, ['-xf', archivePath, '-C', tmp, ...take.map(t => t.rel)], { encoding: 'utf8' });
             if (res.status !== 0) return { ok: false, error: `Could not unpack the mod: ${(res.stderr || '').trim().slice(0, 300)}` };

@@ -1,6 +1,6 @@
 'use strict';
 /*
- * @clarity/core — the Linux platform backend.
+ * @clarity/core, the Linux platform backend.
  *
  * Everything in here was lifted out of installer-engine.js unchanged. The comments came with
  * it on purpose: nearly every one of them records a bug that took real debugging to find,
@@ -37,24 +37,24 @@ function init(ctx = {}) {
 //
 // gogdl is a frozen PyInstaller binary, and the `requests` inside it resolves its CA bundle
 // from a path baked in at BUILD time. Ours are built on Fedora, so that path is
-// /etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem — which does not exist on Arch, Debian,
+// /etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem, which does not exist on Arch, Debian,
 // openSUSE or Alpine. On any of those, the very first HTTPS call dies before it is made:
 //
 //     OSError: Could not find a suitable TLS CA certificate bundle, invalid path:
 //              /etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem
 //
 // The user sees "the install failed" on every GOG title, with nothing naming TLS, and the
-// obvious suspects — auth, the token, the network, the store — are all fine. Diagnosed on
+// obvious suspects, auth, the token, the network, the store, are all fine. Diagnosed on
 // Omarchy 4 on 2026-08-25 against a real title; setting the variable below fixed it outright.
 //
 // Fedora is listed first because on the host the binaries were built for, the baked-in path
 // is correct and there is nothing to override. Anything already exported by the user wins,
 // so someone with a custom trust store is left alone.
 //
-// ⚠️ It must run before ANY helper is spawned, which is why it lives in init() — the engine
+// ⚠️ It must run before ANY helper is spawned, which is why it lives in init(), the engine
 // calls that during startup, and every child inherits process.env from there.
 const CA_BUNDLES = [
-    '/etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem',   // Fedora / RHEL / Nobara — the build host
+    '/etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem',   // Fedora / RHEL / Nobara, the build host
     '/etc/ca-certificates/extracted/tls-ca-bundle.pem',    // Arch / Omarchy
     '/etc/ssl/certs/ca-certificates.crt',                  // Debian / Ubuntu (Arch symlinks here too)
     '/etc/ssl/ca-bundle.pem',                              // openSUSE
@@ -63,7 +63,7 @@ const CA_BUNDLES = [
 ];
 
 function ensureCaBundle() {
-    // A value the user set themselves is not ours to second-guess — but an empty or dangling
+    // A value the user set themselves is not ours to second-guess, but an empty or dangling
     // one is worse than none, so it only counts if it actually resolves to a file.
     for (const v of ['REQUESTS_CA_BUNDLE', 'SSL_CERT_FILE']) {
         const cur = process.env[v];
@@ -91,8 +91,8 @@ const binDirName = 'linux';
 // beside the file the user placed, so moving the AppImage moves the data with it. Falls
 // back to the packaged executable's directory, then to whatever the caller uses in dev.
 //
-// There is no equivalent on macOS — an .app in /Applications cannot keep user data inside
-// itself — so a darwin backend returns an absolute Library path and ignores devDir.
+// There is no equivalent on macOS, an .app in /Applications cannot keep user data inside
+// itself, so a darwin backend returns an absolute Library path and ignores devDir.
 function portableBaseDir({ isPackaged = false, execPath = '', devDir = '' } = {}) {
     if (process.env.APPIMAGE) return path.dirname(process.env.APPIMAGE);
     if (isPackaged && execPath) return path.dirname(execPath);
@@ -152,17 +152,17 @@ function legendaryConfigDir() { return path.join(HOME, '.config', 'legendary'); 
 // ── Desktop integration ──────────────────────────────────────────────────────
 // Menu entries, desktop shortcuts, autostart, opening a URL scheme, focusing a window.
 // The INTENT is the same everywhere; almost none of the mechanics are. Callers describe a
-// launcher in structured fields and the backend decides what a launcher actually is — on
+// launcher in structured fields and the backend decides what a launcher actually is, on
 // Linux a .desktop file under XDG directories, elsewhere something else entirely.
 
 // Fire-and-forget spawn of an OPTIONAL desktop-integration tool.
 //
 // ⚠️ `spawn` reports a missing binary through an ASYNCHRONOUS 'error' event, not a throw, so
-// a surrounding try/catch does not catch it — and an unhandled 'error' on a ChildProcess is
+// a surrounding try/catch does not catch it, and an unhandled 'error' on a ChildProcess is
 // fatal to the process. Every tool below is genuinely optional: a minimal, non-freedesktop or
 // Wayland-only session may ship none of them. That made `try { spawn(...) } catch {}` a crash
 // waiting for a host without the tool, which is exactly what a tiling-WM Arch install is.
-// Each one needs a real listener instead. Swallowing the error is right here — all callers are
+// Each one needs a real listener instead. Swallowing the error is right here, all callers are
 // best-effort niceties whose failure the user should never be shown.
 function spawnOptional(bin, args, opts = {}) {
     try {
@@ -237,13 +237,13 @@ function setAutostart(id, enabled, entry) {
     } catch (e) { return { ok: false, error: e.message }; }
 }
 
-// Custom schemes (itch://, pico8-cart:) — shell.openExternal refuses these, so hand them to
+// Custom schemes (itch://, pico8-cart:), shell.openExternal refuses these, so hand them to
 // the desktop's own opener.
 function openUrlScheme(url) { spawnOptional('xdg-open', [url], { detached: true }); }
 
 // X11 only: wmctrl sends _NET_ACTIVE_WINDOW with CurrentTime, which most window managers
 // honour where Electron's own focus() is ignored. A no-op on Wayland and anywhere wmctrl is
-// not installed — enforced below, not merely hoped for, which is what it used to be.
+// not installed, enforced below, not merely hoped for, which is what it used to be.
 function focusWindow(win) {
     // The claim above is only true if we actually check. With no X server there is no X11
     // window id to send and nothing to send it to, so skip entirely rather than spawn an X11
@@ -261,8 +261,8 @@ const desktop = {
     refreshMenu, markTrusted,
     autostartPath, getAutostart, setAutostart,
     openUrlScheme, focusWindow,
-    // The per-game display picker has two backends — a KWin script on KDE, Hyprland
-    // window rules on Hyprland — behind one interface, so the Control Panel card does
+    // The per-game display picker has two backends, a KWin script on KDE, Hyprland
+    // window rules on Hyprland, behind one interface, so the Control Panel card does
     // not know or care which is in use. The backend is chosen per call rather than at
     // require time: this module is loaded once at startup, and which compositor is
     // running is not a fact about the build.
@@ -283,7 +283,7 @@ const desktop = {
         };
     })(),
     // Omarchy: still host.id === 'linux', so this is a desktop-level integration sitting
-    // beside the KWin one rather than a platform backend. Both modules gate themselves —
+    // beside the KWin one rather than a platform backend. Both modules gate themselves,
     // on Nobara, isOmarchy() is false and every surface they feed simply does not appear.
     omarchy: require('../omarchy.js'),
     omarchyTheme: require('../omarchy-theme.js'),
@@ -318,12 +318,12 @@ function steamLibraryPaths() {
 }
 
 // How a Steam game is started here. Stored in the library as a launch command, so changing
-// it changes existing rows too — see the LIKE '%steam://rungameid%' queries in the Manager.
+// it changes existing rows too, see the LIKE '%steam://rungameid%' queries in the Manager.
 function steamLaunchCommand(appId) { return `steam steam://rungameid/${appId} -silent`; }
 
 // ── Other stores this host knows about ───────────────────────────────────────
 // Flatpak: games installed outside GOG/Epic/Steam that still announce themselves through a
-// desktop entry. Discovery only — reconciling the results against the library is the same
+// desktop entry. Discovery only, reconciling the results against the library is the same
 // work on every host, so it stays in shared-ipc.
 const FLATPAK_GAME_CATS = new Set(['Game','ActionGame','ArcadeGame','BoardGame','CardGame',
     'KidsGame','LogicGame','RolePlaying','Shooter','Simulation','SportsGame','StrategyGame']);
@@ -429,13 +429,13 @@ function findNativeInstallResult(gameDir, appId, preExistingDirs = null) {
     const linuxManifest = path.join(gameDir, '.gogdl-linux-manifest');
     if (!fs.existsSync(linuxManifest)) return null;
     // Primary check: gogdl writes a plain-text "gameinfo" file whose lines include the
-    // numeric appId — fast and reliable.
+    // numeric appId, fast and reliable.
     try {
         const lines = fs.readFileSync(path.join(gameDir, 'gameinfo'), 'utf8')
             .split('\n').map(l => l.trim());
         if (!lines.includes(String(appId))) return null;
     } catch {
-        // gameinfo absent — fall back to the pre-install snapshot: skip any directory
+        // gameinfo absent, fall back to the pre-install snapshot: skip any directory
         // that already existed before this install.
         if (preExistingDirs?.has(path.basename(gameDir))) return null;
     }
@@ -452,7 +452,7 @@ function findNativeInstallResult(gameDir, appId, preExistingDirs = null) {
 const DOSBOX_BINARIES = ['dosbox-staging', 'dosbox', 'dosbox-x'];
 
 // Flatpak is the one way to get DOSBox that works on every distribution, so it is worth
-// finding too — otherwise someone who installed it that way is told they have none.
+// finding too, otherwise someone who installed it that way is told they have none.
 const DOSBOX_FLATPAKS = ['io.github.dosbox-staging', 'com.dosbox_x.DOSBox-X'];
 
 // { cmd, args, label } or null. args is non-empty only for the flatpak form.
@@ -540,10 +540,10 @@ function findWineCached() {
 // game that "launched" and then did absolutely nothing:
 //   1. umu's own discovery (umu_proton.py `_get_from_compat`) keeps only folders whose name
 //      `startswith("GE-Proton")` or `("UMU-Proton")`. A perfectly good build installed under
-//      any other name — e.g. "Proton-GE Latest", which is what ProtonUp-Qt writes — is
+//      any other name, e.g. "Proton-GE Latest", which is what ProtonUp-Qt writes, is
 //      invisible to it, so PROTONPATH stays empty and umu exits 1 immediately with
 //      `FileNotFoundError: Environment variable not set or is empty: PROTONPATH`.
-//   2. With nothing installed at all, umu tries to *download* GE-Proton — hundreds of MB with
+//   2. With nothing installed at all, umu tries to *download* GE-Proton, hundreds of MB with
 //      no progress anywhere in our UI, and a hard failure when the machine is offline.
 // Resolving it ourselves also means we can tell the user what's wrong (NO_PROTON below).
 const PROTON_SEARCH_DIRS = () => [
@@ -571,7 +571,7 @@ function isProtonDir(dir) {
 }
 
 // All Proton builds on the machine, best first: GE-Proton, then Steam's, then anything else;
-// newest within each group. Named folders are matched loosely on purpose — the *contents*
+// newest within each group. Named folders are matched loosely on purpose, the *contents*
 // decide what counts, not the folder name (that is exactly what umu gets wrong).
 function scanRuntimes() {
     const found = [];
@@ -610,7 +610,7 @@ function scanRuntimes() {
 }
 
 // The Proton a given game should run with: its own override, then the configured default,
-// then the best one found on disk. Configured paths are existence-checked — a `proton_path`
+// then the best one found on disk. Configured paths are existence-checked, a `proton_path`
 // left over from a build the user has since deleted is another way to end up launching
 // nothing at all.
 function resolveRuntime(game) {
@@ -624,8 +624,8 @@ function resolveRuntime(game) {
     return scanRuntimes()[0]?.path || '';
 }
 
-// Does this machine have a usable Vulkan driver? The loader library alone proves nothing —
-// distributions ship it as a dependency of things that never use it — so the test is whether
+// Does this machine have a usable Vulkan driver? The loader library alone proves nothing,
+// distributions ship it as a dependency of things that never use it, so the test is whether
 // any ICD (installable client driver) is registered. That is exactly what DXVK needs to find.
 //
 // Locations are the Vulkan loader's own search path, so this works on any distribution rather
@@ -655,7 +655,7 @@ function hasVulkan() {
 }
 
 // Turn a dead game's output into something a person can act on. Anything we don't recognise
-// stays UNKNOWN — the face shows the log tail rather than inventing a cause.
+// stays UNKNOWN, the face shows the log tail rather than inventing a cause.
 function diagnose(log, protonPath) {
     const t = String(log || '');
     if (/PROTONPATH/i.test(t) && /not set or is empty|FileNotFoundError/i.test(t))
@@ -669,36 +669,36 @@ function diagnose(log, protonPath) {
 
     // The same missing-Vulkan cause, but from a game that got far enough to install its own
     // crash handler. DOOM + DOOM II dies with an access violation inside dxgi.dll at a null
-    // pointer — DXVK could not create a device, handed back nothing, and the game dereferenced
+    // pointer, DXVK could not create a device, handed back nothing, and the game dereferenced
     // it. Recognising the module name is what turns "the game crashed, see CRASHLOG.TXT" into
     // an answer, since that file is written by the game and the app never reads it.
     if (/dxgi\.dll|d3d11\.dll|dxvk/i.test(t) && /Access Violation|0xc0000005|Exception/i.test(t))
         return hasVulkan()
             ? { code: 'D3D_CRASH', message:
                 'The game crashed inside the Direct3D layer. This machine does have a Vulkan driver, so ' +
-                'it is not the usual missing-Vulkan cause — more often a driver problem or a game that ' +
+                'it is not the usual missing-Vulkan cause, more often a driver problem or a game that ' +
                 'needs a specific Proton build. PROTON_USE_WINED3D=1 forces the OpenGL path and is worth ' +
                 'trying under the game\'s own environment variables.' }
             : { code: 'NO_VULKAN', message:
                 'The game crashed inside the Direct3D layer. On a GPU with no Vulkan support that is ' +
-                'expected — Proton renders Direct3D through DXVK, which requires it. Setting ' +
+                'expected, Proton renders Direct3D through DXVK, which requires it. Setting ' +
                 'PROTON_USE_WINED3D=1 for this game switches to OpenGL and often works on older hardware.' };
 
     // The game had a display and lost it, which is a different failure from never having had
     // one. On a Wayland session that is XWayland going away underneath the game. It is emitted
-    // by the X client itself, so it is evidence about the display connection and nothing else —
+    // by the X client itself, so it is evidence about the display connection and nothing else,
     // in particular it is NOT a GPU capability problem, and PROTON_USE_WINED3D will not touch it.
     // This used to be swallowed by the catch-all below and reported as missing Vulkan.
     if (/X connection to :\d+ broken/i.test(t))
         return { code: 'DISPLAY_LOST', message:
             'The game lost its connection to the X server and stopped. On a Wayland desktop that means ' +
-            'XWayland ended underneath it. This is not a graphics-capability problem — forcing OpenGL ' +
+            'XWayland ended underneath it. This is not a graphics-capability problem, forcing OpenGL ' +
             'will not help. Try launching it again; if it repeats, run the game with the log open and ' +
             'check whether XWayland is restarting.' };
 
     // ⚠️ No Vulkan on this GPU. Proton translates Direct3D through DXVK, which is Vulkan-only,
     // so on hardware that predates Vulkan the game dies instantly with nothing useful in the
-    // log — Proton gets as far as "fsync: up and running" and stops. Diagnosed on a 2011 Mac
+    // log, Proton gets as far as "fsync: up and running" and stops. Diagnosed on a 2011 Mac
     // (Intel HD 3000 / Radeon HD 6750M): neither GPU is supported by Mesa's Vulkan drivers,
     // and the identical launch succeeded with PROTON_USE_WINED3D=1, which uses OpenGL instead.
     //
@@ -708,7 +708,7 @@ function diagnose(log, protonPath) {
     // ⚠️ Two corrections, both of which made this fire far too widely:
     //
     //  1. `Proton: Error` was a trigger, but "Proton: Error: unable to use parent for game
-    //     drive, path /home" is printed for ANY game living under /home/<user>/… — which is
+    //     drive, path /home" is printed for ANY game living under /home/<user>/…, which is
     //     nearly every install. It appears verbatim in a launch that SUCCEEDED. It is noise,
     //     not evidence, so it no longer counts.
     //  2. `fsync: up and running` appears in every Proton launch there is, so what remains is
@@ -720,18 +720,18 @@ function diagnose(log, protonPath) {
     if (!hasVulkan() && /fsync: up and running/i.test(t) && !/vulkan|dxvk|d3d11|opengl|wined3d/i.test(t))
         return { code: 'NO_VULKAN', message:
             'The game started and closed immediately with no graphics output. The usual cause is a ' +
-            'GPU with no Vulkan support — Proton renders Direct3D through DXVK, which requires it. ' +
+            'GPU with no Vulkan support, Proton renders Direct3D through DXVK, which requires it. ' +
             'Setting PROTON_USE_WINED3D=1 for this game switches to OpenGL and often works on older ' +
             'hardware. Add it under the game\'s own environment variables.' };
 
     // Proton Experimental ships Xalia, an accessibility helper that aborts the launch when SDL
-    // cannot open a display. It is a symptom rather than a cause — but naming it saves the next
+    // cannot open a display. It is a symptom rather than a cause, but naming it saves the next
     // person searching a stack trace that has nothing to do with their game.
     if (/Xalia/i.test(t) && /No displays available/i.test(t))
         return { code: 'XALIA_NO_DISPLAY', message:
             'Proton\'s accessibility helper (Xalia) could not open a display and stopped the launch. ' +
             'PROTON_USE_XALIA=0 disables it. If the game still fails afterwards, the real cause is ' +
-            'elsewhere — most often a GPU without Vulkan support.' };
+            'elsewhere, most often a GPU without Vulkan support.' };
 
     return { code: 'UNKNOWN', message: 'The game closed immediately after starting.' };
 }
@@ -746,14 +746,14 @@ function diagnose(log, protonPath) {
 // `.parts` file, reported as MB in the message.
 const STARTUP_STEPS = [
     { re: /Setting up Unified Launcher/i,                    phase: 'setup',    percent: 5,   message: 'Preparing the compatibility layer…' },
-    { re: /Downloading steamrt|Downloading SteamLinuxRuntime/i, phase: 'runtime', percent: 15, message: 'Downloading the compatibility runtime — one-time setup, this takes a few minutes.' },
+    { re: /Downloading steamrt|Downloading SteamLinuxRuntime/i, phase: 'runtime', percent: 15, message: 'Downloading the compatibility runtime, one-time setup, this takes a few minutes.' },
     { re: /SHA256 is OK/i,                                   phase: 'verify',   percent: 45,  message: 'Checking the download…' },
     { re: /Verifying integrity of/i,                         phase: 'verify',   percent: 50,  message: 'Verifying the runtime…' },
     { re: /mtree is OK|Using steamrt/i,                      phase: 'ready',    percent: 60,  message: 'Compatibility runtime ready.' },
     // protonfixes runs on every launch and lands BEFORE the prefix build in umu's output, so it
-    // sits below `prefix` here — percentages are clamped monotonic and must not walk backwards.
+    // sits below `prefix` here, percentages are clamped monotonic and must not walk backwards.
     { re: /Running protonfixes|Running checks/i,             phase: 'fixes',    percent: 70,  message: 'Applying compatibility fixes…' },
-    // "Upgrading prefix" is printed only when the prefix is new or the Proton build changed —
+    // "Upgrading prefix" is printed only when the prefix is new or the Proton build changed,
     // deliberately NOT matching generic wine startup chatter, which would show the panel on
     // every ordinary launch.
     { re: /Upgrading prefix from|Creating prefix/i,          phase: 'prefix',   percent: 80,  message: "Setting up this game's Windows environment…" },
@@ -785,7 +785,7 @@ function setupBytes() {
 // letting umu fail invisibly.
 function unavailableError() {
     const err = new Error(
-        'No Proton build found. Windows games need Proton (GE-Proton is recommended) — ' +
+        'No Proton build found. Windows games need Proton (GE-Proton is recommended), ' +
         'install one from the Control Panel, or point Clarity at an existing build.');
     err.code = 'NO_PROTON';
     return err;
@@ -809,7 +809,7 @@ function inUse(runtimePath) { return !!(runtimePath || findUmu()); }
 // Whether *anything* can run a Windows executable here.
 function canRun(runtimePath) { return !!(runtimePath || findWineCached()); }
 
-// Compat env vars — mirrors Heroic's launcher.ts logic exactly
+// Compat env vars, mirrors Heroic's launcher.ts logic exactly
 function compatEnv(game, runtimePath) {
     const env = {};
     if (inUse(runtimePath)) {
@@ -827,25 +827,25 @@ function compatEnv(game, runtimePath) {
 }
 
 // A host path as the runtime sees it. Z: maps to the filesystem root under Wine, and .bat
-// files must be launched via that Windows path — Proton/wine can't run .bat from a raw
+// files must be launched via that Windows path, Proton/wine can't run .bat from a raw
 // Linux path. The same form is what registry values have to carry.
 function toWindowsPath(p) { return ('Z:' + p).replace(/\//g, '\\'); }
 
 // Refuse a launch that is guaranteed to die in silence. Bare wine stays reachable only where
-// it is genuinely the sole option — with umu-run installed, Proton is the supported path and
+// it is genuinely the sole option, with umu-run installed, Proton is the supported path and
 // quietly dropping to wine (no DXVK, no Proton patches) just trades a visible failure for a
 // mysterious one.
 function assertAvailable(runtimePath) {
     if (!runtimePath && (findUmu() || !findWineCached())) throw unavailableError();
 }
 
-// The spawn spec for one Windows game. `env` is the EXTRA environment only — the caller
+// The spawn spec for one Windows game. `env` is the EXTRA environment only, the caller
 // merges it over its own base (system → per-game custom vars → compat flags).
 function buildLaunch({ game, gameId, launchExe, isBat, userArgs, allArgs, runtimePath, prefix }) {
     const umu = findUmu();
     const gameid = game.app_id || `installer-${gameId}`;
 
-    // Epic titles are launched with the user's own arguments only — legendary owns the rest.
+    // Epic titles are launched with the user's own arguments only, legendary owns the rest.
     if (game.store === 'epic' && umu && runtimePath) {
         return { cmd: umu, args: [launchExe, ...userArgs],
                  env: { WINEPREFIX: prefix, PROTONPATH: runtimePath, GAMEID: gameid },
@@ -936,7 +936,7 @@ function resolveInstallDir() {
 }
 
 // Everywhere a build may legitimately be removed from. Deliberately a superset of
-// installDirs(): the two faces used to keep their own lists and they disagreed — one allowed
+// installDirs(): the two faces used to keep their own lists and they disagreed, one allowed
 // ~/.steam/steam/compatibilitytools.d but not umu's store, the other the reverse. Taking the
 // union means nothing that used to be removable stopped being removable, and the one location
 // we install into that was previously un-removable no longer strands a build there.
@@ -944,7 +944,7 @@ function managedDirs() {
     return [...installDirs(), path.join(HOME, '.steam', 'steam', 'compatibilitytools.d')];
 }
 
-// Delete safety. Symlinks are resolved on both sides — ~/.steam/root and ~/.local/share/Steam
+// Delete safety. Symlinks are resolved on both sides, ~/.steam/root and ~/.local/share/Steam
 // are usually the same place, and a path that arrived by one name must still match a base
 // named the other.
 function isManagedDir(dirPath) {
@@ -954,7 +954,7 @@ function isManagedDir(dirPath) {
 }
 
 function removeRuntime(dirPath) {
-    if (!isManagedDir(dirPath)) return { ok: false, error: 'Refusing to delete — path is not inside compatibilitytools.d.' };
+    if (!isManagedDir(dirPath)) return { ok: false, error: 'Refusing to delete, path is not inside compatibilitytools.d.' };
     const resolved = (() => { try { return fs.realpathSync(expandTilde(dirPath)); } catch { return expandTilde(dirPath); } })();
     try { fs.rmSync(resolved, { recursive: true, force: true }); return { ok: true }; }
     catch (e) { return { ok: false, error: e.message }; }
@@ -1007,7 +1007,7 @@ function cancelInstall() {
 // Download + unpack one release. onProgress({ phase, percent, message }).
 //
 // The archive lands in the install directory, not os.tmpdir(): /tmp is tmpfs on most
-// modern distributions, and these builds unpack to well over a gigabyte — staging that in
+// modern distributions, and these builds unpack to well over a gigabyte, staging that in
 // RAM is a bad trade when the destination filesystem is right there. It also means the
 // extraction never crosses a filesystem boundary.
 async function installRelease({ release, onProgress } = {}) {
@@ -1077,9 +1077,9 @@ const management = {
 function runnerTools() {
     return [
         { key: 'umu',  label: 'umu-run', path: findUmu() || null, installable: true, optional: false,
-          hint: 'not found — install via package manager for best compatibility. Direct Proton invocation is used as a fallback.' },
+          hint: 'not found, install via package manager for best compatibility. Direct Proton invocation is used as a fallback.' },
         { key: 'wine', label: 'wine',    path: findWineCached() || null, installable: false, optional: true,
-          hint: 'not found (optional — only needed as last resort)' },
+          hint: 'not found (optional, only needed as last resort)' },
     ];
 }
 

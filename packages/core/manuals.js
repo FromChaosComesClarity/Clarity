@@ -1,6 +1,6 @@
 'use strict';
 /*
- * @clarity/core — per-game manuals.
+ * @clarity/core, per-game manuals.
  *
  * Plenty of games, RPGs above all, still expect you to read something, and more often than
  * not the file is already on disk: GOG ships manuals, cluebooks and reference cards inside
@@ -11,7 +11,7 @@
  * password reference card, and picking one of the three to be "the manual" would have been
  * an odd thing to make someone do.
  *
- * POINTERS, never copies — except for what we download ourselves. A file the user chose, or
+ * POINTERS, never copies, except for what we download ourselves. A file the user chose, or
  * one GOG installed, belongs to them: removing it here only forgets the association. Only a
  * manual this app downloaded may be deleted from disk, and only from the folder it owns.
  */
@@ -54,7 +54,7 @@ const MANUAL_FILTERS = [
 const isDoc = f => MANUAL_EXTENSIONS.includes(path.extname(f).slice(1).toLowerCase());
 
 // Attached manuals, newest sort_order last. `exists` is re-checked every time because these
-// files live outside our control — an uninstall or a moved folder takes one away silently.
+// files live outside our control, an uninstall or a moved folder takes one away silently.
 function listManuals(db, fs, gameId) {
     let rows = [];
     try {
@@ -97,7 +97,7 @@ function removeManual(db, fs, manualId, downloadDir) {
  * Documents a game already has, without asking the user to go looking.
  *
  * Two sources, best first:
- *   1. goggame-<appId>.info — GOG lists its documents as FileTasks with real names
+ *   1. goggame-<appId>.info, GOG lists its documents as FileTasks with real names
  *      ("Cluebook", "Password reference card"), which beats anything guessed from a
  *      filename. Both playTasks and supportTasks carry them.
  *   2. A shallow scan of the install folder for documents the manifest did not mention.
@@ -112,7 +112,7 @@ function detectManuals(fs, installPath, appId) {
     const seen = new Set();
 
     // GOG's manifests are written on Windows and their casing does not always match what
-    // is on disk — Realms of Arkania declares "Manual.pdf" and ships MANUAL.PDF. On a
+    // is on disk, Realms of Arkania declares "Manual.pdf" and ships MANUAL.PDF. On a
     // case-sensitive filesystem that is a different file, and the best-labelled source
     // would silently lose to the folder scan.
     const resolveCase = p => {
@@ -151,7 +151,7 @@ function detectManuals(fs, installPath, appId) {
             const full = path.join(dir, e.name);
             if (e.isFile()) {
                 // A folder scan cannot tell a manual from a licence, so only take the
-                // formats people actually read — and never plain text, which at the top of
+                // formats people actually read, and never plain text, which at the top of
                 // a game folder is almost always a EULA or a changelog.
                 if (/\.(pdf|html?)$/i.test(e.name)) push(full, path.basename(e.name, path.extname(e.name)), 'folder-scan');
             } else if (e.isDirectory() && depth > 0) {

@@ -1,8 +1,8 @@
 'use strict';
 /*
- * @clarity/core — "Free This Week" sources for the Home dashboards (Phase 2).
+ * @clarity/core, "Free This Week" sources for the Home dashboards (Phase 2).
  * Currently the Epic Games weekly free games via their PUBLIC promotions endpoint
- * (no key, no auth). Network — only called when the Freebies widget/row is enabled
+ * (no key, no auth). Network, only called when the Freebies widget/row is enabled
  * (opt-in). Defensive: resolves to [] on any error.
  */
 const { session } = require('electron');

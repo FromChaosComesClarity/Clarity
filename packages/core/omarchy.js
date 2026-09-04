@@ -1,7 +1,7 @@
 // ── Omarchy Linux integration ────────────────────────────────────────────────
 // Omarchy is Arch with Hyprland and an opinionated set of defaults. It is NOT a platform
 // backend: `host.id` is still `linux` and every path in platform/linux.js applies unchanged.
-// What is different is the *desktop* — a Wayland tiling compositor instead of KDE — and the
+// What is different is the *desktop*, a Wayland tiling compositor instead of KDE, and the
 // fact that a fresh install ships almost none of the gaming stack, because Omarchy is aimed
 // at developers first. Both of those are things this module can answer questions about.
 //
@@ -9,7 +9,7 @@
 // is meant to be copied into EmuLatte verbatim, where only the wiring differs.
 //
 // ⚠️ Nothing here escalates privileges. Installing packages needs root, and the honest way
-// to ask for root from a GUI app is to hand the command to a terminal the user can watch —
+// to ask for root from a GUI app is to hand the command to a terminal the user can watch,
 // see openInstallTerminal(). Omarchy's own guidance says the same: sudo where a terminal
 // exists to type the password into.
 'use strict';
@@ -33,7 +33,7 @@ function which(bin) {
 // ── Detection ────────────────────────────────────────────────────────────────
 // os-release is the only thing that identifies the distribution. Omarchy 4 sets
 // ID=omarchy with ID_LIKE=arch, which is why linux.js's pacman hints already fire
-// correctly — its is() helper splits ID_LIKE. Do not assume ID_LIKE stays set: a future
+// correctly, its is() helper splits ID_LIKE. Do not assume ID_LIKE stays set: a future
 // release dropping it would silently turn every "arch" branch off, so anything that needs
 // "is this pacman-based" should ask isArchLike() rather than reading ID alone.
 let _osRelease;
@@ -64,7 +64,7 @@ function isArchLike() {
 }
 function version() { return osRelease().versionId || ''; }
 
-// Hyprland is what Omarchy runs, but it is not exclusive to it — someone on plain Arch may
+// Hyprland is what Omarchy runs, but it is not exclusive to it, someone on plain Arch may
 // well be running Hyprland too, and every window-management feature here works for them.
 // Keep the two questions separate so neither gates the other.
 function isHyprland() {
@@ -94,7 +94,7 @@ function hyprctlJson(args) {
 }
 
 // The monitors Hyprland knows about, in its own order. `name` is the connector (eDP-1,
-// LVDS-1, HDMI-A-1) and is what a window rule matches on — an index shifts when a monitor
+// LVDS-1, HDMI-A-1) and is what a window rule matches on, an index shifts when a monitor
 // is unplugged, a connector name does not. Same reasoning as kwin-display.js.
 function monitors() {
     const list = hyprctlJson(['monitors']);
@@ -115,18 +115,18 @@ function monitors() {
 // A tiling compositor tiles everything, including windows that are obviously transient. The
 // Installer window is the clear case: it is a tool the Manager opens over itself, and tiling it
 // side-by-side halves the library you were just looking at. Sign-in windows are the same
-// shape — they are dialogs, and a dialog that steals half the screen is a dialog done wrong.
+// shape. They are dialogs, and a dialog that steals half the screen is a dialog done wrong.
 //
 // ⚠️ Every face ships as the same Electron app, so they all share one app id
 // (`clarity`). Class alone cannot tell them apart; the rules below match on TITLE, which
 // is the only thing that distinguishes Installer from the Manager from Couch.
 //
 // Applied with `hyprctl keyword`, which is session-scoped and writes NOTHING to the user's
-// Hyprland config — the same restraint kwin-display.js exercises on KDE, and for the same
+// Hyprland config, the same restraint kwin-display.js exercises on KDE, and for the same
 // reason: a game launcher has no business editing someone's window manager configuration.
 // Re-applied at every start, since the rules die with the session.
 // ⚠️ Hyprland 0.56 with Omarchy's Lua config runs a NON-LEGACY parser, and `hyprctl keyword`
-// simply does not work there — it answers "keyword can't work with non-legacy parsers. Use
+// simply does not work there, it answers "keyword can't work with non-legacy parsers. Use
 // eval." and changes nothing. Worse, it answers that on stdout with exit status 0, so a naive
 // success check counts the refusal as a success and reports rules applied that were not. The
 // runtime API is `hyprctl eval` with Omarchy's own Lua helper:
@@ -136,11 +136,11 @@ function monitors() {
 // A plain Arch box running Hyprland with a .conf config still has the legacy parser, so the
 // keyword form is kept as a fallback. Both are checked for a literal "ok".
 // Every window class a game can arrive under, as one Lua/Hyprland regex. Kept in step with
-// kwin-display.js's GAME_CLASSES — the same problem on a different compositor.
+// kwin-display.js's GAME_CLASSES, the same problem on a different compositor.
 const GAME_CLASS_RE = '^(steam_app_.*|dosbox.*|scummvm|openbor|gzdoom|uzdoom|ironwail|vkquake|quake.*|raze|buildgdx|ecwolf|cannonball)$';
 
 const WINDOW_RULES = [
-    // Installer floats above the Manager rather than splitting the screen with it — it is a tool
+    // Installer floats above the Manager rather than splitting the screen with it. It is a tool
     // opened over the library, and tiling it halves the thing you were just looking at.
     {
         lua: 'o.window({ class = "^(clarity)$", title = "^(Clarity Installer)$" }, { float = true, center = true, size = { 1100, 700 } })',
@@ -157,7 +157,7 @@ const WINDOW_RULES = [
         keyword: ['float', 'class:^(clarity)$,title:^(.*Manual.*)$'],
     },
     // Games launched through umu/Proton all arrive as steam_app_* (umu gives every non-Steam
-    // title the same class — see kwin-display.js for why that is not ours to change). Holding
+    // title the same class, see kwin-display.js for why that is not ours to change). Holding
     // idle off while one is focused is belt-and-braces alongside the app's own inhibitor, and
     // it is what Steam's own Omarchy rule does.
     {
@@ -170,7 +170,7 @@ const WINDOW_RULES = [
 // Three answers, and the default is fullscreen.
 //
 // A game that opens TILED gets shoved into whatever slot the layout has free and resized to
-// it, a moment before it goes fullscreen anyway — so the first thing you see of a game is it
+// it, a moment before it goes fullscreen anyway, so the first thing you see of a game is it
 // being squashed into half a screen.
 //
 // FLOATING was the old default and fixed that, but not the thing underneath it: a floating
@@ -181,7 +181,7 @@ const WINDOW_RULES = [
 // FULLSCREEN hands it the whole monitor at map time, which is what a game wants and what
 // Omarchy's own rules already do for RetroArch and Moonlight. ⚠️ It also fullscreens a game's
 // little pre-launch configuration dialog, since umu gives every Proton title the same window
-// class and nothing distinguishes the two — which is exactly why floating remains one click
+// class and nothing distinguishes the two, which is exactly why floating remains one click
 // away rather than being deleted.
 //
 // Same class list the KWin picker uses: everything through umu/Proton arrives as steam_app_*,
@@ -206,14 +206,14 @@ const GAME_WINDOW_MODE_DEFAULT = 'fullscreen';
 /*
  * Drop every window rule added at runtime, by re-reading the user's own Hyprland config.
  *
- * ⚠️ This exists because a Hyprland rule cannot be withdrawn — the Lua API has `unbind` for
+ * ⚠️ This exists because a Hyprland rule cannot be withdrawn, the Lua API has `unbind` for
  * keys and nothing at all for window rules (checked against 0.56.2's `hl` table). So the only
  * way to stop a rule applying is to make the compositor forget every dynamic one, which
  * `hyprctl reload` does: measured, a rule added by eval no longer matched afterwards, and the
  * monitor layout came back untouched because that lives in the user's config.
  *
  * ⚠️ It is therefore NOT free: rules other tools set at runtime this session go too, and only
- * ours are put back. That is why nothing calls this on its own — it happens when the user asks
+ * ours are put back. That is why nothing calls this on its own, it happens when the user asks
  * for the change to take effect now, and the button says what it does.
  */
 function reloadConfig() {
@@ -225,7 +225,7 @@ function reloadConfig() {
 function applyWindowRules({ gameWindowMode = GAME_WINDOW_MODE_DEFAULT } = {}) {
     if (!isHyprland() || !hyprctlBin()) return { ok: false, applied: 0, total: 0 };
     // ⚠️ `hasOwnProperty`, not `||`: 'tile' is a real mode whose rule is deliberately null, and
-    // an `||` reads that as "unknown mode" and quietly substitutes fullscreen — so the one
+    // an `||` reads that as "unknown mode" and quietly substitutes fullscreen, so the one
     // setting that means "leave my windows alone" did the opposite.
     const modeRule = Object.prototype.hasOwnProperty.call(GAME_WINDOW_MODES, gameWindowMode)
         ? GAME_WINDOW_MODES[gameWindowMode]
@@ -234,7 +234,7 @@ function applyWindowRules({ gameWindowMode = GAME_WINDOW_MODE_DEFAULT } = {}) {
     let applied = 0;
     for (const r of rules) {
         let out = hyprctl(['eval', r.lua]);
-        // No Lua helper (a plain Hyprland with the legacy parser) — try the classic form.
+        // No Lua helper (a plain Hyprland with the legacy parser), try the classic form.
         if (!out || !/^ok\b/i.test(out.trim())) {
             const alt = hyprctl(['keyword', 'windowrulev2', `${r.keyword[0]}, ${r.keyword[1]}`]);
             out = alt;
@@ -247,8 +247,8 @@ function applyWindowRules({ gameWindowMode = GAME_WINDOW_MODE_DEFAULT } = {}) {
 // ── System tuning for games ──────────────────────────────────────────────────
 // A gaming-focused distribution sets a handful of kernel knobs that a general-purpose one
 // leaves at defaults. Most of what those distributions are famous for does not apply on Arch
-// — full Mesa and ffmpeg are already here, the kernel is newer, and the fsync work that once
-// justified a patched kernel is upstream — so this list is deliberately short. Measured on a
+//, full Mesa and ffmpeg are already here, the kernel is newer, and the fsync work that once
+// justified a patched kernel is upstream, so this list is deliberately short. Measured on a
 // real Omarchy 4 box, two of the three below were already correct out of the box.
 //
 // ⚠️ This REPORTS. It does not tune anything. Kernel parameters belong to the distribution
@@ -260,7 +260,7 @@ const TUNING = [
         key: 'max_map_count', label: 'Memory map limit',
         read: () => procNumber('/proc/sys/vm/max_map_count'),
         want: 1048576, cmp: 'gte', sysctl: 'vm.max_map_count=1048576',
-        why: 'Some games — Proton titles especially — map far more memory regions than the old default allowed, and hit a wall that looks like a random crash. Modern kernels already ship a high value.',
+        why: 'Some games, Proton titles especially, map far more memory regions than the old default allowed, and hit a wall that looks like a random crash. Modern kernels already ship a high value.',
     },
     {
         key: 'split_lock', label: 'Split-lock mitigation',
@@ -271,7 +271,7 @@ const TUNING = [
     {
         key: 'file_limit', label: 'Open file limit',
         // /proc/self/limits reflects what this process inherited, which is the same session
-        // default a game launched from here will get — a truer answer than fs.file-max.
+        // default a game launched from here will get, a truer answer than fs.file-max.
         read: () => {
             try {
                 const line = fs.readFileSync('/proc/self/limits', 'utf8')
@@ -281,7 +281,7 @@ const TUNING = [
                 return n[2] === 'unlimited' ? Infinity : parseInt(n[2], 10);
             } catch { return null; }
         },
-        want: 524288, cmp: 'gte', sysctl: '',   // not a sysctl — set by systemd, see `fix`
+        want: 524288, cmp: 'gte', sysctl: '',   // not a sysctl, set by systemd, see `fix`
         fix: 'sudo mkdir -p /etc/systemd/system.conf.d && printf \'[Manager]\\nDefaultLimitNOFILE=524288:524288\\n\' | sudo tee /etc/systemd/system.conf.d/99-gaming-nofile.conf',
         why: 'esync gives every game thread its own file descriptor, so a low ceiling shows up as a game refusing to start once it is busy enough.',
     },
@@ -332,7 +332,7 @@ function tuningCommand() {
 // side by side.
 //
 // ⚠️ Read from the compositor, not from ~/.config/hypr/looknfeel.lua. The config is Lua in
-// Omarchy 4 and parsing it would mean writing a Lua reader for one integer — and it would
+// Omarchy 4 and parsing it would mean writing a Lua reader for one integer, and it would
 // still be wrong the moment the value is changed at runtime. `hyprctl getoption` reports what
 // Hyprland is ACTUALLY using.
 function hyprGeometry() {
@@ -355,7 +355,7 @@ function hyprGeometry() {
 // ── Keeping the screen awake while a game runs ───────────────────────────────
 // Omarchy locks on idle. A gamepad-only Couch session, a long cutscene or a turn spent
 // reading a map produces no keyboard or mouse input at all, so the desktop's idea of "idle"
-// and the player's are completely different — and the lock screen wins.
+// and the player's are completely different, and the lock screen wins.
 //
 // Electron's powerSaveBlocker speaks the Wayland idle-inhibit protocol, which hypridle honours,
 // so the app can hold the inhibitor for exactly as long as a game is running. That is better
@@ -387,7 +387,7 @@ function inhibitIdle(on, powerSaveBlocker) {
 //
 // ⚠️ The previous profile is captured at switch time and restored on the way out, so this
 // cannot strand a machine in `performance` and eat someone's battery. If the profile cannot
-// be read, nothing is changed at all — guessing what to restore to would be worse than not
+// be read, nothing is changed at all, guessing what to restore to would be worse than not
 // helping.
 let _savedProfile = '';
 function powerProfile(name) {
@@ -419,14 +419,14 @@ function setGamingPower(on) {
 // is a gaming distribution and ships this whole list preinstalled, which is exactly why the
 // gap only becomes visible on a machine like this one.
 //
-// ⚠️ Never name the reference distribution in a `label` or `why` — those strings are rendered
+// ⚠️ Never name the reference distribution in a `label` or `why`, those strings are rendered
 // in the app, and a user on Omarchy has no reason to be told about another distro. Describe
 // what the tool does instead. (The comments here are developer-facing and may name it.)
 //
 // Every entry names the binary the suite actually probes for, so this list stays honest:
 // `required: true` means something in Clarity degrades without it, and the `why`
 // says what. The `extra` group is what Nobara ships and a gamer will want, but which the
-// suite itself never calls — labelled so nobody is told they need something they don't.
+// suite itself never calls, labelled so nobody is told they need something they don't.
 //
 // ⚠️ Package names are Arch's, and `repo` records where it comes from: everything here is
 // in an official repo except dosbox-staging, which is AUR-only and therefore installed
@@ -438,15 +438,15 @@ const TOOLS = [
     // ⚠️ Plain `dosbox` from the official repos, NOT dosbox-staging from the AUR. The suite
     // accepts any of the three, the Nobara reference host runs plain `dosbox`, and this list
     // exists to reach parity with that host. Staging is arguably the better emulator, but it
-    // is an AUR source build — minutes of compiling on old hardware, and a dependency on an
-    // AUR helper — for a tier labelled "required". Anyone who wants Staging can install it
+    // is an AUR source build, minutes of compiling on old hardware, and a dependency on an
+    // AUR helper, for a tier labelled "required". Anyone who wants Staging can install it
     // themselves and the alternates below pick it up.
     { key: 'dosbox',   bin: 'dosbox',                   pkg: 'dosbox',             repo: 'extra',    required: true,
       label: 'DOSBox', alt: ['dosbox-staging', 'dosbox-x'],
       why: 'DOS games from GOG launch through it. Without any DOSBox, those titles cannot start at all. An existing dosbox-staging or dosbox-x counts just the same.' },
     { key: 'wmctrl',   bin: 'wmctrl',                   pkg: 'wmctrl',             repo: 'extra',    required: false,
       label: 'wmctrl',
-      why: 'used to raise the window after a game exits. It is an X11 tool, so on a pure Wayland session it does nothing even when installed — safe to skip on Hyprland.' },
+      why: 'used to raise the window after a game exits. It is an X11 tool, so on a pure Wayland session it does nothing even when installed, safe to skip on Hyprland.' },
     { key: 'pipx',     bin: 'pipx',                     pkg: 'python-pipx',        repo: 'extra',    required: false,
       label: 'pipx',
       why: 'lets the suite install umu-launcher into your home directory without root. Unnecessary if umu-launcher is installed from the repos.' },
@@ -483,7 +483,7 @@ const TOOLS = [
 // So the rule is: if Omarchy has an installer for it, hand the user Omarchy's installer.
 // We detect what is missing and get out of the way. Nothing here is installed by us.
 //
-// ⚠️ These are whole applications, not helper binaries — a missing one is never an error,
+// ⚠️ These are whole applications, not helper binaries, a missing one is never an error,
 // only an offer. Steam missing is worth surfacing prominently because the library is built
 // from it; the rest are opportunities.
 const FLATPAK_EXPORTS = [
@@ -512,7 +512,7 @@ const INSTALLERS = [
       why: 'Proton and Wine are 32-bit-capable and need the lib32 Vulkan stack. Without it Windows games fail to start or fall back to software rendering. Installing Steam through Omarchy brings these in too.' },
     // ⚠️ Heroic and Lutris are deliberately absent. The suite signs in to GOG and Epic
     // itself and runs Windows games through Proton directly, so a second launcher is not a
-    // missing piece — it is a competing one, and offering to install it would undercut the
+    // missing piece. It is a competing one, and offering to install it would undercut the
     // thing this app exists to do. Omarchy can install both; that is the user's business,
     // not a gap for us to report.
 
@@ -540,7 +540,7 @@ function installerStatus() {
     });
 }
 
-// `includeEmulation` is false for Clarity and true for EmuLatte — same module,
+// `includeEmulation` is false for Clarity and true for EmuLatte, same module,
 // each app reporting only what it is actually responsible for.
 function missingInstallers({ includeEmulation = false } = {}) {
     return installerStatus().filter(i => !i.present && (includeEmulation || !i.emulation));
@@ -554,7 +554,7 @@ function runInstaller(key) {
     return openTerminalWith(entry.command);
 }
 
-// Resolve one tool against PATH, honouring the alternates — a user with plain `dosbox`
+// Resolve one tool against PATH, honouring the alternates, a user with plain `dosbox`
 // installed has a working DOSBox and must not be told otherwise.
 function resolveTool(t) {
     let found = which(t.bin);
@@ -601,8 +601,8 @@ function installCommand(keys) {
     const parts = [];
     if (repo.length) parts.push(`omarchy pkg add ${repo.join(' ')}`);
     if (aur.length)  parts.push(`omarchy pkg aur add ${aur.join(' ')}`);
-    // ⚠️ `;` and not `&&`. Chained with &&, a non-zero exit from the repo step — which
-    // includes cases as harmless as "nothing to do" — silently skips the AUR step, and the
+    // ⚠️ `;` and not `&&`. Chained with &&, a non-zero exit from the repo step, which
+    // includes cases as harmless as "nothing to do", silently skips the AUR step, and the
     // user is left being told a package is still missing after watching an install succeed.
     // These are independent installs; one failing is not a reason to skip the other.
     return parts.join('; ');
@@ -621,7 +621,7 @@ function terminalLauncher() {
     return null;
 }
 
-// Open a terminal running a command, then keep it open so the result is readable — a
+// Open a terminal running a command, then keep it open so the result is readable, a
 // terminal that closes the instant pacman finishes takes the error with it.
 //
 // ⚠️ detached + unref is what stops the install dying when the app is closed mid-way, and
@@ -645,7 +645,7 @@ function openTerminalWith(command) {
 
 function openInstallTerminal(keys) {
     const command = installCommand(keys);
-    if (!command) return { ok: false, error: 'Nothing to install — every selected tool is already present.' };
+    if (!command) return { ok: false, error: 'Nothing to install, every selected tool is already present.' };
     return openTerminalWith(command);
 }
 

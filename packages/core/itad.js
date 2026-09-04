@@ -1,11 +1,11 @@
 'use strict';
 /*
- * @clarity/core — IsThereAnyDeal (ITAD) API v2 wrapper for the Wishlist
+ * @clarity/core, IsThereAnyDeal (ITAD) API v2 wrapper for the Wishlist
  * deals feature (Phase 2). 100% network and 100% OPT-IN: nothing here runs
  * unless the user has saved an ITAD API key (settings key `itad_api_key`).
  *
  * Free key: register an app at https://isthereanydeal.com/apps/developer/
- * Every call is defensive — resolves to null / {} / [] on any error, never throws.
+ * Every call is defensive, resolves to null / {} / [] on any error, never throws.
  */
 const { session } = require('electron');
 const BASE = 'https://api.isthereanydeal.com';

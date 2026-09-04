@@ -2,7 +2,7 @@
 /*
  * Where this installation lives, written down for the desktop to read.
  *
- * Companion pieces — the Omarchy bar widget, its launcher overlay, the Clock — need
+ * Companion pieces, the Omarchy bar widget, its launcher overlay, the Clock, need
  * three things only the app knows for certain: which binary to run, and where the two
  * databases actually are. Every one of those is a *lookup*, never a guess: a second
  * consumer computing its own library.db path is precisely how the library got orphaned
@@ -14,7 +14,7 @@
  * ~/.config/clarity/desktop.json, and anything on the desktop that wants to talk
  * to Clarity reads it there.
  *
- * ⚠️ For consumers: a missing file means "not installed, or never run" — it is never a
+ * ⚠️ For consumers: a missing file means "not installed, or never run". It is never a
  * licence to fall back to a guessed path. Report nothing rather than the wrong thing.
  *
  * ⚠️ Writes merge. The renderer contributes the command-palette actions once the UI is
@@ -60,7 +60,7 @@ function readDescriptor() {
 
 /*
  * Merge `patch` into the descriptor and write it out. Returns the path on success and
- * null on failure — a desktop integration that cannot be told where we are is a
+ * null on failure, a desktop integration that cannot be told where we are is a
  * missing icon in someone's bar, never a reason to interrupt the app.
  */
 function writeDescriptor(patch) {
@@ -77,7 +77,7 @@ function writeDescriptor(patch) {
 
 /*
  * Called once per Manager start with everything main.js already has resolved.
- * `installerDb` may be null — Installer's database does not exist until the first
+ * `installerDb` may be null, Installer's database does not exist until the first
  * store sign-in, and saying so is more useful than omitting the key.
  */
 function publish({ version, baseDir, libraryDb, installerDb, selfExecutable }) {
@@ -94,7 +94,7 @@ function publish({ version, baseDir, libraryDb, installerDb, selfExecutable }) {
 
 /*
  * The command palette's action list, published so the Omarchy launcher overlay offers
- * exactly the actions this build has — rather than a copy that silently drifts the
+ * exactly the actions this build has, rather than a copy that silently drifts the
  * first time one is renamed. Ids are stable; names are what a person reads.
  */
 function publishActions(actions) {

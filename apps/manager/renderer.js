@@ -80,14 +80,14 @@ function _steamAppId(game) {
 
 // ⚠️ A SteamAppID does NOT mean the game is owned on Steam. The scrapers attach one to
 // anything they can match by name, so a GOG-only or itch title carries a Steam id purely
-// for metadata and artwork — 224 of them in Jose's library. Ownership lives in `Store`,
+// for metadata and artwork, 224 of them in Jose's library. Ownership lives in `Store`,
 // which is a comma list ("Steam, GOG", "GOG, Steam", "Others, Steam"), so Steam actions
 // are gated on the store, and the id is only used to build the deep link once that holds.
 function _isOnSteam(game) {
     return (game?.Store || '').toLowerCase().split(',').some(s => s.trim() === 'steam');
 }
 
-// ── "Open in Steam" dropdown — deep-links into the Steam client via steam:// URLs ──
+// ── "Open in Steam" dropdown, deep-links into the Steam client via steam:// URLs ──
 function _closeSteamMenu() {
     document.getElementById('steam-menu')?.remove();
     document.removeEventListener('click', _steamMenuOutside, true);
@@ -128,7 +128,7 @@ function openSteamMenu(anchorBtn, appId) {
 // Hyprland (see packages/core/hypr-display.js). The card appears wherever one of them
 // reports isSupported() and stays away everywhere else rather than showing a setting
 // that cannot work. Nothing inside a game decides which monitor it lands on under
-// Wayland — the compositor does.
+// Wayland. The compositor does.
 async function initDisplayPicker() {
     const card = document.getElementById('display-card');
     const sel = document.getElementById('display-select');
@@ -140,7 +140,7 @@ async function initDisplayPicker() {
     // ⚠️ Unsupported means REMOVE, not hide. This card ships with an inline display:none,
     // and the Control Panel used to reset `display` on every .tools-section in three places,
     // so hiding it lasted exactly until the panel was opened. Those resets went with the
-    // settings search in wave 2A, so hiding would hold now — removal is kept because it is
+    // settings search in wave 2A, so hiding would hold now, removal is kept because it is
     // still the honest answer. This used to remove the card on Hyprland too, because the
     // only backend was a KWin script; Hyprland has its own backend now, so the card appears
     // there and is removed only where neither compositor is running.
@@ -148,7 +148,7 @@ async function initDisplayPicker() {
     // Having only one screen is different: the feature works, there is just nothing to
     // choose, and plugging a second monitor in makes it meaningful again. Hiding is right
     // there, but it has to survive the same reset, so it is removed too and comes back on
-    // the next start — which is when a newly plugged monitor would be noticed anyway.
+    // the next start, which is when a newly plugged monitor would be noticed anyway.
     if (!opts || !opts.supported || opts.displays.length < 2) { card.remove(); return; }
 
     card.style.display = '';
@@ -159,7 +159,7 @@ async function initDisplayPicker() {
         o.value = String(d.index);
         // The connector name alone means nothing to most people; the size is what makes a
         // monitor recognisable.
-        o.textContent = `${d.name}${d.mode ? ` — ${d.mode}${d.hz ? `@${d.hz}Hz` : ''}` : ''}${d.primary ? ' (primary)' : ''}`;
+        o.textContent = `${d.name}${d.mode ? `, ${d.mode}${d.hz ? `@${d.hz}Hz` : ''}` : ''}${d.primary ? ' (primary)' : ''}`;
         if (opts.current === d.index) o.selected = true;
         sel.appendChild(o);
     }
@@ -176,7 +176,7 @@ async function initDisplayPicker() {
             return;
         }
         status.style.color = '#66bb6a';
-        // Two separate things happened on Hyprland, and only one of them is a window rule —
+        // Two separate things happened on Hyprland, and only one of them is a window rule,
         // say so, because the second one changed something about the X session.
         const xNote = res.xPrimary?.ok ? ` ${res.display.name} is now the primary screen for X11 games too.` : '';
         status.textContent = res.display
@@ -189,7 +189,7 @@ initDisplayPicker();
 // ── Fan games & source ports ─────────────────────────────────────────────────
 // The catalogue of things installable from a file the user already downloaded. Each entry
 // states where to get the download and what it is called, because "go find a source port"
-// is the step that actually stops people — and then reports whether the game data it needs
+// is the step that actually stops people, and then reports whether the game data it needs
 // was located in their own library, which is the half worth automating.
 let _customRecipes = [];
 
@@ -214,7 +214,7 @@ function _customGroupOf(r) {
 
 // Opens folded: the catalogue is long enough that a wall of entries buries the shape of
 // it, and the group names are the fastest way to find what you came for. A search is the
-// exception — hiding matches behind a closed header would defeat the search.
+// exception, hiding matches behind a closed header would defeat the search.
 function renderCustomList(recipes, { collapsed = true } = {}) {
     const list = document.getElementById('custom-list');
     list.innerHTML = '';
@@ -296,7 +296,7 @@ function _customRow(r) {
         const actions = row.querySelector('.ci-actions');
         const btn = document.createElement('button');
         btn.className = 'primary';
-        // A shape-based entry is never "reinstalled" — every OpenBOR archive is a different
+        // A shape-based entry is never "reinstalled", every OpenBOR archive is a different
         // game arriving through the same recipe, so it always reads as adding one.
         btn.textContent = r.folder ? 'CHOOSE A FOLDER'
                         : r.dynamic ? 'ADD FROM FILE'
@@ -324,7 +324,7 @@ function _customRow(r) {
     }
 }
 
-// Free-text filter over the whole catalogue — title, kind, game and blurb — so "quake",
+// Free-text filter over the whole catalogue, title, kind, game and blurb, so "quake",
 // "mod" and "openbor" all find what you would expect.
 document.getElementById('custom-search')?.addEventListener('input', (e) => {
     const q = e.target.value.trim().toLowerCase();
@@ -345,7 +345,7 @@ async function addWindowsGameFromFolder() {
     const scan = await window.api.customFolderScan(picked.path);
     if (!scan || !scan.ok) { showAlert((scan && scan.error) || 'Could not read that folder.'); return; }
     if (!scan.entries.length) {
-        showAlert('Nothing in that folder looks like it starts a game — no .exe, .bat or .sh was found.');
+        showAlert('Nothing in that folder looks like it starts a game, no .exe, .bat or .sh was found.');
         return;
     }
 
@@ -354,7 +354,7 @@ async function addWindowsGameFromFolder() {
         okLabel: 'Add to Library',
         radios: {
             header: 'What starts the game?',
-            hint: 'Best guess first. A .bat is sometimes the real entry point — it can carry the command line a mod needs — and sometimes just a utility, so check the name.',
+            hint: 'Best guess first. A .bat is sometimes the real entry point. It can carry the command line a mod needs, and sometimes just a utility, so check the name.',
             items: scan.entries.map(e => ({
                 value: e.rel,
                 label: e.name + (e.bat ? '   (batch file)' : ''),
@@ -369,7 +369,7 @@ async function addWindowsGameFromFolder() {
         folder: picked.path, executable: chosen.choice, title: chosen.name || scan.suggestedTitle,
     });
     if (!res || !res.ok) { showAlert((res && res.error) || 'Could not add that folder.'); return; }
-    showAlert(`${res.title} was added to your library.\n\nIt runs ${res.executable} from the folder where it already lives — nothing was copied.`);
+    showAlert(`${res.title} was added to your library.\n\nIt runs ${res.executable} from the folder where it already lives, nothing was copied.`);
     loadGames();
 }
 
@@ -382,9 +382,9 @@ document.getElementById('btn-custom-folder')?.addEventListener('click', () =>
 // One dialog for every "before we go, which one?" question in this feature: which files
 // out of a mod pack to load, which Doom to run it on, which executable in a folder starts
 // the game. Sections appear only when there is something to ask.
-//   checks — multi-select list   {header, hint, items:[{value,label,sub,checked}]}
-//   radios — single-select list  {header, hint, items:[{value,label,sub}], current}
-//   nameInput — optional free text {label, value}
+//   checks, multi-select list   {header, hint, items:[{value,label,sub,checked}]}
+//   radios, single-select list  {header, hint, items:[{value,label,sub}], current}
+//   nameInput, optional free text {label, value}
 // Resolves to {selected:[], choice:'', name:''} or null if cancelled.
 function pickRunOptions({ title, okLabel = 'Install Selected', checks = null, radios = null, nameInput = null }) {
     return new Promise(resolve => {
@@ -429,7 +429,7 @@ function pickRunOptions({ title, okLabel = 'Install Selected', checks = null, ra
             document.getElementById('modpick-iwad-hint').textContent = radios.hint || '';
             radios.items.forEach((o, i) => radioList.appendChild(
                 rowFor('radio', 'modpick-radio', o, radios.current ? o.value === radios.current : i === 0)));
-            // The remembered choice may no longer exist — never leave the list unanswered.
+            // The remembered choice may no longer exist, never leave the list unanswered.
             if (radios.items.length && !radioList.querySelector('input:checked')) {
                 radioList.querySelector('input').checked = true;
             }
@@ -461,10 +461,10 @@ function pickRunOptions({ title, okLabel = 'Install Selected', checks = null, ra
 async function runCustomInstall(recipe, btn) {
     const label = btn.textContent;
     // Anything thrown on the main side arrives here as a rejected invoke. Unhandled, that
-    // is a button that does nothing at all — the worst possible failure, because there is
+    // is a button that does nothing at all, the worst possible failure, because there is
     // nothing to report and nowhere to look. Every path below either succeeds or says why.
     try {
-        // A game on a shared engine has nothing to download — it is assembled from an
+        // A game on a shared engine has nothing to download. It is assembled from an
         // engine that is already here (or asked for once) plus the game's own data.
         let archivePath = null;
         if (!recipe.onEngine || recipe.needsArchive) {
@@ -479,13 +479,13 @@ async function runCustomInstall(recipe, btn) {
 
         // The mod needs an engine and there isn't one yet. Ask for that download too and
         // install both in this one click, rather than sending the user away to do it
-        // themselves — installing GZDoom was never the thing they wanted.
-        // The library has no copy of the data — but the user very likely does, on a shelf
+        // themselves, installing GZDoom was never the thing they wanted.
+        // The library has no copy of the data, but the user very likely does, on a shelf
         // or in a folder from a disc they still own. Offer that rather than dead-ending:
         // for anything the storefronts never sold, it is the only route there is.
         if (res && !res.ok && res.needsData) {
             // When the data was never sold in a form a library can hold, asking "do you
-            // have it?" is a wasted click — the folder picker is the only route anyway.
+            // have it?" is a wasted click, the folder picker is the only route anyway.
             if (!res.userSupplied) {
                 const ok = await showConfirm(
                     `${recipe.title} needs ${res.dataLabel}.\n\n${res.error}\n\nDo you have those game files in a folder? Point at it and they will be used.`,
@@ -508,14 +508,14 @@ async function runCustomInstall(recipe, btn) {
             res = await window.api.customInstall({ recipeId: recipe.id, archivePath, engineArchivePath: eng.path });
         }
 
-        // Reinstalling over an existing folder is a decision, not a default — ask rather
+        // Reinstalling over an existing folder is a decision, not a default, ask rather
         // than silently deleting whatever is already there.
-        // The archive holds several loadable files — Black Edition ships the mod plus
+        // The archive holds several loadable files, Black Edition ships the mod plus
         // thirty-odd optional voice and footstep packs. Which one is "the mod" is not
         // something to guess at, so ask, with the largest pre-ticked.
         if (res && !res.ok && res.choose) {
             const chosen = await pickRunOptions({
-                title: `${recipe.title} — what should load?`,
+                title: `${recipe.title}, what should load?`,
                 okLabel: 'Install Selected',
                 checks: {
                     header: 'Files to load',
@@ -591,7 +591,7 @@ function openPlayTaskMenu(anchorBtn, game, tasks) {
 
         const name = document.createElement('div');
         name.className = 'pt-name';
-        name.textContent = t.name + (t.isPrimary ? ' — GOG default' : '');
+        name.textContent = t.name + (t.isPrimary ? ', GOG default' : '');
         const sub = document.createElement('div');
         sub.className = 'pt-path';
         sub.textContent = t.path;
@@ -645,10 +645,10 @@ async function _refreshPlayTaskBtn(game) {
 
     const active = tasks.find(t => t.isActive);
     btn.style.display = 'block';
-    // Tinted only when the game is on something other than GOG's default — the button
+    // Tinted only when the game is on something other than GOG's default, the button
     // says "this starts the usual way" or "this starts differently" without being opened.
     btn.classList.toggle('active', !!active && !active.isPrimary);
-    btn.title = active ? `Starts: ${active.name} — click to change`
+    btn.title = active ? `Starts: ${active.name}, click to change`
                        : `Choose which of the ${tasks.length} versions PLAY starts`;
     btn.onclick = (e) => { e.stopPropagation(); openPlayTaskMenu(btn, game, tasks); };
 }
@@ -710,7 +710,7 @@ function closeNowPlaying() {
 // ── Slow-launch progress ─────────────────────────────────────────────────────
 // The main process tails a launching game's log (umu runtime download → Wine prefix build →
 // game start). A launch where everything is already set up races through every step, so hold
-// the card back until the wait is real — otherwise it would flash on every single launch.
+// the card back until the wait is real, otherwise it would flash on every single launch.
 let _npSetupSeen = false;
 const _NP_SHOW_AFTER = ['runtime', 'prefix', 'extras', 'verify'];   // the phases that actually take minutes
 window.api.onGameLaunchProgress(p => {
@@ -723,14 +723,14 @@ window.api.onGameLaunchProgress(p => {
         if (_npSetupSeen) {
             document.getElementById('np-bar').style.width = '100%';
             document.getElementById('np-progress-msg').textContent =
-                p.phase === 'running' ? 'Ready — the game is starting.' : '';
+                p.phase === 'running' ? 'Ready. The game is starting.' : '';
             _npTimer = setTimeout(closeNowPlaying, 2500);
         }
         _npSetupSeen = false;
         return;
     }
 
-    if (_npDismissed) return;                                         // user closed it — leave them alone
+    if (_npDismissed) return;                                         // user closed it, leave them alone
     if (!_npSetupSeen && !_NP_SHOW_AFTER.includes(p.phase)) return;   // fast launch → stay quiet
     _npSetupSeen = true;
 
@@ -767,7 +767,7 @@ function escHtml(s) {
 // Every store a row can be played or installed from, with each one's install state
 // (Steam appmanifest / GOG-Epic library.db). Main resolves this from the row's store
 // fields, not just LaunchCommands, so a mixed-store row that never got the plural column
-// written still lists both stores. [] on failure — callers fall back to the single path.
+// written still lists both stores. [] on failure, callers fall back to the single path.
 async function launcherStatesFor(game) {
     try { return await window.api.launcherStates(game.id) || []; } catch (e) { return []; }
 }
@@ -785,7 +785,7 @@ function showLauncherPicker(game, states, mode = 'launch') {
     }
     states.forEach(st => {
         // An untracked launcher (flatpak / custom / emulator) has no install state to read,
-        // so it counts as playable — its command is the only thing we know about it.
+        // so it counts as playable, its command is the only thing we know about it.
         const installed = st.installed !== false || st.store === null;
         const btn = document.createElement('button');
         btn.className = installed ? 'primary' : 'btn-install-primary';
@@ -812,7 +812,7 @@ function _installLauncher(game, store, cmd) {
         if (/^(gog|epic)_/i.test(game.InstallerGameId || '')) { openInstallerInstall(game); return; }
         _openCompatFor(game); return;
     }
-    _doLaunch(game, cmd); // untracked launcher — best-effort launch
+    _doLaunch(game, cmd); // untracked launcher, best-effort launch
 }
 document.getElementById('btn-launcher-pick-cancel').addEventListener('click', () => {
     document.getElementById('modal-launcher-pick').classList.remove('active');
@@ -824,7 +824,7 @@ document.getElementById('modal-launcher-pick').addEventListener('click', e => {
 
 // A Doom mod runs on whichever Doom you feel like tonight, so the choice belongs at the
 // moment you press Play rather than baked in at install time. Returns the launch line to
-// use, '' to cancel the launch, or undefined when there is nothing to ask about — which is
+// use, '' to cancel the launch, or undefined when there is nothing to ask about, which is
 // every game that is not a mod with more than one IWAD beside it, so nothing else is slowed
 // down by a round trip it does not need.
 async function _iwadForLaunch(installerGameId) {
@@ -842,13 +842,13 @@ async function _iwadForLaunch(installerGameId) {
             current: opts.current,
         },
     });
-    if (!chosen) return null;                     // cancelled — do not launch
+    if (!chosen) return null;                     // cancelled, do not launch
     // Remembered as the new default so the dialog opens on last night's choice.
     try { await window.api.customSetIwad(installerGameId, chosen.choice); } catch (e) {}
     return opts.argsFor[chosen.choice];
 }
 
-// Blood plays on Raze and on BuildGDX, and they are different experiences — one is a
+// Blood plays on Raze and on BuildGDX, and they are different experiences, one is a
 // modern renderer, the other is closer to the DOS original and has its own tuning. If both
 // are installed the choice belongs to the moment you press Play, not to install time.
 // Returns the executable to run, '' for "as recorded", or null if cancelled.
@@ -874,7 +874,7 @@ async function _engineForLaunch(installerGameId) {
 
 async function _doLaunch(game, cmd) {
     // Route by the actual command so the multi-launcher picker is honoured:
-    //  - a installer:// (GOG/Epic) command — or a installer-linked game with no cmd —
+    //  - a installer:// (GOG/Epic) command, or a installer-linked game with no cmd,
     //    launches via Installer's engine in-process
     //  - everything else (steam://, itch://, pico8-cart:, native) launches directly
     const isInstallerCmd = /installer:\/\/launch/i.test(cmd || '');
@@ -895,7 +895,7 @@ async function _doLaunch(game, cmd) {
     Promise.all([window.api.updateLastPlayed(game.id), window.api.verifyInstallStatus(game.id)]).then(() => loadGames());
 }
 
-// ── Global operation toast — keeps install/sync/scrape progress visible even when its modal is hidden ──
+// ── Global operation toast, keeps install/sync/scrape progress visible even when its modal is hidden ──
 let _opToastTimer = null;
 function opToast(label, pct) {
     const tEl = document.getElementById('op-toast'); if (!tEl) return;
@@ -924,7 +924,7 @@ window.api.onRedistProgress(d => {
     if (line) opToast(`Compatibility files: ${line.slice(0, 90)}`);
 });
 
-// Live progress for in-process install/uninstall — drives the global toast always,
+// Live progress for in-process install/uninstall, drives the global toast always,
 // plus the modal's inline bar while it's still visible (so 'Hide' keeps progress on screen).
 window.api.onInstallerInstallProgress(d => {
     const step = (d.step || '').toUpperCase();
@@ -945,7 +945,7 @@ window.api.onInstallerInstallProgress(d => {
         renderDownloadManager();        // manager is open → it owns the display, keep the toast hidden
     } else {
         const name = _dlActive ? _dlActive.name : _giInstallName;
-        const label = `${name ? name + ' — ' : ''}${step}${d.message ? ': ' + d.message : ''}`;
+        const label = `${name ? name + ', ' : ''}${step}${d.message ? ': ' + d.message : ''}`;
         if (d.done) opToastDone(label); else opToast(label, pct);   // auto-hide once the engine signals completion/error
     }
 
@@ -957,7 +957,7 @@ window.api.onInstallerInstallProgress(d => {
     }
 });
 
-// ── DOWNLOAD MANAGER (multi-download queue — the same manager as Installer, in CN) ──
+// ── DOWNLOAD MANAGER (multi-download queue, the same manager as Installer, in CN) ──
 // Installs still run one at a time in the engine; this queues extra requests and
 // surfaces active/queued/completed in #modal-dlm, opened by clicking the top toast.
 let _dlActive = null;        // { gameId, gid, name, store, dir, pct, message, step }
@@ -995,7 +995,7 @@ async function _pumpDownloadQueue() {
     catch (e) { res = { ok: false, error: e.message }; }
     const success = !!(res && res.ok);
     const cancelled = !success && /cancel/i.test((res && res.error) || '');
-    // Desktop/phone ping (KDE Connect mirrors it) — cover art as the notification icon.
+    // Desktop/phone ping (KDE Connect mirrors it), cover art as the notification icon.
     notifyDesktop(success ? 'Game installed' : (cancelled ? 'Install cancelled' : 'Install failed'), item.name,
         allGames.find(g => String(g.id) === String(item.gameId)));
     _dlHistory.unshift({ gameId: item.gameId, name: item.name, store: item.store, success, cancelled, error: success ? null : (res && res.error), at: Date.now() });
@@ -1008,12 +1008,12 @@ async function _pumpDownloadQueue() {
     _dlActive = null;
     renderDownloadManager();
     refreshAfterInstall(item.gameId);   // flip INSTALL → PLAY now, not on the next window focus
-    _pumpDownloadQueue();      // advance to the next queued download immediately — never blocked on the refresh
+    _pumpDownloadQueue();      // advance to the next queued download immediately, never blocked on the refresh
 }
 
 // ── After an install finishes ────────────────────────────────────────────────
 // `loadGames()` alone was not enough, and the symptom was that the gamepage kept showing
-// INSTALL until the window was unfocused and focused again — which "fixed" it only because
+// INSTALL until the window was unfocused and focused again, which "fixed" it only because
 // the focus handler does three things this path was missing.
 //
 // The gamepage's button reads `!!game.LaunchCommand`, and for a Installer title that command
@@ -1068,7 +1068,7 @@ function openGameFromDownloadManager(gameId) {
     openGamepage(g);
 }
 
-// Titlebar downloads button badge — shows the count of active + queued downloads.
+// Titlebar downloads button badge, shows the count of active + queued downloads.
 function _updateDownloadBadge() {
     const badge = document.getElementById('dl-badge');
     if (!badge) return;
@@ -1093,7 +1093,7 @@ function renderDownloadManager() {
         // Stalled: colour the bar and the figure so a frozen percentage cannot be mistaken
         // for a working one, and put the explanation where the eye already is.
         // Both of these carry their normal colour in the inline style attribute, so the
-        // "not stalled" branch has to restore var(--accent) explicitly — clearing to ''
+        // "not stalled" branch has to restore var(--accent) explicitly, clearing to ''
         // deletes the declaration and leaves the bar with no background at all (invisible).
         const stalled = !!_dlActive.stalled;
         $('dlm-bar').style.background = stalled ? '#ef5350' : 'var(--accent)';
@@ -1103,7 +1103,7 @@ function renderDownloadManager() {
             warn.style.display = stalled ? 'flex' : 'none';
             const mins = _dlActive.stalledMinutes || 0;
             $('dlm-stall-text').textContent =
-                `No progress for ${mins} minute${mins === 1 ? '' : 's'}. This usually means GOG is serving a bad copy of one file — ` +
+                `No progress for ${mins} minute${mins === 1 ? '' : 's'}. This usually means GOG is serving a bad copy of one file, ` +
                 `cancel and start the download again, which normally picks a different server and continues from where it stopped.`;
         }
     }
@@ -1172,9 +1172,9 @@ async function openInstallerInstall(game) {
     $('gi-cancel').textContent = 'Cancel';
     modal.classList.add('active');
 
-    // Platform choice — only for GOG games that ship BOTH a native build for this host and a
+    // Platform choice, only for GOG games that ship BOTH a native build for this host and a
     // Windows build. The native key varies by host (gogdl calls it 'linux' on Linux, 'osx' on
-    // macOS) — hardcoding 'linux' here meant a Mac-native GOG game never got offered its own
+    // macOS), hardcoding 'linux' here meant a Mac-native GOG game never got offered its own
     // native build at all: hasChoice stayed false, so the platform silently fell through to
     // whatever library.db already had (usually fine) rather than ever being a real choice.
     const nativeKey   = window.api.platform === 'darwin' ? 'osx' : 'linux';
@@ -1197,14 +1197,14 @@ async function openInstallerInstall(game) {
     // ⚠️ A missing store sign-in used to be indistinguishable from a store hiccup, because
     // every layer below here turns failure into null: getInstallSize catches, gogInstallInfo
     // returns null on a missing token, and gogdl's own failure is swallowed by the JSON parse.
-    // What the user saw was a dialog showing free space and no size — and, after pressing
+    // What the user saw was a dialog showing free space and no size, and, after pressing
     // Install, a download that failed saying nothing. That is the same silent shape the
     // CA-bundle bug had, and it cost a day of looking at the wrong things twice.
     //
     // Being signed out is the ONE cause that is both far and away the commonest and precisely
     // knowable, so it is worth a question of its own. It is asked only when the size lookup has
     // already failed, so the normal path pays nothing. If the check itself cannot answer, no
-    // accusation is made — an unreachable store is not a signed-out one.
+    // accusation is made, an unreachable store is not a signed-out one.
     const store      = _dlStoreOf(gid);
     const storeLabel = store === 'gog' ? 'GOG' : store === 'epic' ? 'Epic' : '';
     const storeSignedOut = async () => {
@@ -1227,7 +1227,7 @@ async function openInstallerInstall(game) {
 
     const refreshSizeInfo = async () => {
         const el = $('gi-sizeinfo'); el.textContent = 'Checking size & free space…';
-        // Always the resolved platform, even without a choice to make — it's already set
+        // Always the resolved platform, even without a choice to make, it's already set
         // correctly above from library.db's own value, and passing undefined here used to
         // silently default the size lookup to Windows (gogInstallInfo's own `platform ||
         // 'windows'` fallback), showing the wrong download size for a game with no Windows
@@ -1243,7 +1243,7 @@ async function openInstallerInstall(game) {
         const need = info?.disk_size || info?.download_size || 0;
         if (free != null) {
             const low = need && free < need;
-            parts.push(`<b style="color:${low ? '#ef5350' : '#66bb6a'}">${fmtB(free)} free</b>${low ? ' — not enough space!' : ''}`);
+            parts.push(`<b style="color:${low ? '#ef5350' : '#66bb6a'}">${fmtB(free)} free</b>${low ? ', not enough space!' : ''}`);
         }
         if (!info && await storeSignedOut()) {
             const freeTxt = free != null ? ` &nbsp;·&nbsp; <span style="color:var(--text_dim)">${fmtB(free)} free</span>` : '';
@@ -1287,7 +1287,7 @@ async function openInstallerInstall(game) {
             } catch { res = null; }
             b.disabled = false;
             if (!res?.ok) {
-                // A cancelled sign-in is a choice, not a fault — say nothing extra about it.
+                // A cancelled sign-in is a choice, not a fault, say nothing extra about it.
                 setSignInMode(true);
                 if (res && res.error && res.error !== 'cancelled' && typeof opToast === 'function') {
                     opToast(`${storeLabel} sign-in failed: ${res.error}`); setTimeout(opToastHide, 2600);
@@ -1325,7 +1325,7 @@ async function showLaunchFailure(info) {
     $('pr-progress').style.display = 'none';
     $('pr-bar').style.width = '0%';
     $('pr-step').textContent = ''; $('pr-progress-msg').textContent = '';
-    // Only offer to install a Windows runtime when the failure is actually about one missing —
+    // Only offer to install a Windows runtime when the failure is actually about one missing,
     // this used to show unconditionally, so a completely unrelated failure (a stale library.db
     // lookup, a bad path) still offered "Install GE-Proton" as if that would fix it. Confusing
     // on Linux; actively wrong on macOS, where GE-Proton isn't a concept that exists at all.
@@ -1336,7 +1336,7 @@ async function showLaunchFailure(info) {
 
     // ── A failure we can actually fix, offered as a button ────────────────────
     // NO_VULKAN means the GPU predates Vulkan and DXVK cannot start, which is not something
-    // the app can repair — but Proton has an OpenGL path, and switching to it is a single
+    // the app can repair, but Proton has an OpenGL path, and switching to it is a single
     // per-game environment variable. Telling someone the variable's name and leaving them to
     // find the right box is a worse answer than offering to set it, so this does.
     //
@@ -1344,7 +1344,7 @@ async function showLaunchFailure(info) {
     // launch-issue payload is the only thing that knows which one just failed.
     //
     // Offered for D3D_CRASH too: that is the same crash on a machine that DOES have Vulkan, so
-    // the cause is a driver or a build rather than the hardware — but the OpenGL path is still
+    // the cause is a driver or a build rather than the hardware, but the OpenGL path is still
     // the one thing worth trying, and its message says so. Naming the variable while making the
     // user go and find the box would be exactly the worse answer described above.
     const fixBtn = $('pr-fix');
@@ -1361,7 +1361,7 @@ async function showLaunchFailure(info) {
             });
             if (r && r.ok) {
                 $('pr-message').textContent =
-                    'Done — this game will now render through OpenGL instead of Vulkan. Press Play to try again. ' +
+                    'Done, this game will now render through OpenGL instead of Vulkan. Press Play to try again. ' +
                     'You can undo it any time by removing PROTON_USE_WINED3D from the game\'s environment variables.';
                 fixBtn.textContent = '✓ Applied';
                 $('pr-close').textContent = 'Close';
@@ -1378,7 +1378,7 @@ async function showLaunchFailure(info) {
     $('pr-details').open = false;
     $('pr-log').textContent = log ? (log + (info.logPath ? `\n\n(full log: ${info.logPath})` : '')) : '';
 
-    // If Proton builds DO exist, the problem is something else (or a bad selection) — let the
+    // If Proton builds DO exist, the problem is something else (or a bad selection), let the
     // user pick which one to use as the default rather than pushing another download at them.
     // None of this applies when the failure isn't Proton-related in the first place.
     let list = { protons: [], current: '' };
@@ -1387,7 +1387,7 @@ async function showLaunchFailure(info) {
     if (isProtonIssue && list.protons && list.protons.length) {
         $('pr-found').style.display = '';
         sel.innerHTML = list.protons
-            .map(p => `<option value="${p.path.replace(/"/g, '&quot;')}">${(p.label || p.name)} — ${p.name}</option>`)
+            .map(p => `<option value="${p.path.replace(/"/g, '&quot;')}">${(p.label || p.name)}, ${p.name}</option>`)
             .join('');
         if (list.current) sel.value = list.current;
         sel.onchange = () => window.api.protonSetDefault(sel.value);
@@ -1421,7 +1421,7 @@ async function installProtonFromModal() {
         $('pr-step').textContent = 'Done'; $('pr-bar').style.width = '100%';
         $('pr-progress-msg').textContent = `${res.proton?.label || 'Proton'} installed. Try launching the game again.`;
         $('pr-install').style.display = 'none';
-        $('pr-message').textContent = 'Proton is ready — your Windows games can run now.';
+        $('pr-message').textContent = 'Proton is ready, your Windows games can run now.';
         $('pr-explain').style.display = 'none';
     } else {
         $('pr-step').textContent = 'Failed'; $('pr-step').style.color = '#ff6d00';
@@ -1473,7 +1473,7 @@ async function openInstallerUninstall(game) {
 
 async function handleInstall(game) {
     // A row can front several stores at once (Store "Steam, GOG"), and the game may well be
-    // owned on all of them — so ask which store to install from instead of silently taking
+    // owned on all of them, so ask which store to install from instead of silently taking
     // whichever branch happens to match first.
     const states = await launcherStatesFor(game);
     if (states.length >= 2) { showLauncherPicker(game, states, 'install'); return; }
@@ -1506,7 +1506,7 @@ async function verifyAndLaunch(gameId, launchCmd) {
 window.api.onInstallStatusUpdated(() => loadGames());
 
 // On window refocus (e.g. returning from the Installer install/uninstall window),
-// re-read the shared DB and re-render ONLY if install state actually changed —
+// re-read the shared DB and re-render ONLY if install state actually changed,
 // avoids any re-render jank on ordinary alt-tabbing.
 let _refocusTimer = 0;
 window.api.onWindowRefocused(() => {
@@ -1519,7 +1519,7 @@ window.api.onWindowRefocused(() => {
             return !old || old.Installed != g.Installed || old.LaunchCommand != g.LaunchCommand;
         });
         if (changed) { allGames = fresh; applyFilters(); }
-        // Playlists can be created/edited from Couch (shared games.db) — re-read the
+        // Playlists can be created/edited from Couch (shared games.db), re-read the
         // list so a playlist made on the couch shows up without restarting The Manager.
         try {
             const freshPl = await window.api.getPlaylists();
@@ -1532,7 +1532,7 @@ window.api.onWindowRefocused(() => {
 
 // ── GPU IDLE SUSPEND ──────────────────────────────────────────────────────────
 // Chromium keeps compositing CSS animations (the Ken Burns hero, spinners, etc.) on
-// a window that is merely unfocused or occluded — which burned 30-40% GPU while the
+// a window that is merely unfocused or occluded, which burned 30-40% GPU while the
 // app sat idle in the background. Pause ALL animations + videos when the window is
 // hidden or loses focus; resume on focus. animation-play-state only affects @keyframes
 // animations (not transitions), so interactions stay snappy on resume.
@@ -1572,7 +1572,7 @@ const STORE_FILTERS     = new Set(['steam','gog','epic','flatpak','pico8','itch'
 // ── One definition of "installed" ────────────────────────────────────────────
 // ⚠️ There were six of these, and they disagreed. The gallery cards asked for a launch
 // command AND a non-zero Installed flag, while four of the filters accepted
-// `Installed == 1 || !!LaunchCommand` — so anything carrying a launch command counted as
+// `Installed == 1 || !!LaunchCommand`, so anything carrying a launch command counted as
 // installed no matter what the flag said. On a library imported from another machine that is
 // almost every row, which is why the Installed filter listed 22 games and most of them showed
 // an INSTALL button: the filter and the button were answering different questions.
@@ -1589,7 +1589,7 @@ const QUALIFIER_FILTERS = new Set(['installed','favs','want','playable','mac-nat
 // ── Genres ───────────────────────────────────────────────────────────────────
 // The vocabulary lives in packages/core/genres.js and arrives via the genre-list IPC,
 // so the renderer never hardcodes the list. Each game row carries a `Genres` string
-// (comma-joined slugs) built by get-games — filtering is a string check, no lookups.
+// (comma-joined slugs) built by get-games, filtering is a string check, no lookups.
 let allGenres = [];             // [{ slug, label, count }]
 let genreCoverage = { total: 0, classified: 0, locked: 0 };
 let currentGenre = null;        // slug, or null for "All Genres"
@@ -1632,7 +1632,7 @@ async function loadGenres() {
     _renderGenreCoverage();
 }
 
-// Only genres that actually match something are listed — an empty menu entry is a
+// Only genres that actually match something are listed, an empty menu entry is a
 // dead end, and the counts make the list self-explanatory.
 function _rebuildGenreDropdown() {
     const sel = document.getElementById('gallery-genre');
@@ -1734,7 +1734,7 @@ document.getElementById('couch-cta')?.addEventListener('click', () => window.api
 //
 // ⚠️ This used to open the project website's support.html. The site is offline while the app is
 // being reworked, and a URL baked into a shipped build is the one link that cannot be corrected
-// afterwards — so the app no longer sends anyone anywhere. The details are shown in-app instead,
+// afterwards, so the app no longer sends anyone anywhere. The details are shown in-app instead,
 // which also means they still work with no network at all. Because nothing is clickable, both
 // values must be copyable, and that is the whole point of the Copy buttons.
 const _supportModal = document.getElementById('modal-support');
@@ -1786,7 +1786,7 @@ window.api.getBaseDir().then(dir => {
     // ── UI scale ─────────────────────────────────────────────────────────────
     // 100% for everyone, always. The user changes it if they want to.
     //
-    // ⚠️ This used to derive a scale from the screen — 0.75 on anything small — because on a
+    // ⚠️ This used to derive a scale from the screen, 0.75 on anything small, because on a
     // 1152x720 panel the icon rail ran past the bottom of the window and the Control Panel
     // button, the one control that fixes an oversized interface, could not be clicked. Two
     // Phase 1 changes already removed that trap: the rail is `overflow-y: auto`, so nothing in
@@ -1795,7 +1795,7 @@ window.api.getBaseDir().then(dir => {
     //
     // ⚠️ And it was wrong in practice on the very devices it targeted: 0.75 makes everything
     // too small to read on a Steam Deck, and Jose runs 100% on the 1152x720 MacBook the rule
-    // was written for. Deriving also meant one install disagreed with itself across monitors —
+    // was written for. Deriving also meant one install disagreed with itself across monitors,
     // a rotated 900x1440 head derived 75% while the desktop head beside it derived 100%.
     //
     // With nothing derived there is nothing to re-derive, so the screen stamp that existed to
@@ -1812,7 +1812,7 @@ window.api.getBaseDir().then(dir => {
 
     // ⚠️ One-time reset. Removing the derivation fixes what a FRESH install gets, but every
     // existing install is still carrying whatever the old code auto-derived and wrote into
-    // `clarity_ui_scale` — typically 0.75 — and that value is indistinguishable from a scale the
+    // `clarity_ui_scale`, typically 0.75, and that value is indistinguishable from a scale the
     // user actually picked. Since it was almost never a choice, and 100% is now the intended
     // baseline, it is cleared once. A scale chosen after this sticks for good.
     Promise.all([
@@ -1994,14 +1994,14 @@ async function _refreshDosboxCard() {
         b.classList.toggle('active', b.dataset.val === st.mode));
 
     // The whole point of this line: "Native" means nothing unless a native DOSBox is
-    // actually installed, so say plainly which one is in use — and if none is, give the
+    // actually installed, so say plainly which one is in use, and if none is, give the
     // command for *this* distribution rather than a guess.
     const cmds = [st.hint?.native, st.hint?.flatpak].filter(Boolean)
         .map(c => `<code style="user-select:text;">${escHtml(c)}</code>`).join(' &nbsp;or&nbsp; ');
     const name = st.native?.label || '';
     if (st.native) {
         const sandboxNote = st.native.flatpak
-            ? ' <span style="color:var(--text_dim);">(Flatpak — if a game fails to start, its folder may be outside the sandbox.)</span>'
+            ? ' <span style="color:var(--text_dim);">(Flatpak, if a game fails to start, its folder may be outside the sandbox.)</span>'
             : '';
         el.innerHTML = st.mode === 'bundled'
             ? `<span style="color:var(--text_dim);">Using GOG's DOSBox. <b>${escHtml(name)}</b> is installed if you want it.</span>`
@@ -2010,7 +2010,7 @@ async function _refreshDosboxCard() {
         el.innerHTML = st.mode === 'native'
             ? `<span style="color:#ef5350;">No native DOSBox installed, so DOS games will not start.</span><br>` +
               `<span style="color:var(--text_dim);">Install one with ${cmds}, or switch back to Automatic.</span>`
-            : `<span style="color:var(--text_dim);">No native DOSBox found — using GOG's, which works. ` +
+            : `<span style="color:var(--text_dim);">No native DOSBox found, using GOG's, which works. ` +
               `For the better one: ${cmds}</span>`;
     }
 }
@@ -2025,7 +2025,7 @@ _refreshDosboxCard();
 let _hidePico8 = false;
 
 // "Hide PICO-8" must mean *only* PICO-8. A library row can front several stores at once
-// (Store = "PICO-8, GOG"), and a substring test reads that as a PICO-8 game and hides it —
+// (Store = "PICO-8, GOG"), and a substring test reads that as a PICO-8 game and hides it,
 // which is how a GOG copy of Wolfenstein 3D vanished from the gallery entirely because a
 // PICO-8 demake happens to share its name. Same principle as resolveInstallState: only act
 // on a multi-store row when *every* store agrees.
@@ -2092,9 +2092,9 @@ document.getElementById('modal-free-games')?.addEventListener('click', (e) => {
 // ── MAC-NATIVE FILTER (macOS only) ──────────────────────────────────────────
 // Which games have a real macOS build vs. Windows-only. GOG/Epic are tagged from library.db
 // (free, local); Steam needs a live per-game lookup, so it's a user-triggered scan rather than
-// something that runs on every sync — see scan-mac-native in main.js. The filter itself is just
+// something that runs on every sync, see scan-mac-native in main.js. The filter itself is just
 // another qualifier in activeFilters (see QUALIFIER_FILTERS/applyFilters), reachable from the
-// same "ALL GAMES ▾" dropdown Favourites/Want/Installed already live in — not a bespoke toggle,
+// same "ALL GAMES ▾" dropdown Favourites/Want/Installed already live in, not a bespoke toggle,
 // so it's exactly as easy to find as those.
 function isMacNative(game) { return game && (game.MacNative == 1); }
 if (window.api.platform === 'darwin') {
@@ -2104,7 +2104,7 @@ if (window.api.platform === 'darwin') {
     // Hiding is not enough in either case, for the same underlying reason: several code paths
     // walk the DOM instead of reading CSS. enhanceSelect()'s popup reads sel.options directly,
     // and the Control Panel used to reset `display` on EVERY .tools-section in three places
-    // (openToolsModal, closeTools, and the search filter) — which silently un-did the inline
+    // (openToolsModal, closeTools, and the search filter), which silently un-did the inline
     // display:none this card ships with the moment the panel was opened. Those three resets
     // are gone as of wave 2A. That shipped in 1.8.0:
     // Linux users saw a "Mac-Native Games" card offering a scan the backend refuses anyway
@@ -2123,7 +2123,7 @@ document.getElementById('btn-scan-mac-native')?.addEventListener('click', async 
     const r = await window.api.scanMacNative({ force: false });
     btn.disabled = false;
     if (!r.ok) { if (status) status.textContent = r.error === 'already_running' ? 'Already scanning…' : `Failed: ${r.error}`; return; }
-    if (status) status.textContent = `Done — ${r.macNative} Mac-native games found.`;
+    if (status) status.textContent = `Done, ${r.macNative} Mac-native games found.`;
     const res = await window.api.getGames();
     allGames = (res.games || []).filter(g => g.Game && g.Game !== 'null');
     applyFilters();
@@ -2136,7 +2136,7 @@ function isHidden(game) { return game && (game.Hidden == 1); }
 async function setGameHidden(id, hidden) {
     const val = hidden ? 1 : 0;
     // Optimistic: patch the master list AND any active playlist snapshot in place, then re-render
-    // immediately so the game disappears/reappears instantly — persist to the DB afterwards.
+    // immediately so the game disappears/reappears instantly, persist to the DB afterwards.
     for (const arr of [allGames, currentPlaylistGames]) {
         const g = arr && arr.find(x => String(x.id) === String(id));
         if (g) g.Hidden = val;
@@ -2182,7 +2182,7 @@ document.getElementById('btn-open-hidden-games')?.addEventListener('click', open
 let _compatGid = null;
 
 function _fmtBytes(n) {
-    if (!n) return '—';
+    if (!n) return '-';
     const u = ['B', 'KB', 'MB', 'GB', 'TB'];
     let i = 0, v = n;
     while (v >= 1024 && i < u.length - 1) { v /= 1024; i++; }
@@ -2195,14 +2195,14 @@ function _fmtBytes(n) {
 function _openCompatFor(game) {
     const gid = game?.InstallerGameId || '';
     if (gid) { openCompatModal(gid, game.Game || ''); return true; }
-    showAlert('This game has no Installer entry yet — install it through Clarity first, and its compatibility settings appear here.');
+    showAlert('This game has no Installer entry yet, install it through Clarity first, and its compatibility settings appear here.');
     return false;
 }
 
 async function openCompatModal(installerGameId, title = '') {
     _compatGid = installerGameId;
     const box = document.getElementById('modal-compat');
-    document.getElementById('compat-game-name').textContent = title ? '— ' + title : '';
+    document.getElementById('compat-game-name').textContent = title ? ', ' + title : '';
     document.getElementById('compat-status').textContent = '';
     box.classList.add('active');
 
@@ -2231,7 +2231,7 @@ async function openCompatModal(installerGameId, title = '') {
     }
     psel.value = g.proton_path || '';
 
-    // GOG play tasks — keyed by index, because two tasks can share an executable.
+    // GOG play tasks, keyed by index, because two tasks can share an executable.
     const trow = document.getElementById('compat-row-target');
     const tsel = document.getElementById('compat-launch-target');
     if ((res.tasks || []).length > 1) {
@@ -2283,7 +2283,7 @@ document.getElementById('btn-compat-save')?.addEventListener('click', async () =
     };
     const r = await window.api.installerCompatSet({ installerGameId: _compatGid, patch });
     if (!r || !r.ok) { status.textContent = r?.error || 'Could not save.'; return; }
-    // The launch target is not a plain column — the engine rewrites the stored task.
+    // The launch target is not a plain column, the engine rewrites the stored task.
     const trow = document.getElementById('compat-row-target');
     if (trow.style.display !== 'none') {
         await window.api.installerSetLaunchTarget({
@@ -2322,7 +2322,7 @@ document.getElementById('modal-storage')?.addEventListener('click', e => {
 document.getElementById('btn-storage-installer')?.addEventListener('click', openStorageModal);
 document.getElementById('btn-storage-steam')?.addEventListener('click', () => window.api.openInstallUrl('steam://settings/storage'));
 
-// ── Add to Desktop — per-game launcher via the --game deeplink ────────────────
+// ── Add to Desktop, per-game launcher via the --game deeplink ────────────────
 function openShortcutDialog(game) {
     const modal = document.getElementById('modal-shortcut');
     if (!modal) return;
@@ -2342,7 +2342,7 @@ function openShortcutDialog(game) {
     modal.onclick = (e) => { if (e.target === modal) close(); };
 }
 
-// ── Scan for Updates — GOG/Epic real check (+ optional in-CN update), Steam flag-only ──
+// ── Scan for Updates, GOG/Epic real check (+ optional in-CN update), Steam flag-only ──
 const _storeBadge = { gog: '#a55eea', epic: '#4b7bec', steam: '#2a9d8f' };
 function _renderUpdateRow(u) {
     const row = document.createElement('div');
@@ -2365,7 +2365,7 @@ function _renderUpdateRow(u) {
             document.getElementById('modal-updates')?.classList.remove('active');
             const game = allGames.find(g => g.id == u.id);
             // Re-running the install reconciles GOG/Epic to latest. The scan already knows
-            // which store has the update, so go straight there — no store picker to answer.
+            // which store has the update, so go straight there, no store picker to answer.
             if (game) _installLauncher(game, u.store, game.LaunchCommand);
             else showAlert('This game is no longer in your library.');
         };
@@ -2426,7 +2426,7 @@ function openGenreModal() {
     const mins  = Math.max(1, Math.round(left * 1.2 / 60));
     document.getElementById('genres-intro').innerHTML = left
         ? `<b>${left}</b> of your ${total} games still need a genre. The scan reads the tags players ` +
-          `voted on for each one, so it works through them about one a second — roughly <b>${mins} minute${mins === 1 ? '' : 's'}</b>. ` +
+          `voted on for each one, so it works through them about one a second, roughly <b>${mins} minute${mins === 1 ? '' : 's'}</b>. ` +
           `You can close this and keep using the app, or stop it at any point and keep what it found.`
         : `All ${total} games already have a genre. Re-check them if you want the latest tags.`;
     document.getElementById('genres-progress-wrap').style.display = 'none';
@@ -2456,7 +2456,7 @@ async function runGenreScan() {
             : 'Scan failed.';
         fill.style.width = '100%';
         await loadGenres();
-        await loadGames();          // rows carry Genres/PrimaryGenre — re-read to show them
+        await loadGames();          // rows carry Genres/PrimaryGenre, re-read to show them
     } catch (e) {
         statusEl.textContent = 'Scan failed.';
     } finally {
@@ -2475,7 +2475,7 @@ window.api.onGenreScanProgress(p => {
     const statusEl = document.getElementById('genres-status');
     if (statusEl) statusEl.textContent = p.label ? `${p.scanned} / ${p.total} · ${p.label}` : `${p.scanned} / ${p.total}`;
     // Mirrored to the global toast so closing the modal doesn't hide the progress.
-    opToast(`Detecting genres — ${p.scanned}/${p.total}`, pct);
+    opToast(`Detecting genres, ${p.scanned}/${p.total}`, pct);
 });
 
 document.getElementById('btn-scan-genres')?.addEventListener('click', openGenreModal);
@@ -2555,7 +2555,7 @@ function renderDlcModal(game, res) {
             `Install all ${dlcs.length} owned DLC(s) for "${game.Game}"?\n\nGOG installs DLCs as a set, so this downloads every owned DLC for the game (already-installed ones are skipped).`,
             'Install all DLCs');
         if (!ok) return;
-        _dlcEnqueue(game, 'all', null, `${game.Game} — all DLCs`); closeDlcModal();
+        _dlcEnqueue(game, 'all', null, `${game.Game}, all DLCs`); closeDlcModal();
     };
     resetBtn.style.display = dlcs.some(d => d.installed) ? 'inline-block' : 'none';
 }
@@ -2628,9 +2628,9 @@ function renderSavesModal(game, res) {
     if (!cands.length) {
         statusEl.style.display = 'block';
         statusEl.innerHTML = res && res.native
-            ? 'Native Linux game — its save location can\'t be auto-detected.<br>Use <strong>Locate saves…</strong> to point at the folder.'
+            ? 'Native Linux game, its save location can\'t be auto-detected.<br>Use <strong>Locate saves…</strong> to point at the folder.'
             : (!res || !res.ok) ? ('Could not read this game\'s saves.' + (res && res.error ? '<br>' + res.error : ''))
-            : 'No saves found yet — play the game first, then come back.<br>If it saves somewhere unusual, use <strong>Locate saves…</strong>.';
+            : 'No saves found yet, play the game first, then come back.<br>If it saves somewhere unusual, use <strong>Locate saves…</strong>.';
         backupBtn.style.display = 'none';
         renderSaveBackups(game, (res && res.backups) || [], backupsEl);   // history still usable
         return;
@@ -2675,7 +2675,7 @@ function renderSaveBackups(game, backups, el) {
         del.style.background = 'transparent'; del.style.border = '1px solid #ef5350'; del.style.color = '#ef5350';
         del.title = 'Delete this backup file';
         del.onclick = async () => {
-            const ok = await showConfirm(`Delete this backup file?\n\n${b.path}\n\nThis only removes the .zip — your live saves are untouched.`, 'Delete', true);
+            const ok = await showConfirm(`Delete this backup file?\n\n${b.path}\n\nThis only removes the .zip, your live saves are untouched.`, 'Delete', true);
             if (!ok) return;
             const r = await window.api.savesDeleteBackup(game.id, b.path);
             if (r && r.ok) { if (_savesGame === game) openSavesModal(game); }
@@ -2722,23 +2722,23 @@ document.getElementById('btn-saves-locate')?.addEventListener('click', async () 
     else if (res && res.error) showAlert('Could not set the save folder: ' + res.error);
 });
 
-// Save Manager — dedicated help/guide modal (opened by "LEARN MORE").
+// Save Manager, dedicated help/guide modal (opened by "LEARN MORE").
 document.getElementById('saves-learn-more')?.addEventListener('click', (e) => { e.preventDefault(); document.getElementById('modal-saves-help')?.classList.add('active'); });
 document.getElementById('btn-close-saves-help')?.addEventListener('click', () => document.getElementById('modal-saves-help')?.classList.remove('active'));
 document.getElementById('modal-saves-help')?.addEventListener('click', (e) => { if (e.target.id === 'modal-saves-help') document.getElementById('modal-saves-help')?.classList.remove('active'); });
 document.getElementById('btn-dlc-reset')?.addEventListener('click', async () => {
     const game = _dlcGame; if (!game) return;
     const ok = await showConfirm(
-        `Reset DLCs for "${game.Game}"?\n\nThis reinstalls the base game with NO DLCs — it re-downloads the entire game. Use this to remove installed DLCs.`,
+        `Reset DLCs for "${game.Game}"?\n\nThis reinstalls the base game with NO DLCs, it re-downloads the entire game. Use this to remove installed DLCs.`,
         'Reset DLCs', true);
     if (!ok) return;
-    _dlcEnqueue(game, 'reset', null, `${game.Game} — reinstalling (no DLCs)`);
+    _dlcEnqueue(game, 'reset', null, `${game.Game}, reinstalling (no DLCs)`);
     closeDlcModal();
 });
 document.getElementById('modal-hidden-games')?.addEventListener('click', (e) => {
     if (e.target.id === 'modal-hidden-games') e.currentTarget.classList.remove('active');
 });
-// F2P popup: "Hide this game only" — hides just the game whose pill was clicked.
+// F2P popup: "Hide this game only", hides just the game whose pill was clicked.
 document.getElementById('btn-f2p-hide-one')?.addEventListener('click', async () => {
     if (_f2pPromptGame) await setGameHidden(_f2pPromptGame.id, true);
     document.getElementById('modal-free-games')?.classList.remove('active');
@@ -2756,7 +2756,7 @@ function applyCornersStyle() {
 // There is one layout: the icon side rail.
 //
 // The app carried 24 across four families, and not one of them could be reached
-// in a shipped build — startup always called applyLayoutMode('rail') and ignored
+// in a shipped build, startup always called applyLayoutMode('rail') and ignored
 // the saved layout_mode, while the picker card sat behind display:none. Between
 // them they cost roughly 9,000 lines of renderer and CSS, so they were retired
 // rather than revived: TTY and Ancient-OS first, then the flat family, the split
@@ -2772,7 +2772,7 @@ function applyLayoutMode() {
 }
 
 // ════════════════════════════════════════════════════════════════════════════
-//  HOME — "Control Room" dashboard (optional start screen preceding the library)
+//  HOME, "Control Room" dashboard (optional start screen preceding the library)
 //  Stats come from the shared core engine via window.api.getHomeStats(); the
 //  same engine feeds Couch's Home, so the numbers never drift between faces.
 // ════════════════════════════════════════════════════════════════════════════
@@ -2799,10 +2799,10 @@ const HOME_WIDGETS = [
     { key: 'wishlist', label: 'Wishlist & Deals' },
     { key: 'freebies', label: 'Free This Week' },
     { key: 'news',     label: 'Gaming News' },
-    { key: 'gamenews', label: "Your Games — What's New" },
+    { key: 'gamenews', label: "Your Games, What's New" },
     { key: 'protonwatch', label: 'Proton Watch' },
 ];
-// Online widgets make network calls — opt-in only.
+// Online widgets make network calls, opt-in only.
 const HOME_ONLINE = new Set(['wishlist', 'freebies', 'news', 'gamenews', 'protonwatch']);
 // Default Home = a lean handful of widgets covering local stats plus one online feed.
 // Everything else (Steam-playtime, disk/achievement scans, the other online widgets, and the
@@ -2837,7 +2837,7 @@ const HOME_DEFAULT_LAYOUT = {
     news:      { x:0, y:4, w:3, h:4 },
     wishlist:  { x:3, y:4, w:3, h:4 },
 };
-// Theme-derived chart palette — resolves against the active theme's CSS vars
+// Theme-derived chart palette, resolves against the active theme's CSS vars
 // (color-mix is evaluated live), so the donut follows whatever theme is applied.
 const HOME_PALETTE = [
     'var(--accent)',
@@ -2855,9 +2855,9 @@ let _homeLayout = { ...HOME_DEFAULT_LAYOUT };   // key → { x, y, w, h }; seede
 let _homeEditMode = false, _gsGrid = null;
 let _homeSnap = null;
 let _homeClockTimer = null;
-let _homeClockOn = true;   // faux-LCD header clock — show/hide via Customize Home
+let _homeClockOn = true;   // faux-LCD header clock, show/hide via Customize Home
 
-// Live clock for the Home header — ticks once a second while the Home view is on
+// Live clock for the Home header, ticks once a second while the Home view is on
 // screen and self-clears when it isn't (so it never runs in the background).
 function _updateHomeClock() {
     const cEl = document.getElementById('home-clock');
@@ -2898,7 +2898,7 @@ function openHomeGameById(id, fallback) {
     if (!g) return;
     // The grid switch is only there to put the library behind the floating panel. If a panel is
     // already floating the library is already behind it, and going via the grid would just start
-    // a close animation we immediately cancel — so swap the contents in place instead.
+    // a close animation we immediately cancel, so swap the contents in place instead.
     if (!document.body.classList.contains('gamepage-overlay')) switchView(lastGridView);
     openGamepage(g);
 }
@@ -2909,14 +2909,14 @@ window.api.onOpenGame?.(id => {
     whenLibraryReady(() => openHomeGameById(id));
 });
 
-// A request that arrives before the library is loaded is not a request to ignore — the app
+// A request that arrives before the library is loaded is not a request to ignore, the app
 // may have been started *by* it. Wait the five seconds it takes, then act.
 function whenLibraryReady(fn, attempt = 0) {
     if (Array.isArray(allGames) && allGames.length) { fn(); return; }
     if (attempt < 20) setTimeout(() => whenLibraryReady(fn, attempt + 1), 250);
 }
 
-// --play=<id> — the Omarchy launcher overlay's Enter. Deliberately the same call the Play
+// --play=<id>, the Omarchy launcher overlay's Enter. Deliberately the same call the Play
 // button makes, so the store picker, the engine and IWAD dialogs, the last-played write and
 // the install-state check all happen exactly as they do for a click.
 // ⚠️ An uninstalled game opens its page instead of failing quietly: that page is where the
@@ -2930,7 +2930,7 @@ window.api.onPlayGame?.(id => {
     });
 });
 
-// --action=<id> — one of the command palette's actions, asked for from outside.
+// --action=<id>, one of the command palette's actions, asked for from outside.
 window.api.onRunAction?.(id => {
     whenLibraryReady(() => runPaletteAction(id));
 });
@@ -3303,7 +3303,7 @@ function _persistLayout() {
     const grid = document.getElementById('home-grid'); if (!grid) return;
     const layout = {};
     // Read each item's live size/position straight off its gridstackNode (with the rendered
-    // gs-* attributes as a fallback) — more reliable than save(), which could drop w/h for
+    // gs-* attributes as a fallback), more reliable than save(), which could drop w/h for
     // some widgets and leave them snapping back to their default size on the next render.
     grid.querySelectorAll('.grid-stack-item').forEach(el => {
         const id = el.getAttribute('gs-id'); if (!id) return;
@@ -3346,7 +3346,7 @@ function openHomeConfig() {
     document.getElementById('modal-home-config').classList.add('active');
 }
 document.getElementById('btn-home-add')?.addEventListener('click', openHomeConfig);
-// Instant apply — no Done button. Any toggle saves + re-renders immediately.
+// Instant apply, no Done button. Any toggle saves + re-renders immediately.
 document.getElementById('cfg-home-enabled')?.addEventListener('change', (e) => { _homeEnabled = e.target.checked; saveHomeConfig(); });
 document.getElementById('cfg-home-clock')?.addEventListener('change', (e) => { _homeClockOn = e.target.checked; saveHomeConfig(); _applyHomeClockVis(); });
 document.getElementById('home-cfg-widgets')?.addEventListener('change', (e) => {
@@ -3370,15 +3370,15 @@ document.getElementById('btn-titlebar-library')?.addEventListener('click', () =>
 });
 
 (async () => {
-    // Sharp is the default — only an explicitly saved 'round' opts back into the rounded style.
+    // Sharp is the default, only an explicitly saved 'round' opts back into the rounded style.
     _cornersStyle = (await window.api.getSetting('corners_style')) === 'round' ? 'round' : 'sharp';
     document.querySelectorAll('.corners-btn').forEach(b => b.classList.toggle('active', b.dataset.val === _cornersStyle));
-    // Release build: the icon side rail is the ONLY available layout — any saved
+    // Release build: the icon side rail is the ONLY available layout, any saved
     // layout_mode is ignored, and the picker card is display:none, so the other
     // eight layouts ship as unreachable code.
     // ⚠️ This line is why the Phase 2 cull was safe: the sixteen retired layouts
     // could never execute in a shipped build. It is also why the surviving eight
-    // are still dormant — reaching them needs this call to honour the saved mode
+    // are still dormant, reaching them needs this call to honour the saved mode
     // AND the picker card to lose its display:none.
     applyLayoutMode();
     await loadHomeConfig();
@@ -3413,7 +3413,7 @@ document.getElementById('btn-gamepage-back').addEventListener('click', closeGame
 // Floating-overlay gamepage: clicking the blurred backdrop (outside the panel) closes it.
 // The backdrop is body::before, so a click on it reports e.target === document.body; clicks on
 // the panel, its pinned back bar / play button, or the titlebar report a different target (and
-// so does the single click on a Home tile that opens the overlay — it never self-closes).
+// so does the single click on a Home tile that opens the overlay, it never self-closes).
 document.addEventListener('click', (e) => {
     if (!document.body.classList.contains('gamepage-overlay')) return;
     if (e.target !== document.body) return;
@@ -3449,7 +3449,7 @@ async function openPlaylistPickerForGame(game) {
         const available = allPlaylists.filter(p => !gamePlaylistIds.includes(p.id) && !isSmartPlaylist(p));
         confirmBtn.disabled = true;
         if (!available.length) {
-            const msg = !allPlaylists.length ? 'No playlists yet — create one below.' : 'Game is already in all playlists.';
+            const msg = !allPlaylists.length ? 'No playlists yet, create one below.' : 'Game is already in all playlists.';
             list.innerHTML = `<div class="pl-select-row" style="cursor:default;color:var(--text_dim);">${msg}</div>`;
         } else {
             list.innerHTML = available.map(p =>
@@ -3466,7 +3466,7 @@ async function openPlaylistPickerForGame(game) {
     }
 
     // Refresh the current view's game set so it never goes blank after a membership change.
-    // Re-pull through the SAME path that built it — crucially the 'recently-imported' sentinel
+    // Re-pull through the SAME path that built it, crucially the 'recently-imported' sentinel
     // needs getRecentlyImported, not getPlaylistGames (which would return [] and leave it empty).
     async function refreshCurrentView() {
         if (currentPlaylistId === 'recently-imported') {
@@ -3489,7 +3489,7 @@ async function openPlaylistPickerForGame(game) {
         document.getElementById('modal-add-to-playlist').classList.remove('active');
     };
 
-    // "Add to a new playlist" — create it, assign the game, and keep the modal open so the
+    // "Add to a new playlist", create it, assign the game, and keep the modal open so the
     // freshly-made playlist shows up (already a member) and more can be added in one sitting.
     newNameInput.value = '';
     async function createAndAddNewPlaylist() {
@@ -3615,7 +3615,7 @@ window.api.getAppVersion?.().then(v => {
     const cp = document.getElementById('cp-app-version-num');
     if (cp) cp.textContent = `VERSION ${v}`;
 }).catch(() => {});
-// The macOS build is unsigned and doesn't get the same Linux-first testing yet — make that
+// The macOS build is unsigned and doesn't get the same Linux-first testing yet, make that
 // visible in the two places anyone would look for the version, not just the docs.
 if (window.api.platform === 'darwin') {
     document.getElementById('about-platform-badge')?.style.setProperty('display', '');
@@ -3648,8 +3648,8 @@ function dismissWelcome() {
 // Omarchy is keyboard-driven: everything else on this desktop opens from a fuzzy
 // menu, and the library was the exception. Games and actions share one list, so
 // "quake" and "backup" are the same gesture.
-// ⚠️ Each `id` is a name the desktop knows us by — the Omarchy launcher overlay runs
-// these from outside the app as `--action=<id>` — so an id is renamed only with the same
+// ⚠️ Each `id` is a name the desktop knows us by, the Omarchy launcher overlay runs
+// these from outside the app as `--action=<id>`, so an id is renamed only with the same
 // care as a CLI flag. The visible `name` is free to change whenever the wording improves.
 const _PAL_ACTIONS = [
     { id: 'control-panel',        name: 'Control Panel',            run: () => openToolsModal('welcome') },
@@ -3671,7 +3671,7 @@ const _PAL_ACTIONS = [
 ];
 
 // Publish the list so the desktop offers exactly the actions this build has, rather than
-// a copy that drifts the first time one is added or renamed. Sent once — they are static.
+// a copy that drifts the first time one is added or renamed. Sent once. They are static.
 try { window.api.publishPaletteActions?.(_PAL_ACTIONS.map(a => ({ id: a.id, name: a.name }))); } catch (e) {}
 
 // One way to run an action, whether it was picked in the palette or asked for from outside.
@@ -3686,7 +3686,7 @@ let _palItems = [], _palSel = 0;
 
 // Subsequence match, the same rule a fuzzy launcher uses: every character of the
 // query must appear in order. Scoring prefers a prefix hit, then a word-start hit,
-// then anything — so "kcd" finds "Kingdom Come: Deliverance" but an exact prefix
+// then anything, so "kcd" finds "Kingdom Come: Deliverance" but an exact prefix
 // still wins the top slot.
 function _palScore(hay, q) {
     const h = hay.toLowerCase();
@@ -3713,7 +3713,7 @@ function _palRender(q) {
     }
     for (const g of (allGames || [])) {
         // A user-hidden game is hidden here too. applyFilters() drops them from every
-        // library view, and the palette reads allGames directly — which is how they kept
+        // library view, and the palette reads allGames directly, which is how they kept
         // turning up in the one list that was supposed to be the fastest way in.
         if (isHidden(g)) continue;
         const s = _palScore(g.Game || '', q);
@@ -3745,7 +3745,7 @@ function _palRun(i) {
     if (!r) return;
     closePalette();
     if (r.kind === 'action') { runPaletteAction(r.id); return; }
-    // A game opens its page rather than launching outright — Enter on a fuzzy match
+    // A game opens its page rather than launching outright, Enter on a fuzzy match
     // is too easy to hit by accident for something that starts a process.
     openGamepage(r.game);
 }
@@ -3775,7 +3775,7 @@ document.getElementById('palette-input')?.addEventListener('keydown', e => {
 });
 
 // ⚠️ Capture phase: the gamepage and several modals run their own keydown handlers,
-// and Ctrl+K has to reach the palette from anywhere — including from inside a text
+// and Ctrl+K has to reach the palette from anywhere, including from inside a text
 // field, which is where a user reaches for it most naturally.
 document.addEventListener('keydown', e => {
     if ((e.ctrlKey || e.metaKey) && (e.key === 'k' || e.key === 'K')) {
@@ -3811,7 +3811,7 @@ async function renderWelcomeDetection() {
                 lines.push(`<div class="wlc-line"><span class="wlc-dot wlc-ok"></span><b>Gaming tools</b><span class="wlc-detail">all ${g.total} present</span></div>`);
             } else {
                 const names = missing.map(m => m.key || m).join(', ');
-                lines.push(`<div class="wlc-line"><span class="wlc-dot wlc-warn"></span><b>Gaming tools</b><span class="wlc-detail">${g.present} of ${g.total} — missing ${escHtml(names)}</span></div>`);
+                lines.push(`<div class="wlc-line"><span class="wlc-dot wlc-warn"></span><b>Gaming tools</b><span class="wlc-detail">${g.present} of ${g.total}, missing ${escHtml(names)}</span></div>`);
             }
         }
     } catch {}
@@ -3825,18 +3825,18 @@ async function renderWelcomeDetection() {
             window.api.epicAuthStatus().catch(() => ({ loggedIn: false })),
         ]);
         gogOn = !!gog.loggedIn; epicOn = !!epic.loggedIn;
-        lines.push(`<div class="wlc-line"><span class="wlc-dot ${gogOn ? 'wlc-ok' : 'wlc-off'}"></span><b>GOG</b><span class="wlc-detail">${gogOn ? 'connected' + (gog.username ? ' — ' + escHtml(gog.username) : '') : 'not connected'}</span></div>`);
-        lines.push(`<div class="wlc-line"><span class="wlc-dot ${epicOn ? 'wlc-ok' : 'wlc-off'}"></span><b>Epic</b><span class="wlc-detail">${epicOn ? 'connected' + (epic.account ? ' — ' + escHtml(epic.account) : '') : 'not connected'}</span></div>`);
+        lines.push(`<div class="wlc-line"><span class="wlc-dot ${gogOn ? 'wlc-ok' : 'wlc-off'}"></span><b>GOG</b><span class="wlc-detail">${gogOn ? 'connected' + (gog.username ? ', ' + escHtml(gog.username) : '') : 'not connected'}</span></div>`);
+        lines.push(`<div class="wlc-line"><span class="wlc-dot ${epicOn ? 'wlc-ok' : 'wlc-off'}"></span><b>Epic</b><span class="wlc-detail">${epicOn ? 'connected' + (epic.account ? ', ' + escHtml(epic.account) : '') : 'not connected'}</span></div>`);
     } catch {}
 
-    // Steam has no on-disk detection here — the library comes through the Web API —
+    // Steam has no on-disk detection here. The library comes through the Web API,
     // so the honest thing to report is whether the credentials are already stored.
     try {
         const [sid, key] = await Promise.all([
             window.api.getSetting('steam_id'), window.api.getSetting('steam_api_key'),
         ]);
         const has = !!(sid && key);
-        lines.push(`<div class="wlc-line"><span class="wlc-dot ${has ? 'wlc-ok' : 'wlc-off'}"></span><b>Steam</b><span class="wlc-detail">${has ? 'key saved — fetch below to refresh' : 'needs a SteamID64 and API key'}</span></div>`);
+        lines.push(`<div class="wlc-line"><span class="wlc-dot ${has ? 'wlc-ok' : 'wlc-off'}"></span><b>Steam</b><span class="wlc-detail">${has ? 'key saved, fetch below to refresh' : 'needs a SteamID64 and API key'}</span></div>`);
         if (has) {
             const idEl = document.getElementById('wlc-steam-id'), keyEl = document.getElementById('wlc-steam-api-key');
             if (idEl && !idEl.value) idEl.value = sid;
@@ -3863,7 +3863,7 @@ async function renderWelcomeDetection() {
 document.getElementById('btn-welcome-done').addEventListener('click', dismissWelcome);
 document.getElementById('btn-welcome-manual').addEventListener('click', () => { dismissWelcome(); window.api.openManual(); });
 
-// Welcome screen — headless GOG/Epic sign-in.
+// Welcome screen, headless GOG/Epic sign-in.
 // No Installer window: sign-in happens in-place and the owned library imports right away.
 
 // Pull newly-authorized GOG/Epic games into Clarity's library (same path as Refresh Library).
@@ -3876,7 +3876,7 @@ async function importStoreLibrary() {
     } catch (e) { console.warn('[store-import]', e); }
 }
 
-// Render "✓ GOG — name · ○ Epic not connected" into the given status element.
+// Render "✓ GOG, name · ○ Epic not connected" into the given status element.
 async function renderStoreAuthStatus(statusEl) {
     if (!statusEl) return { gog: false, epic: false };
     statusEl.style.color = 'var(--text_dim)';
@@ -3886,8 +3886,8 @@ async function renderStoreAuthStatus(statusEl) {
         window.api.epicAuthStatus().catch(() => ({ loggedIn: false })),
     ]);
     const parts = [
-        gog.loggedIn  ? `✓ GOG${gog.username ? ' — ' + gog.username : ''}`  : '○ GOG not connected',
-        epic.loggedIn ? `✓ Epic${epic.account ? ' — ' + epic.account : ''}` : '○ Epic not connected',
+        gog.loggedIn  ? `✓ GOG${gog.username ? ', ' + gog.username : ''}`  : '○ GOG not connected',
+        epic.loggedIn ? `✓ Epic${epic.account ? ', ' + epic.account : ''}` : '○ Epic not connected',
     ];
     statusEl.style.color = (gog.loggedIn || epic.loggedIn) ? '#66bb6a' : 'var(--text_dim)';
     statusEl.innerHTML = parts.join('&nbsp;&nbsp;·&nbsp;&nbsp;');
@@ -3966,15 +3966,15 @@ document.getElementById('btn-welcome-batch').addEventListener('click', async () 
     btn.disabled = true;
     progressWrap.style.display = 'block';
     progressFill.style.width = '0%';
-    // Mirror progress to the always-visible top toast (cpTask* → op-toast) so it keeps going —
-    // and stays visible — after the user leaves the Welcome screen.
+    // Mirror progress to the always-visible top toast (cpTask* → op-toast) so it keeps going,
+    // and stays visible, after the user leaves the Welcome screen.
     cpTaskStart('Fetching media…', false);
     for (let i = 0; i < toFetch.length; i++) {
         const g = toFetch[i];
         const pct = Math.round(((i + 1) / toFetch.length) * 100);
         statusEl.style.color = 'var(--text_dim)';
         statusEl.innerHTML = `Fetching ${i + 1} / ${toFetch.length}: ${g.Game}…` +
-            `<br><span style="opacity:0.72; font-size:11px;">You can leave this screen — fetching keeps running in the background, with progress in the bar at the top.</span>`;
+            `<br><span style="opacity:0.72; font-size:11px;">You can leave this screen, fetching keeps running in the background, with progress in the bar at the top.</span>`;
         progressFill.style.width = `${pct}%`;
         cpTaskProgress(pct, `Fetching media ${i + 1}/${toFetch.length} · ${g.Game}`);
         await window.api.autoFetch(g.id, g.Game, g.SteamAppID);
@@ -4074,7 +4074,7 @@ function _renderPlaylistList(containerId, mode) {
         const isActive = currentPlaylistId === p.id;
         const smart = isSmartPlaylist(p);
         return `<div style="display:flex; align-items:center; gap:4px; flex-shrink:0;">
-            <button class="btn-playlist-filter" data-playlist-id="${p.id}" title="${smart ? 'Fills itself — ' + escHtml(smartPlaylistSummary(p)) : ''}"
+            <button class="btn-playlist-filter" data-playlist-id="${p.id}" title="${smart ? 'Fills itself, ' + escHtml(smartPlaylistSummary(p)) : ''}"
                 style="flex:1; text-align:left; font-size:11px; padding:8px 10px; background:${isActive ? 'var(--accent)' : 'var(--bg_menu)'}; border:1px solid ${isActive ? 'var(--accent)' : 'var(--border_solid)'}; color:${isActive ? 'var(--bg)' : 'var(--text_sec)'}; border-radius:6px; cursor:pointer; font-family:inherit; font-weight:900; transition:background 0.15s; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
                 ${smart ? '<span style="opacity:.75;">✦</span> ' : ''}${escHtml(p.name)}
             </button>
@@ -4132,7 +4132,7 @@ function clearPlaylistFilter() {
     applyFilters();
 }
 
-// `presetGenre` is optional — the function is also wired straight to click handlers,
+// `presetGenre` is optional. The function is also wired straight to click handlers,
 // which would otherwise hand it an Event.
 function openCreatePlaylistModal(presetGenre) {
     if (typeof presetGenre !== 'string') presetGenre = '';
@@ -4141,7 +4141,7 @@ function openCreatePlaylistModal(presetGenre) {
     if (gsel) {
         // Only genres with games in them: an auto-playlist that resolves to nothing is
         // just a confusing empty list.
-        gsel.innerHTML = ["<option value=\"\">Hand-picked — I'll add games myself</option>"]
+        gsel.innerHTML = ["<option value=\"\">Hand-picked, I'll add games myself</option>"]
             .concat(allGenres.filter(g => g.count).map(g => `<option value="${g.slug}">${escHtml(g.label)} (${g.count})</option>`))
             .join('');
         gsel.value = presetGenre || '';
@@ -4281,7 +4281,7 @@ function syncFilterActiveStates() {
 let _gpOverlayCloseTimer = null;
 // Bumped whenever a close is cancelled by the overlay re-opening. A close that has already
 // been scheduled cannot be un-scheduled, so instead it checks this on the way out and stays
-// quiet if it is stale — otherwise its done() fires ~360ms later and closes the panel that
+// quiet if it is stale, otherwise its done() fires ~360ms later and closes the panel that
 // just re-opened, which is what a --game= request arriving over an open gamepage does.
 let _gpOverlayCloseGen = 0;
 function _animateOverlayClose(done) {
@@ -4300,7 +4300,7 @@ function _animateOverlayClose(done) {
         finished = true;
         clearTimeout(_gpOverlayCloseTimer);
         gp.removeEventListener('animationend', onEnd);
-        if (gen !== _gpOverlayCloseGen) return;   // the overlay re-opened — this close is void
+        if (gen !== _gpOverlayCloseGen) return;   // the overlay re-opened, this close is void
         done();
     };
     const onEnd = (e) => { if (e.target === gp) finish(); };
@@ -4318,7 +4318,7 @@ function switchView(viewId) {
     const _classicOverlay = true;
     const _overlayGamepage = viewId === 'view-gamepage' && _classicOverlay;
     // The Edit page (view-details), when reached FROM the floating gamepage, floats in the SAME
-    // panel box directly on top — so opening/returning feels seamless, not a full-page swap.
+    // panel box directly on top, so opening/returning feels seamless, not a full-page swap.
     const _overlayDetails = viewId === 'view-details' && _classicOverlay && document.body.classList.contains('gamepage-overlay');
     if (_overlayGamepage || _overlayDetails) {
         document.body.classList.remove('gamepage-overlay-closing');   // cancel any in-flight close
@@ -4331,7 +4331,7 @@ function switchView(viewId) {
         panel.scrollTop = 0;
         document.getElementById('gamepage-back-bar').style.display = _overlayGamepage ? 'block' : 'none';
         const _vp = document.getElementById('detail-video-player'); if (_vp) _vp.pause();
-        clearInterval(heroKbInterval);                                   // gamepage hero — hidden either way
+        clearInterval(heroKbInterval);                                   // gamepage hero, hidden either way
         if (_overlayGamepage) clearInterval(detailScreenshotInterval);   // stop edit screenshots when leaving the edit page (keep them while editing)
         return;
     }
@@ -4348,7 +4348,7 @@ function switchView(viewId) {
     else { target.scrollTop = 0; }
     document.body.classList.toggle('viewing-home', viewId === 'view-home');   // full-bleed Home
 
-    // The search/category/sort/playlist row is a single node shared by the grid views —
+    // The search/category/sort/playlist row is a single node shared by the grid views,
     // move it into whichever one is being shown (all its wiring is id-based, so it just works).
     const _gsw = document.getElementById('gallery-search-wrap');
     if (_gsw) {
@@ -4374,14 +4374,14 @@ function switchView(viewId) {
 }
 
 
-// Debounced applyFilters — collapses rapid successive calls (search keystrokes) into one render.
+// Debounced applyFilters, collapses rapid successive calls (search keystrokes) into one render.
 let _afTimer = null;
 function _debouncedApplyFilters() {
     clearTimeout(_afTimer);
     _afTimer = setTimeout(applyFilters, 80);
 }
 
-// Debounced loadGames — collapses rapid successive calls (e.g. from two parallel .then() chains)
+// Debounced loadGames, collapses rapid successive calls (e.g. from two parallel .then() chains)
 // into a single DB fetch 80ms after the last call, invisible to the user.
 let _lgTimer = null;
 let _lgResolvers = [];   // resolvers of every loadGames() coalesced into the pending timer
@@ -4390,7 +4390,7 @@ function loadGames() {
     return new Promise(resolve => {
         // Coalesce: each call registers its resolver; the surviving timer resolves them ALL.
         // (Previously the resolver lived inside the timer, so a later call that cleared the
-        // timer left earlier promises pending forever — hanging any `await loadGames()`.)
+        // timer left earlier promises pending forever, hanging any `await loadGames()`.)
         _lgResolvers.push(resolve);
         _lgTimer = setTimeout(async () => {
             const resolvers = _lgResolvers; _lgResolvers = [];
@@ -4398,7 +4398,7 @@ function loadGames() {
                 const res = await window.api.getGames();
                 let games = res.games || [];
                 allGames = games.filter(g => g.Game && g.Game !== 'null');
-                // Keep the active playlist/recently-imported snapshot fresh too — it's a separate
+                // Keep the active playlist/recently-imported snapshot fresh too, it's a separate
                 // fetch, so without this a scrape/edit/hide only shows after switching views and back.
                 if (currentPlaylistId === 'recently-imported') {
                     currentPlaylistGames = await window.api.getRecentlyImported(recentlyImportedCount);
@@ -4539,7 +4539,7 @@ enhanceSelect(document.getElementById('gallery-genre'));
 enhanceSelect(document.getElementById('gallery-playlist'));
 enhanceSelect(document.getElementById('ui-font-select'));   // themed Interface Font dropdown (Appearance)
 
-// Playlist dropdown — options rebuilt from allPlaylists (called from renderPlaylistPanels,
+// Playlist dropdown, options rebuilt from allPlaylists (called from renderPlaylistPanels,
 // so create/delete/rename and filter changes all keep it current). innerHTML swap triggers
 // the cust-sel MutationObserver → label re-syncs.
 function _rebuildPlaylistDropdown() {
@@ -4653,7 +4653,7 @@ document.getElementById('btn-panel-close')?.addEventListener('click', closePanel
 
 // Lowercased search text for a game: the title plus the metadata people actually search by.
 // Searching every column instead (the old `Object.values(game).some(...)`) matched the multi-KB
-// Steam descriptions and the artwork file paths — on an 887-game library "wit" returned 503 games
+// Steam descriptions and the artwork file paths, on an 887-game library "wit" returned 503 games
 // (424 of them only because "with" appears in their description) when 10 have it in the title,
 // and the gallery then rebuilt all 503 cards on every keystroke.
 // Cached on the object under a Symbol, so it stays out of Object.values / JSON / IPC round-trips.
@@ -4679,7 +4679,7 @@ let _recentPicks = [];
 
 function pickRandomVisible() {
     const pool = _galleryVisible;
-    if (!pool.length) { showAlert('Nothing to pick from — no games match the current filters.'); return; }
+    if (!pool.length) { showAlert('Nothing to pick from, no games match the current filters.'); return; }
     if (pool.length === 1) { openHomeGameById(pool[0].id, pool[0]); return; }
 
     // Avoid repeats, but never at the cost of refusing to pick: with a pool smaller than
@@ -4717,7 +4717,7 @@ function applyFilters() {
         // Free-to-play visibility: hide tagged games everywhere when the toggle is off
         if (_hideFreeGames && isFreeToPlay(game)) return false;
 
-        // Stores: OR — game must match at least one selected store (open if none selected)
+        // Stores: OR, game must match at least one selected store (open if none selected)
         if (storeActive.length > 0) {
             const storeMatch = storeActive.some(f => {
                 if (f === 'steam')     return storeLower.includes('steam');
@@ -4736,7 +4736,7 @@ function applyFilters() {
             if (!storeMatch) return false;
         }
 
-        // Genre: AND against everything else — narrowing "Steam" by "CRPG" is the
+        // Genre: AND against everything else, narrowing "Steam" by "CRPG" is the
         // whole point, so it never widens the result the way the store chips do.
         if (currentGenre === '__none__') {
             if (game.PrimaryGenre) return false;
@@ -4744,7 +4744,7 @@ function applyFilters() {
             return false;
         }
 
-        // Qualifiers: AND — game must satisfy every selected qualifier
+        // Qualifiers: AND, game must satisfy every selected qualifier
         for (const f of qualifierActive) {
             if (f === 'playable'   && !game.LaunchCommand) return false;
             if (f === 'favs'       && game.FAV !== 'YES') return false;
@@ -4797,7 +4797,7 @@ function applyFilters() {
 
     // What the gallery is actually showing right now. The random pick reads this rather
     // than re-deriving the filters, so "surprise me" always answers the question the
-    // screen is currently asking — search text, category, genre and playlist included.
+    // screen is currently asking, search text, category, genre and playlist included.
     _galleryVisible = filtered;
 
     let recentGames = [];
@@ -4844,7 +4844,7 @@ function renderTable(recent, regular) {
         <td><button class="btn-list-fav${game.FAV === 'YES' ? ' active' : ''}" data-list-fav="${game.id}" title="Favourite">${_lStarSvg}</button></td>
         <td><button class="btn-list-want${game.WANT_TO_PLAY === 'YES' ? ' active' : ''}" data-list-want="${game.id}" title="Want to play">${_lBkSvg}</button></td>
         <td><button class="btn-list-playlist" data-list-playlist="${game.id}" title="Add to Playlist">${_lPlSvg}</button></td>
-        <td style="font-weight: bold;">${game.Game}${isFreeToPlay(game) ? ` <span class="f2p-pill f2p-pill-inline" data-f2p-pill="1" title="Free-to-play — click to show/hide these">FREE</span>` : ''}</td>
+        <td style="font-weight: bold;">${game.Game}${isFreeToPlay(game) ? ` <span class="f2p-pill f2p-pill-inline" data-f2p-pill="1" title="Free-to-play, click to show/hide these">FREE</span>` : ''}</td>
         <td>${displayStore}</td>
         <td>${game.GENRE || ''}</td>
         <td>${game.RELEASED || ''}</td>
@@ -4921,7 +4921,7 @@ _tbody.addEventListener('click', async (e) => {
             openAddCmdDialog(install.dataset.id, install.dataset.name);
         } else if (install.dataset.installer) {
             const g = allGames.find(x => x.id == install.dataset.id);
-            if (g) handleInstall(g); else showAlert('That game is no longer in the library — refresh and try again.');
+            if (g) handleInstall(g); else showAlert('That game is no longer in the library, refresh and try again.');
         } else {
             const g = allGames.find(x => x.id == install.dataset.id);
             if (g) handleInstall(g); else window.api.openInstallUrl(install.dataset.url);
@@ -5030,7 +5030,7 @@ function _flatpakGradient(ctx, w, h, r, g, b, dir = 'diagonal') {
     ctx.fillStyle = grad; ctx.fillRect(0, 0, w, h);
     // Radial glow
     const glow = ctx.createRadialGradient(w/2,h/2,0, w/2,h/2, Math.max(w,h)*.55);
-    glow.addColorStop(0, `rgba(${r},${g},${b},.32)`);
+    glow.addColorStop(0, `rgba(${r},${g},${b}.32)`);
     glow.addColorStop(1, 'rgba(0,0,0,0)');
     ctx.fillStyle = glow; ctx.fillRect(0, 0, w, h);
 }
@@ -5097,7 +5097,7 @@ function renderGallery(recent, regular) {
         const _badges = (game.Store ? String(game.Store).split(',') : []).map(s => s.trim()).filter(Boolean).map(s => { const l = getStoreLogo(s); return l ? `<div class="gallery-store-badge" style="-webkit-mask-image:url('${l}');"></div>` : ''; }).join('');
         const _macBadge = isMacNative(game) ? `<div class="gallery-store-badge gallery-mac-badge" style="-webkit-mask-image:url('assets/logos/apple.png');" title="Runs natively on macOS"></div>` : '';
         const badgeHtml = (_badges || _macBadge) ? `<div class="gallery-store-badges">${_badges}${_macBadge}</div>` : '';
-        const f2pHtml = isFreeToPlay(game) ? `<div class="f2p-pill gallery-f2p-pill" data-f2p-pill="1" title="Free-to-play — click to show/hide these">FREE</div>` : '';
+        const f2pHtml = isFreeToPlay(game) ? `<div class="f2p-pill gallery-f2p-pill" data-f2p-pill="1" title="Free-to-play, click to show/hide these">FREE</div>` : '';
         const installCmdG = getInstallCommand(game);
         const isInstalled = isGameInstalled(game);
         const dotHtml = game.LaunchCommand ? `<div class="install-dot ${isInstalled ? 'is-installed' : 'not-installed'}" title="${isInstalled ? t('status.installed') : t('status.not_installed')}"></div>` : '';
@@ -5176,7 +5176,7 @@ _grid.addEventListener('click', (e) => {
             openAddCmdDialog(install.dataset.id, install.dataset.name);
         } else if (install.dataset.installer) {
             const g = allGames.find(x => x.id == install.dataset.id);
-            if (g) handleInstall(g); else showAlert('That game is no longer in the library — refresh and try again.');
+            if (g) handleInstall(g); else showAlert('That game is no longer in the library, refresh and try again.');
         } else {
             const g = allGames.find(x => x.id == install.dataset.id);
             if (g) handleInstall(g); else window.api.openInstallUrl(install.dataset.url);
@@ -5293,7 +5293,7 @@ function _renderAchStrip(container, label, achievements, showLabel) {
     strip.innerHTML = `
         <div style="display:flex; align-items:center; gap:8px;">
             <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="var(--accent)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 21h8M12 17v4M5 7H3v4a4 4 0 0 0 4 4h10a4 4 0 0 0 4-4V7h-2"/><path d="M5 3h14v8a7 7 0 0 1-7 7 7 7 0 0 1-7-7V3z"/></svg>
-            <span class="stat-label" style="flex:1;">ACHIEVEMENTS${showLabel ? ` <span style="font-size:9px; opacity:0.7; font-weight:400; letter-spacing:1px;">— ${label}</span>` : ''}</span>
+            <span class="stat-label" style="flex:1;">ACHIEVEMENTS${showLabel ? ` <span style="font-size:9px; opacity:0.7; font-weight:400; letter-spacing:1px;">, ${label}</span>` : ''}</span>
             <span style="font-size:11px; font-weight:900; color:var(--accent);">${unlocked} / ${total}</span>
         </div>
         <div style="height:3px; border-radius:2px; background:var(--border_solid); overflow:hidden;">
@@ -5342,7 +5342,7 @@ function openAchievementsModal() {
     const game  = allGames.find(g => g.id === currentGameId);
     const _label = arguments[0], _multi = arguments[1];
     document.getElementById('ach-modal-game-title').textContent =
-        (_multi && _label) ? `${game?.Game || ''} — ${_label}` : (game?.Game || '');
+        (_multi && _label) ? `${game?.Game || ''}, ${_label}` : (game?.Game || '');
 
     const total    = _achAll.length;
     const unlocked = _achAll.filter(a => a.date_unlocked).length;
@@ -5483,7 +5483,7 @@ function openGamepage(game) {
     const wantBtn = document.getElementById('btn-gamepage-want');
     const removeFromPlaylistBtn = document.getElementById('btn-gamepage-remove-playlist');
 
-    // Hero Art — always reset to none first so the previous game's image
+    // Hero Art, always reset to none first so the previous game's image
     // is cleared immediately, before the new URL starts loading.
     heroEl.style.backgroundImage = "none";
     if (game.HeroArt && game.HeroArt.trim() !== "") {
@@ -5521,7 +5521,7 @@ function openGamepage(game) {
         });
     }
 
-    // Free-to-play hero pill — click opens the show/hide popup (with this game's per-game hide).
+    // Free-to-play hero pill, click opens the show/hide popup (with this game's per-game hide).
     const f2pPill = document.getElementById('gamepage-f2p-pill');
     if (f2pPill) {
         f2pPill.style.display = isFreeToPlay(game) ? 'inline-flex' : 'none';
@@ -5529,21 +5529,21 @@ function openGamepage(game) {
         f2pPill.onclick = (e) => { e.stopPropagation(); openFreeGamesPrompt(game); };
     }
 
-    // Hide-game hero button — hides this game from the library and returns to it.
+    // Hide-game hero button, hides this game from the library and returns to it.
     const hideBtn = document.getElementById('btn-gamepage-hide');
     if (hideBtn) hideBtn.onclick = async () => {
         await setGameHidden(game.id, true);
         closeGamepageToLibrary();
     };
 
-    // Live Toggle Logic for Favs / Wants (icon buttons — active class drives fill via CSS)
+    // Live Toggle Logic for Favs / Wants (icon buttons, active class drives fill via CSS)
     const updateTogglesUI = () => {
         favBtn.classList.toggle('active', game.FAV === 'YES');
         wantBtn.classList.toggle('active', game.WANT_TO_PLAY === 'YES');
     };
     updateTogglesUI();
 
-    // Remove-from-playlist button — visible whenever the game belongs to at least one playlist
+    // Remove-from-playlist button, visible whenever the game belongs to at least one playlist
     removeFromPlaylistBtn.style.display = 'none';
     removeFromPlaylistBtn.onclick = null;
     window.api.getGamePlaylists(game.id).then(ids => {
@@ -5570,7 +5570,7 @@ function openGamepage(game) {
     // Play / Install / Add Command Button
     refreshGamepagePlayBtn(game);
 
-    // Installer setup button — GOG and Epic games only
+    // Installer setup button, GOG and Epic games only
     const gpStore = (game.Store || '').toLowerCase();
     if (gpStore.includes('gog') || gpStore.includes('epic')) {
         installerBtn.style.display = 'block';
@@ -5580,7 +5580,7 @@ function openGamepage(game) {
         installerBtn.onclick = null;
     }
 
-    // "Open in Steam" button — only for a game actually owned on Steam.
+    // "Open in Steam" button, only for a game actually owned on Steam.
     const steamBtn = document.getElementById('btn-gamepage-steam');
     if (steamBtn) {
         const sAppId = _isOnSteam(game) ? _steamAppId(game) : '';
@@ -5593,7 +5593,7 @@ function openGamepage(game) {
         }
     }
 
-    // Uninstall button — installed GOG/Epic (in-process) or Steam (via the Steam client)
+    // Uninstall button, installed GOG/Epic (in-process) or Steam (via the Steam client)
     const uninstallBtn = document.getElementById('btn-gamepage-uninstall');
     if (uninstallBtn) {
         const installerCan = /^(gog|epic)_/i.test(game.InstallerGameId || '') && (game.Installed == 1);
@@ -5618,7 +5618,7 @@ function openGamepage(game) {
         }
     }
 
-    // DLC button — installed GOG games (DLCs merge into the existing install folder)
+    // DLC button, installed GOG games (DLCs merge into the existing install folder)
     const dlcBtn = document.getElementById('btn-gamepage-dlc');
     if (dlcBtn) {
         if (/^gog_/i.test(game.InstallerGameId || '') && game.Installed == 1) {
@@ -5630,7 +5630,7 @@ function openGamepage(game) {
         }
     }
 
-    // Compatibility files — installed GOG games. GOG ships OpenAL, the VC++ runtimes and the
+    // Compatibility files, installed GOG games. GOG ships OpenAL, the VC++ runtimes and the
     // like beside a game and expects them installed into the prefix; a game missing one starts
     // and dies at once with nothing in the log naming the cause. Offered for every installed
     // GOG title rather than only where we think it is needed: whether a game declares
@@ -5644,7 +5644,7 @@ function openGamepage(game) {
                 e.stopPropagation();
                 if (_redistBusy) { showAlert('Compatibility files are already being installed.'); return; }
                 const ok = await showConfirm(
-                    `Install the compatibility files "${game.Game}" needs — OpenAL, Visual C++ runtimes and similar — into its Proton prefix?\n\n` +
+                    `Install the compatibility files "${game.Game}" needs, OpenAL, Visual C++ runtimes and similar, into its Proton prefix?\n\n` +
                     `The game itself is not re-downloaded. Worth doing when a game installed cleanly but closes immediately when you press Play.`,
                     'Install');
                 if (!ok) return;
@@ -5668,10 +5668,10 @@ function openGamepage(game) {
         }
     }
 
-    // Play-task picker — installed GOG games that ship more than one way to start
+    // Play-task picker, installed GOG games that ship more than one way to start
     _refreshPlayTaskBtn(game);
 
-    // Save Manager button — installed GOG & Epic games (locate/back up/restore saves)
+    // Save Manager button, installed GOG & Epic games (locate/back up/restore saves)
     const savesBtn = document.getElementById('btn-gamepage-saves');
     if (savesBtn) {
         if (/^(gog|epic)_/i.test(game.InstallerGameId || '') && game.Installed == 1) {
@@ -5683,7 +5683,7 @@ function openGamepage(game) {
         }
     }
 
-    // SPLORE button — PICO-8 games only
+    // SPLORE button, PICO-8 games only
     const sploreBtn = document.getElementById('btn-gamepage-splore');
     if (gpStore.includes('pico-8') || gpStore.includes('pico8')) {
         sploreBtn.style.display = 'block';
@@ -5693,11 +5693,11 @@ function openGamepage(game) {
         sploreBtn.onclick = null;
     }
 
-    // Manual button — always offered, because a manual can be attached to anything
+    // Manual button, always offered, because a manual can be attached to anything
     // (a physical copy, an emulated game), not only to titles with an install folder.
     _refreshManualBtn(game);
 
-    // Browse Local Files button — shown whenever the game's install folder can be
+    // Browse Local Files button, shown whenever the game's install folder can be
     // located on disk (Steam, GOG/Epic, or a custom/emulator command with a real path).
     const browseBtn = document.getElementById('btn-gamepage-browse');
     if (browseBtn) {
@@ -5716,11 +5716,11 @@ function openGamepage(game) {
         });
     }
 
-    // Add to Desktop button — any game; creates a launcher that opens it through CN.
+    // Add to Desktop button, any game; creates a launcher that opens it through CN.
     const shortcutBtn = document.getElementById('btn-gamepage-shortcut');
     if (shortcutBtn) shortcutBtn.onclick = (e) => { e.stopPropagation(); openShortcutDialog(game); };
 
-    // Trailer button — always visible; plays local trailer or opens download flow
+    // Trailer button, always visible; plays local trailer or opens download flow
     trailerBtn.onclick = () => {
         document.getElementById('edit-name').value = game.Game;
         document.getElementById('btn-watch-trailer').click();
@@ -5912,7 +5912,7 @@ async function _refreshManualBtn(game) {
 
     const readable = info.attached.filter(m => m.exists);
     btn.classList.toggle('active', readable.length > 0);
-    btn.title = readable.length > 1 ? `${readable.length} manuals — choose one`
+    btn.title = readable.length > 1 ? `${readable.length} manuals, choose one`
               : readable.length     ? `Read: ${readable[0].label}`
               : info.detected.length ? `${info.detected.length} manual(s) found in this game's folder`
               : 'Attach a manual to this game';
@@ -6001,7 +6001,7 @@ async function renderManualsList() {
             const acts = [];
             if (m.exists) acts.push({ text: 'Read', primary: true, fn: () => showManualViewer(game, m.path) });
             acts.push({ text: 'Remove', fn: async () => { await window.api.removeManual(m.id, game.id); renderManualsList(); _refreshManualBtn(game); } });
-            row(m.label || 'Manual', m.exists ? m.path : 'File is missing — ' + m.path, acts, !m.exists);
+            row(m.label || 'Manual', m.exists ? m.path : 'File is missing, ' + m.path, acts, !m.exists);
         }
     }
 
@@ -6031,7 +6031,7 @@ async function renderManualsList() {
     if (info.gogAppId) renderGogManuals(game);
 }
 
-// GOG sells the extras alongside the game — the scanned originals. Listed lazily, because
+// GOG sells the extras alongside the game, the scanned originals. Listed lazily, because
 // it is a network call and most of the time the folder already had what you wanted.
 async function renderGogManuals(game) {
     const list = document.getElementById('manuals-list');
@@ -6091,7 +6091,7 @@ document.getElementById('modal-manuals')?.addEventListener('click', (e) => {
 });
 
 // The viewer is a separate window with its own document, so it cannot inherit the CSS
-// variables — the active theme's colours are passed across and re-applied there.
+// variables, the active theme's colours are passed across and re-applied there.
 function _currentThemeVars() {
     const cs = getComputedStyle(document.documentElement);
     const out = {};
@@ -6102,8 +6102,8 @@ function _currentThemeVars() {
     return out;
 }
 
-// Genre override in the edit dialog. Choosing one pins the game — scans skip it from
-// then on — and "Detected automatically" hands it back to them.
+// Genre override in the edit dialog. Choosing one pins the game, scans skip it from
+// then on, and "Detected automatically" hands it back to them.
 function _renderGenrePicker(game) {
     const sel = document.getElementById('edit-primary-genre');
     if (!sel) return;
@@ -6119,7 +6119,7 @@ function _updateGenreNote(game) {
     const sel  = document.getElementById('edit-primary-genre');
     if (!note || !sel) return;
     if (sel.value) {
-        note.textContent = 'Pinned by you — genre scans will leave this game alone.';
+        note.textContent = 'Pinned by you, genre scans will leave this game alone.';
     } else {
         const detected = genreLabel(game.PrimaryGenre);
         note.textContent = detected ? `Currently detected as ${detected}.` : 'No genre detected yet.';
@@ -6131,7 +6131,7 @@ function _makeLauncherRow(label, cmd, managed = false) {
     row.style.cssText = 'display:flex; gap:6px; align-items:center;';
     const ro = managed ? ' readonly' : '';
     const dim = managed ? ' opacity:.6; cursor:default;' : '';
-    const tip = managed ? ' title="Managed by Installer — install and launch are handled for you."' : '';
+    const tip = managed ? ' title="Managed by Installer, install and launch are handled for you."' : '';
     row.innerHTML =
         `<input type="text" class="lnch-label" placeholder="Label" value="${escHtml(label)}"${ro}${tip} style="width:140px; font-size:11px; padding:6px 8px; flex-shrink:0; background:var(--bg_input,rgba(255,255,255,0.07)); border:1px solid var(--border_solid); border-radius:4px; color:var(--text_main);${dim}">` +
         `<input type="text" class="lnch-cmd" placeholder="Command or URL" value="${escHtml(cmd)}"${ro}${tip} style="flex:1; font-size:11px; padding:6px 8px; background:var(--bg_input,rgba(255,255,255,0.07)); border:1px solid var(--border_solid); border-radius:4px; color:var(--text_main);${dim}">` +
@@ -6452,7 +6452,7 @@ async function igdbSsLoadScreenshots(game) {
         return;
     }
     stat.style.color = 'var(--text_dim)';
-    stat.textContent = `${screenshots.length} screenshot${screenshots.length > 1 ? 's' : ''} — click to add`;
+    stat.textContent = `${screenshots.length} screenshot${screenshots.length > 1 ? 's' : ''}, click to add`;
 
     const capturedGameId = currentGameId;
     screenshots.forEach(ss => {
@@ -6700,7 +6700,7 @@ document.getElementById('btn-watch-trailer').addEventListener('click', async () 
         const lst = document.getElementById('yt-search-list'); const stat = document.getElementById('yt-search-status');
         lst.innerHTML = '';
 
-        // IGDB result is local — show it immediately if available
+        // IGDB result is local, show it immediately if available
         const game = allGames.find(g => g.id === currentGameId);
         const igdbId = game?.IGDBTrailer;
         const renderResult = (res) => {
@@ -6719,7 +6719,7 @@ document.getElementById('btn-watch-trailer').addEventListener('click', async () 
             stat.innerText = t('status.searching_yt', {name: gameName});
         }
 
-        // YouTube search runs in parallel — results appended when ready
+        // YouTube search runs in parallel, results appended when ready
         const ytResults = await window.api.searchYoutube(gameName);
         const filtered = ytResults.filter(r => r.id !== igdbId);
         filtered.forEach(res => renderResult(res));
@@ -6815,7 +6815,7 @@ document.getElementById('btn-save-igdb').addEventListener('click', async () => {
 async function refreshPico8Status() {
     const status = await window.api.getPico8Status();
     const el = document.getElementById('pico8-bin-status');
-    if (el) el.innerText = status.bin ? `✓ ${status.bin}` : 'Not detected — place pico8 binary in GameManagerConfig/pico8/';
+    if (el) el.innerText = status.bin ? `✓ ${status.bin}` : 'Not detected, place pico8 binary in GameManagerConfig/pico8/';
 }
 
 document.getElementById('btn-pico8-browse')?.addEventListener('click', async () => {
@@ -6839,7 +6839,7 @@ window.api.onPico8CartDownloaded(({ name }) => {
     // Toast in Clarity window
     const toast = document.createElement('div');
     toast.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);z-index:9999;background:var(--bg_menu);border:1px solid var(--accent);color:var(--accent);padding:10px 20px;border-radius:6px;font-size:13px;font-weight:700;letter-spacing:1px;box-shadow:0 6px 24px rgba(0,0,0,0.8);transition:opacity 0.4s;pointer-events:none;white-space:nowrap;';
-    toast.textContent = `✓ ${name} — added to PICO-8 library`;
+    toast.textContent = `✓ ${name}, added to PICO-8 library`;
     document.body.appendChild(toast);
     setTimeout(() => { toast.style.opacity = '0'; setTimeout(() => toast.remove(), 400); }, 3000);
 });
@@ -6995,7 +6995,7 @@ document.getElementById('btn-hero-update-steam')?.addEventListener('click', asyn
     loadGames();
 });
 
-// Sync runs in-process now — `installer-refresh-owned` already did the whole job
+// Sync runs in-process now, `installer-refresh-owned` already did the whole job
 // (syncOwnedLibrary plus pruning refunds out of the CN library); it simply had no
 // caller. The spinner runs for as long as the sync actually takes.
 async function _syncOwnedLibrary(btnId) {
@@ -7004,7 +7004,7 @@ async function _syncOwnedLibrary(btnId) {
     if (btn) { btn.dataset.busy = '1'; btn.style.animation = 'spin 1s linear infinite'; }
     try {
         const r = await window.api.installerRefreshOwned();
-        if (!r?.available)  { await showAlert('Installer data is not set up yet — connect GOG or Epic first.'); return; }
+        if (!r?.available)  { await showAlert('Installer data is not set up yet, connect GOG or Epic first.'); return; }
         if (r.error)        { await showAlert('Could not refresh your library: ' + r.error); return; }
         await loadGames();
     } finally {
@@ -7040,7 +7040,7 @@ document.getElementById('btn-p8-folder-hero')?.addEventListener('click', () => w
 async function openPico8Config() {
     const status = await window.api.getPico8Status();
     const binEl = document.getElementById('pico8-cfg-bin-status');
-    if (binEl) binEl.innerText = status.bin ? `✓ ${status.bin}` : 'Not detected — place pico8 binary in GameManagerConfig/pico8/';
+    if (binEl) binEl.innerText = status.bin ? `✓ ${status.bin}` : 'Not detected, place pico8 binary in GameManagerConfig/pico8/';
 
     const opts = await window.api.getPico8Opts();
     _p8SetToggle('p8-opt-windowed',  opts.windowed);
@@ -7073,7 +7073,7 @@ document.getElementById('btn-pico8-cfg-browse')?.addEventListener('click', async
     }
 });
 
-// Toggle buttons — each click toggles and saves immediately
+// Toggle buttons, each click toggles and saves immediately
 document.querySelectorAll('.p8-opt-btn').forEach(btn => {
     btn.addEventListener('click', async () => {
         const isOn = !btn.classList.contains('on');
@@ -7127,7 +7127,7 @@ async function updateLibraryFlow({ quiet = false } = {}) {
     let anySuccess = false;
     const beforeIds = new Set(allGames.map(g => g.id)); // snapshot to detect games added by this sync
 
-    // Steam sync — only if credentials are already saved
+    // Steam sync, only if credentials are already saved
     if (steamId && steamKey) {
         line('🔄 Syncing Steam...');
         const steamResult = await window.api.syncSteam(steamId, steamKey);
@@ -7148,7 +7148,7 @@ async function updateLibraryFlow({ quiet = false } = {}) {
         document.getElementById('modal-update-info').classList.add('active');
     }
 
-    // Headless store refresh — pull newly-bought GOG/Epic games from the stores
+    // Headless store refresh, pull newly-bought GOG/Epic games from the stores
     // into Installer's DB (import-only, not install) so the Installer sync below picks
     // them up into Clarity's library.
     cpTaskProgress(45);
@@ -7170,7 +7170,7 @@ async function updateLibraryFlow({ quiet = false } = {}) {
         statusEl.innerHTML = statusEl.innerHTML.replace('🔄 Refreshing GOG/Epic library...', `⚠️ GOG/Epic: ${e.message}`);
     }
 
-    // Installer sync — always attempt if Installer is present
+    // Installer sync, always attempt if Installer is present
     cpTaskProgress(60);
     line('🔄 Syncing Installer...');
     const gs = await window.api.installerStatus();
@@ -7195,7 +7195,7 @@ async function updateLibraryFlow({ quiet = false } = {}) {
 
     cpTaskEnd('Library updated');
     await loadGames();
-    // Offer to scrape ONLY the games this sync added — never re-scrape the whole library
+    // Offer to scrape ONLY the games this sync added, never re-scrape the whole library
     const newGames = gamesMissingData(allGames.filter(g => !beforeIds.has(g.id)));
     if (newGames.length && await showConfirm(`Fetch artwork & metadata for ${newGames.length} newly-added game${newGames.length !== 1 ? 's' : ''}?`, 'Fetch Now')) {
         runBatchScrape(newGames, 'Scraping new games');
@@ -7257,7 +7257,7 @@ document.getElementById('btn-restore-zip').addEventListener('click', async () =>
 
 const modalTools = document.getElementById('modal-tools');
 function openToolsModal(pane = 'welcome') {
-    // Used directly as a click handler too — an Event lands in `pane`; treat it as default.
+    // Used directly as a click handler too, an Event lands in `pane`; treat it as default.
     if (typeof pane !== 'string') pane = 'welcome';
     modalTools.classList.add('active');
     document.getElementById('batch-status').innerText = '';
@@ -7311,7 +7311,7 @@ document.getElementById('btn-install-menu').addEventListener('click', async () =
     status.innerText = result.message;
 });
 
-// Opt-in: auto-start Couch (fullscreen) on login — reflects the autostart entry's presence.
+// Opt-in: auto-start Couch (fullscreen) on login, reflects the autostart entry's presence.
 (() => {
     const chk = document.getElementById('chk-couch-autostart');
     if (!chk) return;
@@ -7373,7 +7373,7 @@ async function updateInstallerRow(game) {
 
     // Custom/Others games: always Installer-managed
     if (isCustomInstaller) {
-        statusEl.textContent = '✓ Installer — default launcher';
+        statusEl.textContent = '✓ Installer, default launcher';
         statusEl.style.color = '#66bb6a';
         openBtn.style.display = '';
         openBtn.onclick = () => _openCompatFor(game);
@@ -7386,7 +7386,7 @@ async function updateInstallerRow(game) {
     openBtn.style.display = '';
     openBtn.onclick = () => _openCompatFor(game);
     if (game.InstallerGameId || inInstaller) {
-        statusEl.textContent = '✓ Installer — default launcher';
+        statusEl.textContent = '✓ Installer, default launcher';
         statusEl.style.color = '#66bb6a';
     } else {
         statusEl.textContent = 'Not yet linked in Installer';
@@ -7409,7 +7409,7 @@ modalTools.addEventListener('click', e => { if (e.target === modalTools) closeTo
     const card = (childId) => document.getElementById(childId)?.closest('.tool-card');
     // ⚠️ EVERY card must appear here. A card that is not listed is never moved, and
     // because `.cp-pane { display:none }` hides panes rather than the cards outside
-    // them, an unlisted card renders on TOP of whichever page is showing — on all of
+    // them, an unlisted card renders on TOP of whichever page is showing, on all of
     // them. Seven cards were in that state (game updates, the display picker, Omarchy,
     // source ports, DOSBox, genres and Mac-Native), which is why the panel still read
     // as one flat list even though the panes were already built.
@@ -7441,7 +7441,7 @@ modalTools.addEventListener('click', e => { if (e.target === modalTools) closeTo
         c.classList.add('tools-section'); connPane.appendChild(c);
     });
     document.getElementById('modal-connect')?.remove();
-    // Anything still sitting outside a pane would render on every page — report it.
+    // Anything still sitting outside a pane would render on every page, report it.
     const stray = [...document.querySelectorAll('#tools-cards-container > .tool-card')];
     if (stray.length) console.warn('[control panel] card(s) not filed into a pane:',
         stray.map(c => c.querySelector('.tool-card-title')?.textContent?.trim() || c.dataset.search || '?'));
@@ -7497,11 +7497,11 @@ function cpTaskEnd(label) {
 }
 document.getElementById('cp-taskbar-stop')?.addEventListener('click', () => { _cpBatchCancel = true; });
 
-// Upgraded Batch Fetcher — filter helper + reusable runner
+// Upgraded Batch Fetcher, filter helper + reusable runner
 function gamesMissingData(list) {
     const hasImg = (v) => v && String(v).startsWith('GameManagerConfig');
     const hasText = (v) => v && String(v).trim() !== '';
-    // Carts carry their own art and never want scraping — but a row that is PICO-8 *and*
+    // Carts carry their own art and never want scraping, but a row that is PICO-8 *and*
     // something else is a real game that does, so only a pure cart is skipped.
     const isPico8 = (g) => _isPico8Only(g.store || g.Store);
     return list.filter(g =>
@@ -7744,14 +7744,14 @@ const THEMES = {
     // Oakanizer (imported from the OAKANIZER project built-ins)
     "OAKANIZER LIGHT": {bg: "#f5f0f8", bg_panel: "rgba(228,219,237,0.75)", bg_menu: "#e4dbed", accent: "#46295a", accent_menu: "#46295a", text_main: "#1e0a30", text_sec: "#6b547b", text_dim: "#907f9c", border: "rgba(70,41,90,0.12)", border_solid: "#c0b4cc"},
     "OAKANIZER DARK": {bg: "#120a1a", bg_panel: "rgba(35,20,45,0.6)", bg_menu: "#23142d", accent: "#b5a9bd", accent_menu: "#b5a9bd", text_main: "#dad4de", text_sec: "#907f9c", text_dim: "#6b547b", border: "rgba(181,169,189,0.2)", border_solid: "#46295a"},
-    // BrewBalance (imported from the BrewBalance app — espresso & latte brand set)
+    // BrewBalance (imported from the BrewBalance app, espresso & latte brand set)
     "BREWBALANCE DARK": {bg: "#17100a", bg_panel: "rgba(30, 21, 13, 0.6)", bg_menu: "#1e150d", accent: "#d4a373", accent_menu: "#d4a373", text_main: "#efe3d2", text_sec: "#b89b7d", text_dim: "#7a5f45", border: "rgba(212, 163, 115, 0.2)", border_solid: "#3f2d1c"},
     "BREWBALANCE LIGHT": {bg: "#fbf7ef", bg_panel: "rgba(243, 235, 221, 0.75)", bg_menu: "#f3ebdd", accent: "#b5651d", accent_menu: "#b5651d", text_main: "#2a241c", text_sec: "#7c6b53", text_dim: "#9a8a72", border: "rgba(181, 101, 29, 0.12)", border_solid: "#d6c6ab"},
     "MOCHA": {bg: "#1a1210", bg_panel: "rgba(36, 24, 19, 0.6)", bg_menu: "#241813", accent: "#c98a5e", accent_menu: "#c98a5e", text_main: "#f0dfcf", text_sec: "#c7a98f", text_dim: "#8a6a54", border: "rgba(201, 138, 94, 0.2)", border_solid: "#4a3226"},
     "FLAT WHITE": {bg: "#f6f1e9", bg_panel: "rgba(253, 250, 244, 0.75)", bg_menu: "#fdfaf4", accent: "#8a5a2b", accent_menu: "#8a5a2b", text_main: "#33291f", text_sec: "#6b5a48", text_dim: "#a4917a", border: "rgba(138, 90, 43, 0.12)", border_solid: "#e0d4c0"},
     "MATCHA": {bg: "#12160f", bg_panel: "rgba(26, 32, 21, 0.6)", bg_menu: "#1a2015", accent: "#9bbf6b", accent_menu: "#9bbf6b", text_main: "#e6efd8", text_sec: "#b3c79b", text_dim: "#6d8556", border: "rgba(155, 191, 107, 0.2)", border_solid: "#33422a"},
 
-    // Systems (imported from LatteWrite) — retro-OS palettes; each carries its era `font` (applied as --ui-font while active)
+    // Systems (imported from LatteWrite), retro-OS palettes; each carries its era `font` (applied as --ui-font while active)
     "MS-DOS": {bg: "#0a0a0a", bg_panel: "rgba(0, 0, 0, 0.6)", bg_menu: "#000000", accent: "#ffffff", accent_menu: "#ffffff", text_main: "#d2d2d2", text_sec: "#a2a2a2", text_dim: "#7e7e7e", border: "rgba(255, 255, 255, 0.25)", border_solid: "#4a4a4a", font: 'PxPlus IBM VGA8'},
     "COMMODORE 64": {bg: "#0000aa", bg_panel: "rgba(0, 0, 170, 0.6)", bg_menu: "#0000aa", accent: "#b9b6ff", accent_menu: "#b9b6ff", text_main: "#d0ccff", text_sec: "#9e9beb", text_dim: "#7976db", border: "rgba(185, 182, 255, 0.25)", border_solid: "#4341c5", font: 'C64 Pro Mono'},
     "MACOS 1.0": {bg: "#ffffff", bg_panel: "rgba(255, 255, 255, 0.6)", bg_menu: "#ffffff", accent: "#000000", accent_menu: "#000000", text_main: "#000000", text_sec: "#3d3d3d", text_dim: "#6b6b6b", border: "rgba(0, 0, 0, 0.25)", border_solid: "#adadad", font: 'Chicago'},
@@ -7909,7 +7909,7 @@ window.api.getSetting('ui_font').then(f => {   // re-resolve --ui-font regardles
 });
 // ── Zoom shortcuts ───────────────────────────────────────────────────────────
 // ⚠️ The escape hatch for a UI that is too big to operate. The scale lives in the Control
-// Panel, which is opened from the icon rail — so when the interface is too large for the
+// Panel, which is opened from the icon rail, so when the interface is too large for the
 // window, the control that fixes it is exactly the one you cannot reach. That actually
 // happened on a 1152x720 laptop screen.
 //
@@ -7919,7 +7919,7 @@ const ZOOM_STEPS = [0.5, 0.75, 1.0, 1.25, 1.5];
 let _zoomNow = 1.0;
 
 // ⚠️ Shared by the startup re-derive and by setZoom below, so both stamp the same thing.
-// Filled from the main process at startup — `window.screen` is the wrong source (it describes
+// Filled from the main process at startup, `window.screen` is the wrong source (it describes
 // whichever display the window sits on, and on a fresh install that is Electron's unreliable
 // idea of the primary); see 'ui-screen-info' in main.js.
 //
@@ -7955,8 +7955,8 @@ window.addEventListener('keydown', e => {
 //
 // ⚠️ The controls are MOVED, not recreated. appendChild relocates a live node together with
 // its event listeners, so nothing needs rebinding and there is never a second copy to keep in
-// sync — which is what a "build a duplicate rail button" approach would have cost.
-// Navigation belongs in the rail — it is a column of navigation already. The two pills are a
+// sync, which is what a "build a duplicate rail button" approach would have cost.
+// Navigation belongs in the rail. It is a column of navigation already. The two pills are a
 // different kind of thing: they are wide, branded and horizontal, and squeezed into a 48px
 // column they looked like an afterthought. They go over the hero's top-right corner instead.
 const RAIL_IDS = ['btn-titlebar-home', 'btn-titlebar-library', 'btn-titlebar-downloads'];
@@ -7981,13 +7981,13 @@ function applyCompactChrome(on) {
     move(RAIL_IDS,  on ? rail  : controls);
     move(PILL_IDS,  on ? pills : controls);
     if (on) placeHeroPills();
-    // Mirrored for the pre-paint script in index.html — see the comment there. Written on
+    // Mirrored for the pre-paint script in index.html, see the comment there. Written on
     // every call, so the cache cannot drift from what is actually on screen.
     try { localStorage.setItem('clarity_compact_chrome', on ? '1' : '0'); } catch {}
 }
 
 // ⚠️ Applied synchronously, right here, from the cache the pre-paint script also reads.
-// Scripts block rendering, so this still runs before the first paint — which is the whole
+// Scripts block rendering, so this still runs before the first paint, which is the whole
 // point: the buttons are relocated before the window is ever shown, instead of visibly
 // rearranging themselves a couple of seconds later. The IPC round trip below still runs and
 // corrects this if the stored setting disagrees.
@@ -8001,7 +8001,7 @@ try { applyCompactChrome(localStorage.getItem('clarity_compact_chrome') === '1')
 // hovering over the game grid. Re-parenting them into the hero means they scroll with it and
 // sit in its corner properly.
 //
-// Not every view has a hero — the list view and the split layout do not — so the container
+// Not every view has a hero, the list view and the split layout do not, so the container
 // falls back to <body>, where the CSS switches it to a fixed corner. One node either way,
 // which keeps the listeners intact.
 function placeHeroPills() {
@@ -8014,7 +8014,7 @@ function placeHeroPills() {
 }
 
 // ── Responsive shell ─────────────────────────────────────────────────────────
-// A tiling WM makes a narrow window ordinary rather than exceptional — half of a 1440px
+// A tiling WM makes a narrow window ordinary rather than exceptional, half of a 1440px
 // screen is 720px. Driven by the WINDOW's width via ResizeObserver rather than CSS media
 // queries, because a media query reads the screen, and on a tiled desktop the two numbers
 // have nothing to do with each other.
@@ -8027,7 +8027,7 @@ const SHORT_AT = 820;
 
 function applyWidthClasses(w, h) {
     // ⚠️ On documentElement, not body. The compact-chrome class has to be set by the inline
-    // script in <head>, where document.body does not exist yet — and a compound selector like
+    // script in <head>, where document.body does not exist yet, and a compound selector like
     // `.narrow.compact-chrome` only matches when both classes sit on the SAME element. Keeping
     // every layout class on <html> is what makes that work.
     const r = document.documentElement.classList;
@@ -8051,7 +8051,7 @@ try {
 
 // ── The Omarchy card ─────────────────────────────────────────────────────────
 // Everything Omarchy-specific in one Control Panel card. On any other host the card is
-// REMOVED, not hidden — the Control Panel used to reset `display` on every .tools-section in three
+// REMOVED, not hidden, the Control Panel used to reset `display` on every .tools-section in three
 // places, so an inline display:none lasts exactly until the panel is opened. That is the
 // Mac-Native bug from 1.8.0, and the display picker above had it too.
 async function initOmarchyCard() {
@@ -8068,7 +8068,7 @@ async function initOmarchyCard() {
 
 // Split out from init so the Re-check button can redraw from fresh data. Re-reading is the
 // whole point: an install happens in a terminal the app does not own, so the app cannot know
-// it finished — and telling someone to restart when a button could just look again is a poor
+// it finished, and telling someone to restart when a button could just look again is a poor
 // trade. Everything here is derived from status, so a redraw is the only state update needed.
 async function renderOmarchyCard(s) {
     const listEl   = document.getElementById('omarchy-tools-list');
@@ -8082,7 +8082,7 @@ async function renderOmarchyCard(s) {
         const r = await fn();
         statusEl.style.color = r?.ok ? 'var(--text_sec)' : '#ef5350';
         statusEl.textContent = r?.ok
-            ? `${label} is running in a terminal — finish it there, then press Re-check.`
+            ? `${label} is running in a terminal, finish it there, then press Re-check.`
             : (r?.error || 'Could not open a terminal.');
         return r;
     };
@@ -8157,7 +8157,7 @@ async function renderOmarchyCard(s) {
 
     // ── System tuning ────────────────────────────────────────────────────────
     // Reported, never changed. An entry whose value could not be read at all is shown as
-    // unknown rather than guessed at — a missing /proc entry means the kernel does not have
+    // unknown rather than guessed at, a missing /proc entry means the kernel does not have
     // that knob, which is not the same as it being wrong.
     const tuneBlock = document.getElementById('omarchy-tuning-block');
     const tuneList  = document.getElementById('omarchy-tuning-list');
@@ -8202,8 +8202,8 @@ async function renderOmarchyCard(s) {
         };
     }
 
-    // Compact chrome. Default ON when Omarchy is detected — it is the right default for a
-    // tiling desktop — but stored the moment it is toggled, so a deliberate choice sticks.
+    // Compact chrome. Default ON when Omarchy is detected. It is the right default for a
+    // tiling desktop, but stored the moment it is toggled, so a deliberate choice sticks.
     const chromeBox = document.getElementById('omarchy-compact-chrome');
     if (chromeBox) {
         const saved = await window.api.getSetting('omarchy_compact_chrome').catch(() => null);
@@ -8217,7 +8217,7 @@ async function renderOmarchyCard(s) {
     }
 
     // How a game's window opens. Applied by the main process at startup, because Hyprland rules
-    // cannot be withdrawn once set for a session — so this stores the choice and the hint says
+    // cannot be withdrawn once set for a session, so this stores the choice and the hint says
     // when it takes effect rather than implying it is live.
     const gameWinCtl = document.getElementById('omarchy-game-window-control');
     if (gameWinCtl) {
@@ -8237,7 +8237,7 @@ async function renderOmarchyCard(s) {
                 .forEach(b => b.classList.toggle('active', b.dataset.val === val));
             const hint = document.getElementById('omarchy-game-window-hint');
             // ⚠️ "next time the app starts" was wrong and made this look broken: a rule set for
-            // the session outlives the app, so a new one only wins from the next LOGIN — or
+            // the session outlives the app, so a new one only wins from the next LOGIN, or
             // from the button below, which is why the button exists.
             if (hint) hint.innerHTML = `${HINTS[val]} <i>Takes effect at your next login, or press the button below.</i>`;
         };
@@ -8304,7 +8304,7 @@ async function renderOmarchyCard(s) {
 // one entry named after whichever theme they are on, and it follows `omarchy theme set`.
 //
 // ⚠️ It has to be registered *before* the saved theme is read, or someone whose saved theme
-// is OMARCHY silently falls back to the default on every start — THEMES[saved] would not
+// is OMARCHY silently falls back to the default on every start, THEMES[saved] would not
 // exist yet. Hence the promise this chains from rather than a parallel fetch.
 const OMARCHY_THEME_KEY = 'OMARCHY';
 let _omarchyThemeName = '';
@@ -8345,20 +8345,20 @@ const _omarchyThemeReady = (window.api.omarchyTheme ? window.api.omarchyTheme() 
     .catch(() => false);
 
 // Following a live theme switch. Only re-applies if the user is actually on the Omarchy
-// theme — someone who picked CYBERPUNK deliberately does not want their desktop overriding
+// theme, someone who picked CYBERPUNK deliberately does not want their desktop overriding
 // it, so the entry is kept up to date but nothing is forced.
 window.api.onOmarchyThemeChanged?.(d => {
     if (!_registerOmarchyTheme(d)) return;
     _omarchyThemeName = d.name || '';
     if (activeTheme === OMARCHY_THEME_KEY) applyTheme(OMARCHY_THEME_KEY);
     const label = document.getElementById('omarchy-theme-name');
-    if (label) label.textContent = _omarchyThemeName || '—';
+    if (label) label.textContent = _omarchyThemeName || '-';
 });
 
 _omarchyThemeReady.then(initOmarchyCard).catch(() => {});
 
 // ⚠️ Applied at startup as well as in the card, or the layout would only correct itself once
-// the user happened to open the Control Panel — a first run would show the titlebar it is
+// the user happened to open the Control Panel, a first run would show the titlebar it is
 // meant to be hiding.
 (async () => {
     try {
@@ -8375,7 +8375,7 @@ _omarchyThemeReady.then(initOmarchyCard).catch(() => {});
 
 _omarchyThemeReady.then(ok => window.api.getSetting('clarity_theme').then(saved => ({ ok, saved })))
     .then(({ ok, saved }) => {
-    // On Omarchy, matching the desktop is the better default — but only as a *default*.
+    // On Omarchy, matching the desktop is the better default, but only as a *default*.
     // A saved theme is a deliberate choice and always wins, so this fires on a fresh
     // install and never overrides someone who went and picked CYBERPUNK on purpose.
     const saved2 = (!saved && ok && THEMES[OMARCHY_THEME_KEY]) ? OMARCHY_THEME_KEY : saved;

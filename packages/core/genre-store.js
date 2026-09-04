@@ -1,6 +1,6 @@
 'use strict';
 /*
- * @clarity/core — where a game's genres live in games.db.
+ * @clarity/core, where a game's genres live in games.db.
  *
  * Both faces open the same database and each one used to re-declare the schema in its
  * own migration block; this keeps the genre tables in one place so they cannot drift.
@@ -33,7 +33,7 @@ function ensureGenreSchema(db) {
     // 1 = a human set this genre; scans skip the row entirely.
     try { db.prepare("ALTER TABLE games ADD COLUMN PrimaryGenre TEXT").run(); } catch (e) {}
     try { db.prepare("ALTER TABLE games ADD COLUMN GenreLocked INTEGER DEFAULT 0").run(); } catch (e) {}
-    // When a scan last touched the row (unix seconds) — lets a re-scan skip fresh rows.
+    // When a scan last touched the row (unix seconds), lets a re-scan skip fresh rows.
     try { db.prepare("ALTER TABLE games ADD COLUMN GenreScanned INTEGER DEFAULT 0").run(); } catch (e) {}
 }
 
@@ -112,7 +112,7 @@ function genreCounts(db) {
     return out;
 }
 
-// How much of the library has been classified — drives the "run a scan" nudge.
+// How much of the library has been classified, drives the "run a scan" nudge.
 function genreCoverage(db) {
     try {
         const r = db.prepare(

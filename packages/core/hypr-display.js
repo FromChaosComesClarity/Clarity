@@ -1,6 +1,6 @@
 'use strict';
 /*
- * @clarity/core — "which screen games open on", for Hyprland.
+ * @clarity/core, "which screen games open on", for Hyprland.
  *
  * The same feature as kwin-display.js and deliberately the same interface, so the
  * Control Panel card that already exists starts working here without a line of UI
@@ -15,13 +15,13 @@
  * ⚠️ Why `hyprctl eval` and not `hyprctl keyword`: on Omarchy 4 (Hyprland 0.56 with
  * Omarchy's Lua config) the keyword form does not work at all. It answers
  *   "keyword can't work with non-legacy parsers. Use eval."
- * on STDOUT, with exit status 0 — so a naive success check counts the refusal as a
+ * on STDOUT, with exit status 0, so a naive success check counts the refusal as a
  * success. Phase 1 hit exactly this with the float rules. Both forms are tried and
  * both are checked for a literal `ok`, so a plain Arch + Hyprland box (legacy parser,
  * no Lua helper) still works through the keyword path.
  *
  * ⚠️ Nothing is written to the user's Hyprland config. Rules set at runtime are
- * session-scoped, which is why the stored choice is re-applied on every app start —
+ * session-scoped, which is why the stored choice is re-applied on every app start,
  * the same restraint, and the same consequence, as the KWin script.
  */
 
@@ -61,7 +61,7 @@ function isSupported() {
 }
 
 // ⚠️ A rotated monitor reports its UNrotated width/height with a transform flag, so the
-// label has to swap them — otherwise Jose's portrait 1440x900 panel is described as
+// label has to swap them, otherwise Jose's portrait 1440x900 panel is described as
 // landscape and is the hardest one to pick out of a list. Odd transforms are the 90°
 // and 270° rotations.
 function listDisplays() {
@@ -103,15 +103,15 @@ function currentDisplay() {
 /*
  * ⚠️ The compositor rule is only half the answer, and the smaller half.
  *
- * Hyprland's XWayland starts with NO primary output — measured: `xrandr --query` prints no
+ * Hyprland's XWayland starts with NO primary output, measured: `xrandr --query` prints no
  * `primary` on a stock Omarchy 4 desk. An X11 game (which on Proton is nearly all of them)
  * then asks RandR which screen to use and takes the first one listed, which is the output
- * nearest the origin of the X screen — on a desk where a small panel sits left of the main
+ * nearest the origin of the X screen, on a desk where a small panel sits left of the main
  * monitor, that is the small panel. The game sizes itself to it and keeps that size, so
  * sending the window fullscreen afterwards only scales a small picture up.
  *
  * Setting the primary costs one xrandr call, is session-scoped exactly like the window rules,
- * and points at the screen the user has already said their games should open on — so it
+ * and points at the screen the user has already said their games should open on, so it
  * makes X agree with a choice they made rather than making a new one for them. Nothing is
  * touched when no choice is set.
  *
@@ -151,7 +151,7 @@ function setXwaylandPrimary(name) {
 function apply() {
     if (!isSupported()) return { ok: false, applied: 0 };
     const choice = readChoice();
-    if (!choice || !choice.name) return { ok: true, applied: 0 };   // "Default" — nothing to set
+    if (!choice || !choice.name) return { ok: true, applied: 0 };   // "Default", nothing to set
     const name = choice.name;
     const lua = `o.window({ class = "${GAME_CLASS_RE}" }, { monitor = "${name}" })`;
     let out = hyprctl(['eval', lua]);
@@ -160,7 +160,7 @@ function apply() {
     }
     const ok = !!(out && /^ok\b/i.test(out.trim()));
     const xPrimary = setXwaylandPrimary(name);
-    // ⚠️ `display` is the display OBJECT, not its name — kwin-display.js returns the
+    // ⚠️ `display` is the display OBJECT, not its name, kwin-display.js returns the
     // object and the Control Panel reads `res.display.name`. Returning a bare string
     // here would have printed "undefined" on Hyprland and nowhere else.
     const obj = listDisplays().find(d => d.name === name) || { name };

@@ -1,14 +1,14 @@
 'use strict';
 /*
- * @clarity/core — RSS/Atom reader for the "Gaming News" Home widget (Phase 3).
+ * @clarity/core, RSS/Atom reader for the "Gaming News" Home widget (Phase 3).
  * Network + opt-in (the widget/row is off by default). Lightweight regex parsing
- * (no XML dependency) — handles RSS 2.0 <item> and Atom <entry>. Defensive: any
+ * (no XML dependency), handles RSS 2.0 <item> and Atom <entry>. Defensive: any
  * failing feed contributes []; the whole call resolves to [] on error.
  */
 const { session } = require('electron');
 
 const DEFAULT_NEWS = [
-    'https://www.gamingonlinux.com/article_rss.php', // Linux-first — perfect for this audience
+    'https://www.gamingonlinux.com/article_rss.php', // Linux-first, perfect for this audience
     'https://www.pcgamer.com/rss/',
     'https://www.rockpapershotgun.com/feed',
 ];

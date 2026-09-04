@@ -6,7 +6,7 @@ InstallerConfig/
 .DS_Store
 *.log
 
-# Prebuilt helper binaries — fetched at build time from a GitHub Release
+# Prebuilt helper binaries, fetched at build time from a GitHub Release
 # (see scripts/fetch-binaries.mjs). Too large for git; yt-dlp.conf stays tracked.
 assets/bin/linux/ffmpeg
 assets/bin/linux/ffprobe
@@ -21,7 +21,7 @@ assets/bin/darwin-arm64/gogdl
 assets/bin/darwin-arm64/legendary
 assets/bin/darwin-arm64/comet
 
-# Couch wallpapers (272M) — too large for git; become a first-run download pack (Phase 3b)
+# Couch wallpapers (272M), too large for git; become a first-run download pack (Phase 3b)
 apps/couch/assets/wallpapers/
 
 # Claude Code local settings

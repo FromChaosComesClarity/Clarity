@@ -1,20 +1,20 @@
 // ── Omarchy theme bridge ─────────────────────────────────────────────────────
 // Omarchy has a first-class theme system: one directory per theme, and a `colors.toml`
-// inside it declaring the palette in named roles — background, foreground, accent, and the
+// inside it declaring the palette in named roles, background, foreground, accent, and the
 // usual ANSI set. Every app on the system is themed from that one file.
 //
 // The suite's own themes are the same shape (bg / accent / text / border), which means the
-// right integration is not "pick whichever of our 93 themes looks closest" — it is to build
+// right integration is not "pick whichever of our 93 themes looks closest". It is to build
 // a theme from the user's actual palette, so Clarity matches their desktop exactly
 // and keeps matching when they switch. That is what toCafeTheme() does.
 //
 // The key simplification: `~/.local/state/omarchy/current/theme` is the *materialised*
-// current theme — Omarchy copies the resolved theme there whichever of the stock or user
+// current theme, Omarchy copies the resolved theme there whichever of the stock or user
 // directories it came from. Reading that one path means never having to resolve a display
 // name ("Thegreek") against a slug ("thegreek"), or stock against user overlay. It also
 // means a theme with no colors.toml simply reports unavailable rather than half-working.
 //
-// Node builtins only — this file is meant to be copied into EmuLatte unchanged.
+// Node builtins only, this file is meant to be copied into EmuLatte unchanged.
 'use strict';
 
 const fs = require('fs');
@@ -36,7 +36,7 @@ function currentThemeName() {
 function hasTheme() { try { return fs.statSync(COLORS).isFile(); } catch { return false; } }
 
 // A deliberately small TOML reader. colors.toml is flat `key = "value"` with `#` comments
-// and no tables, arrays or multi-line strings — a real TOML parser would be a dependency
+// and no tables, arrays or multi-line strings, a real TOML parser would be a dependency
 // bought for nothing. Anything it does not understand is skipped rather than guessed at,
 // so a future file with structure in it degrades to "missing keys" instead of wrong ones.
 function parseFlatToml(text) {
@@ -88,7 +88,7 @@ function rgba(hex, alpha) {
 }
 
 // Perceived brightness, 0–255. Used only to decide light vs dark when the theme does not
-// say — `mode` is authoritative when present.
+// say, `mode` is authoritative when present.
 function luma(hex) {
     const c = rgb(hex);
     if (!c) return 0;
@@ -127,7 +127,7 @@ function mix(a, b, t) {
 //   border_solid← muted / selection     opaque dividers
 //
 // ⚠️ Light themes exist (catppuccin-latte, flexoki-light). The role names still mean the
-// same thing there — `background` is light and `foreground` is dark — so the mapping holds
+// same thing there, `background` is light and `foreground` is dark, so the mapping holds
 // without inverting anything. What does change is *direction*: "a step deeper than the page"
 // is darker on a dark theme and also darker on a light one, but by a much smaller amount,
 // because a light UI separates its layers with far less contrast than a dark one does.
@@ -136,7 +136,7 @@ function mix(a, b, t) {
 // installed on a real Omarchy 4 box: `accent`, `background` and `foreground` appear in all
 // 37 that have a colors.toml at all, while the richer roles (dark_background, muted,
 // bright_foreground, …) appear in only 23–24, and `mode` in 24. Falling back to a preference
-// chain therefore collapses roles into each other — on a minimal theme every text tier
+// chain therefore collapses roles into each other, on a minimal theme every text tier
 // resolved to the same colour and menus became invisible against the page. So a declared
 // role is always preferred, and anything absent is *derived* from the three that are not.
 function toCafeTheme(colors = readColors()) {
@@ -166,18 +166,18 @@ function toCafeTheme(colors = readColors()) {
     const declaredMenu = pick(colors, 'dark_background', 'darker_background');
     const menu = (declaredMenu && declaredMenu !== bg) ? declaredMenu : mix(bg, towardEdge, step);
     // The panel floats *over* artwork, so it wants to be a lift on dark and a settle on
-    // light — either way it is translucent, and the alpha is what makes it read as glass.
-    // ⚠️ A declared surface role is preferred but never trusted blindly — the same lesson as
+    // light, either way it is translucent, and the alpha is what makes it read as glass.
+    // ⚠️ A declared surface role is preferred but never trusted blindly, the same lesson as
     // tokyoled's dark_background, one step further. `selection` is the sharp case: it is the
     // text-selection highlight, so it is a proper dark surface in some themes (city-783 uses
     // #2b2f37) and pure white in others (Crimson). Taken on faith it produced a floating panel
-    // of rgba(255,255,255,0.62) over a #1a1621 page — near-white rows carrying light-grey
+    // of rgba(255,255,255,0.62) over a #1a1621 page, near-white rows carrying light-grey
     // secondary text, which is unreadable, and pure-white borders to match.
     //
     // So the role is kept in the chain and *validated* instead of dropped: a candidate surface
     // has to sit on the correct side of the page and stay near it. One that would invert the
     // layer relationship is treated as absent, and the value is derived. Dropping `selection`
-    // outright was worse — it cost city-783 its declared surface and pushed contrast down.
+    // outright was worse, it cost city-783 its declared surface and pushed contrast down.
     const surfaceOk = (hex) => {
         if (!hex) return false;
         const d = luma(hex) - bgLuma;
@@ -232,12 +232,12 @@ function isSupported() { return hasTheme(); }
 
 // ── Following the user's theme ───────────────────────────────────────────────
 // Omarchy can install a `theme-set` hook, but writing into the user's system to learn about
-// their system is the wrong trade for a game launcher — it survives uninstalling us, and it
+// their system is the wrong trade for a game launcher, it survives uninstalling us, and it
 // needs a shell script on disk. Watching the state directory costs nothing and needs no
 // permission: `omarchy theme set` rewrites theme.name and repopulates theme/, so a watch on
 // the directory sees every switch.
 //
-// ⚠️ The rewrite is not atomic — name and colours land separately, and a naive watcher fires
+// ⚠️ The rewrite is not atomic, name and colours land separately, and a naive watcher fires
 // two or three times mid-switch and can read a half-written palette. Hence the debounce, and
 // hence re-reading everything on each fire rather than trusting the event's filename.
 function watch(onChange, { debounceMs = 250 } = {}) {

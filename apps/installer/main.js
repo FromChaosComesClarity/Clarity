@@ -37,16 +37,16 @@ const logDir      = path.join(configDir, 'game_logs');
 const appImageDir  = host.portableBaseDir({ devDir: configDir });
 const progressFile = path.join(appImageDir, 'GameManagerConfig', 'installer-progress.json');
 
-// Installer's own db normally lives at configDir/library.db — its dedicated identity (see the
+// Installer's own db normally lives at configDir/library.db, its dedicated identity (see the
 // comment above), and findInstallerDb's own candidate list already includes that exact path
 // first. But if a library.db with real data already exists at one of the OTHER candidates
 // (most likely the shared suite's own baseDir/InstallerConfig, from an install or sync that ran
-// against it before this dedicated path ever got created — e.g. dev-mode testing, or the
+// against it before this dedicated path ever got created, e.g. dev-mode testing, or the
 // Manager face running before Installer's own packaged path existed), use that instead of
 // silently creating another, empty library.db right next to it. Two live, disagreeing
 // databases for the same suite is exactly the split that made "Play" fail with a real, correct
 // InstallerGameId that simply wasn't in *this* file. Falls back to the original dedicated path
-// when nothing exists anywhere yet (the normal fresh-install case — unchanged from before).
+// when nothing exists anywhere yet (the normal fresh-install case, unchanged from before).
 const dbPath = host.findInstallerDb(appImageDir) || path.join(configDir, 'library.db');
 
 
@@ -168,7 +168,7 @@ if (cliMode) {
             .catch(e => { console.error('Installer error:', e.message); app.quit(); });
     });
 } else if (headlessInstMode) {
-    // Headless install/uninstall mode — no window, writes progress to installer-progress.json
+    // Headless install/uninstall mode, no window, writes progress to installer-progress.json
     app.disableHardwareAcceleration();
     app.whenReady().then(async () => {
         initDb();
@@ -183,7 +183,7 @@ if (cliMode) {
 } else {
     // ⚠️ Installer has no GUI as of Phase 2B. Its setup modal and storage view live in
     // the Manager now, so a bare `installer` invocation has nothing to show. The CLI
-    // paths above — launch, install, uninstall-headless — are the whole face, and the
+    // paths above, launch, install, uninstall-headless, are the whole face, and the
     // `installer://launch/…` scheme every installed game carries still routes here.
     console.error('Installer is headless: use `installer launch <id>`, `installer install …` or `installer uninstall-headless …`.');
     app.whenReady().then(() => app.quit());
@@ -252,7 +252,7 @@ ipcMain.handle('uninstall-game-files', async (_, id) => {
 
     if (installPath && fs.existsSync(installPath)) {
         if (!isSafe) {
-            errors.push(`Refusing to delete "${installPath}" — looks like a base directory, not a game folder. Remove files manually.`);
+            errors.push(`Refusing to delete "${installPath}", looks like a base directory, not a game folder. Remove files manually.`);
         } else {
             try { fs.rmSync(installPath, { recursive: true, force: true }); }
             catch (e) { errors.push(`Game files: ${e.message}`); }
@@ -296,11 +296,11 @@ function appendGameLog(game, method, error) {
             ``,
             `| Field | Value |`,
             `|---|---|`,
-            `| Store | ${game.store || '—'} |`,
-            `| App ID | ${game.app_id || '—'} |`,
-            `| Method | ${method || '—'} |`,
-            `| Executable | \`${game.executable || '—'}\` |`,
-            `| Install Path | \`${game.install_path || '—'}\` |`,
+            `| Store | ${game.store || '-'} |`,
+            `| App ID | ${game.app_id || '-'} |`,
+            `| Method | ${method || '-'} |`,
+            `| Executable | \`${game.executable || '-'}\` |`,
+            `| Install Path | \`${game.install_path || '-'}\` |`,
             `| Proton | \`${game.proton_path || '(default)'}\` |`,
             `| Prefix | \`${game.prefix_path || '(auto)'}\` |`,
             `| Status | ${error ? `**ERROR**: ${error}` : '**OK**'} |`,
@@ -322,7 +322,7 @@ ipcMain.handle('launch-game', async (_, gameId) => {
     }
 });
 
-// "Play with Log" — verbose launch that streams the game's stdout/stderr live to the renderer
+// "Play with Log", verbose launch that streams the game's stdout/stderr live to the renderer
 // (for troubleshooting problematic titles). The game itself is spawned detached exactly like a
 // normal launch; only its output is piped here.
 const _logWatched = new Set();   // game ids whose log modal is currently open
@@ -527,7 +527,7 @@ ipcMain.handle('get-disk-size', (_, dirPath) => {
     });
 });
 
-// Single batch call — returns { id: size } for all installed games at once.
+// Single batch call, returns { id: size } for all installed games at once.
 // Avoids N concurrent IPC round-trips which can cause race conditions.
 ipcMain.handle('get-all-disk-sizes', () => {
     const { exec } = require('child_process');
@@ -648,7 +648,7 @@ ipcMain.handle('delete-proton', (_, dirPath) => host.runtime.management.remove(d
 // The catalogue, the install location and the unpacking all live in the platform backend,
 // so this face and the Manager can no longer drift apart on them. They had: this copy took
 // the first .tar.gz in a release, and GE-Proton now ships an aarch64 tarball that sorts
-// ahead of the x86-64 one — so it was downloading an ARM build onto an x86-64 machine.
+// ahead of the x86-64 one, so it was downloading an ARM build onto an x86-64 machine.
 ipcMain.handle('get-proton-releases', () => host.runtime.management.listReleases(15));
 
 ipcMain.handle('download-proton', async (event, url, tag) => {
@@ -680,7 +680,7 @@ ipcMain.handle('legendary-status', async () => {
 // Open Epic login window and authenticate legendary
 ipcMain.handle('legendary-login', event => {
     // legendary.gl/epiclogin is maintained by the legendary team and always uses
-    // the current valid Epic client ID — avoids hardcoding one that can be revoked.
+    // the current valid Epic client ID, avoids hardcoding one that can be revoked.
     const AUTH_URL = 'https://legendary.gl/epiclogin';
     const leg = findLegendary();
     if (!leg) return Promise.resolve({ ok: false, error: 'legendary not found' });
@@ -689,7 +689,7 @@ ipcMain.handle('legendary-login', event => {
         let resolved = false;
 
         const authWin = new BrowserWindow({
-            width: 560, height: 780, title: 'Login to Epic Games — close when done',
+            width: 560, height: 780, title: 'Login to Epic Games, close when done',
             webPreferences: { nodeIntegration: false, contextIsolation: true },
         });
         authWin.setMenu(null);
@@ -704,7 +704,7 @@ ipcMain.handle('legendary-login', event => {
             try {
                 const text = await authWin.webContents.executeJavaScript('document.body.innerText');
 
-                // Epic returns the code in multiple places — try all of them:
+                // Epic returns the code in multiple places, try all of them:
                 // 1. redirectUrl query param:  ...?code=<authCode>
                 // 2. authorizationCode field (current flow)
                 // 3. exchangeCode field (older flow)
@@ -872,7 +872,7 @@ ipcMain.handle('legendary-import', (_, games) => {
     const tx = db.transaction(list => {
         let n = 0;
         for (const g of list) {
-            // installed=0 by default — will be updated when user installs via Installer
+            // installed=0 by default, will be updated when user installs via Installer
         stmt.run('epic_' + g.app_name, g.title, g.app_name,
                      g.install_path || null, g.executable || null, g.version || null);
             n++;
@@ -919,13 +919,13 @@ ipcMain.handle('run-winetricks', (event, prefixPath, tricks) => {
     });
 });
 
-// Standalone redist function — called by both the IPC handler and auto-install after gogdl-install
+// Standalone redist function, called by both the IPC handler and auto-install after gogdl-install
 
 ipcMain.handle('gogdl-install-redist', async (event, appId, platform, _installPath, prefixPath, protonPath) => {
     return runRedist(event.sender, 'redist-progress', appId, platform, prefixPath, protonPath);
 });
 
-// Play tasks from goggame-<id>.info (GOG only) — shared with the Manager face's picker.
+// Play tasks from goggame-<id>.info (GOG only), shared with the Manager face's picker.
 ipcMain.handle('get-play-tasks', (_, gameId) => installerEngine.gogPlayTasks(gameId));
 
 // Run any .exe / .msi inside the game's Wine prefix (mod installers, tools, etc.)
@@ -933,7 +933,7 @@ ipcMain.handle('get-play-tasks', (_, gameId) => installerEngine.gogPlayTasks(gam
 // can detect the base game (they check HKLM\SOFTWARE\GOG.com\Games\<ID>\path).
 // Wine maps Z:\ to the filesystem root, so Linux paths are reachable via Z:\.
 
-// "Run something else in this game's prefix" — a config tool, a patcher, a mod installer.
+// "Run something else in this game's prefix", a config tool, a patcher, a mod installer.
 // Both entry points differ only in which folder the file picker opens at; the spawn spec is
 // the same one redistributable installers use, so it comes from the platform backend.
 async function runExeForGame(gameId, dialogOpts) {
@@ -1002,7 +1002,7 @@ ipcMain.handle('gog-login', event => {
     return new Promise(resolve => {
         let resolved = false;
         const authWin = new BrowserWindow({
-            width: 600, height: 780, title: 'Login to GOG — close when done',
+            width: 600, height: 780, title: 'Login to GOG, close when done',
             webPreferences: { nodeIntegration: false, contextIsolation: true },
         });
         authWin.setMenu(null);
@@ -1256,7 +1256,7 @@ ipcMain.handle('gogdl-install', (event, appId, platform, installDir, isDlc = fal
             try { fs.unlinkSync(authPath); } catch {}
 
             if (isDlc) {
-                // DLCs merge into the existing base game folder — no new subfolder to scan.
+                // DLCs merge into the existing base game folder, no new subfolder to scan.
                 // Success is determined solely by exit code.
                 resolve({ ok: code === 0, exitCode: code, install_dir: dir,
                           gameInfo: code === 0 ? { install_path: dir, executable: null } : null });

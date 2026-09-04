@@ -31,7 +31,7 @@
       --text_sec: #c7a98f; --text_dim: #8a6a54; --border: rgba(201, 138, 94, 0.2);
       --border_solid: #4a3226;
       --tty-font: 'BigBlue Terminal';
-      --ui-font: 'Poppins';   /* interface font default — overridden by the font picker / a theme's era font */
+      --ui-font: 'Poppins';   /* interface font default, overridden by the font picker / a theme's era font */
     }
 
     body { margin: 0; background-color: var(--bg); color: var(--text_main); font-family: var(--ui-font, 'Raleway'), sans-serif; display: flex; flex-direction: column; height: 100vh; width: 100vw; overflow: hidden; transition: background-color 0.3s ease; }
@@ -41,7 +41,7 @@
     .titlebar-controls { display: flex; height: 100%; -webkit-app-region: no-drag; }
     .win-btn { border: none; border-radius: 0; background: transparent; width: 45px; font-size: 14px; display: flex; align-items: center; justify-content: center; transition: background-color 0.1s; cursor: pointer; color: var(--text_main); }
     .win-btn:hover { background-color: rgba(255,255,255,0.1); color: var(--text_main); transform: none; box-shadow: none; }
-    /* macOS: the window itself draws real traffic lights (titleBarStyle:'hidden' in main.js) —
+    /* macOS: the window itself draws real traffic lights (titleBarStyle:'hidden' in main.js),
        hide the custom row and leave room at the left instead of drawing our own. */
     body.platform-darwin .titlebar-controls { display: none; }
     body.platform-darwin .titlebar-brand { padding-left: 78px; }
@@ -54,7 +54,7 @@
     .modal-overlay.active { opacity: 1; pointer-events: auto; backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); }
     .modal-box { background: var(--bg_menu); padding: 30px; border-radius: 12px; border: 2px solid var(--border_solid); width: 400px; display: flex; flex-direction: column; gap: 15px; box-shadow: 0 20px 50px rgba(0,0,0,0.8); }
 
-    /* Global operation toast (install/sync/scrape progress) — always-visible, above modals */
+    /* Global operation toast (install/sync/scrape progress), always-visible, above modals */
     .op-toast { position: fixed; top: 44px; left: 50%; transform: translateX(-50%); z-index: 31000; display: none; flex-direction: column; gap: 7px; min-width: 280px; max-width: 420px; padding: 12px 16px; background: var(--bg_menu); border: 1px solid var(--accent); border-radius: 10px; box-shadow: 0 8px 30px rgba(0,0,0,0.6); font-family: var(--ui-font, 'Raleway'), sans-serif; cursor: pointer; -webkit-app-region: no-drag; }
     .op-toast.show { display: flex; }
     .op-toast:hover { border-color: color-mix(in srgb, var(--accent) 70%, #ffffff); }
@@ -73,7 +73,7 @@
     .dlm-clickable { cursor: pointer; }
     .dlm-clickable:hover { color: var(--accent); text-decoration: underline; }
 
-    /* Couch call-to-action — compact pill inside the titlebar, just before the window controls */
+    /* Couch call-to-action, compact pill inside the titlebar, just before the window controls */
     #couch-cta { -webkit-app-region: no-drag; align-self: center; display: flex; align-items: center; gap: 7px;
         height: 25px; margin: 0 10px 0 4px; padding: 0 13px 0 5px;
         background: linear-gradient(135deg, #2C1E16 0%, #432818 55%, #5a3a22 100%);
@@ -85,7 +85,7 @@
     .couch-cta-icon { width: 19px; height: 19px; flex-shrink: 0; }
     .rail-mark { width: 20px; height: 20px; color: var(--accent); }
     .couch-cta-text { font-size: 10px; font-weight: 900; letter-spacing: 0.4px; color: #FFE6A7; white-space: nowrap; }
-    /* Support call-to-action — amber pill (same family as the Couch pill), red pixel heart */
+    /* Support call-to-action, amber pill (same family as the Couch pill), red pixel heart */
     #support-cta { -webkit-app-region: no-drag; align-self: center; display: flex; align-items: center; gap: 6px;
         height: 25px; margin: 0 4px 0 4px; padding: 0 13px 0 11px;
         background: linear-gradient(135deg, #2C1E16 0%, #432818 55%, #5a3a22 100%);
@@ -99,7 +99,7 @@
     /* Playlist multi-select rows */
     .pl-select-row { padding:10px 14px; cursor:pointer; user-select:none; display:flex; align-items:center; gap:10px; font-size:12px; font-weight:900; color:var(--text_sec); border-bottom:1px solid var(--border); transition:background 0.1s; font-family:inherit; flex-shrink:0; }
     .pl-select-row:last-child { border-bottom:none; }
-    /* Both playlist lists scroll once they outgrow their max-height — keep the bar slim and themed. */
+    /* Both playlist lists scroll once they outgrow their max-height, keep the bar slim and themed. */
     #playlist-picker-list::-webkit-scrollbar,
     #modal-playlists-nav-list::-webkit-scrollbar { width:6px; }
     #playlist-picker-list::-webkit-scrollbar-track,
@@ -123,7 +123,7 @@
     .install-dot.not-installed { background: #ff9800; }
     .gallery-flag-btns { position: absolute; top: 7px; right: 7px; display: flex; flex-direction: column; gap: 4px; z-index: 3; opacity: 0; transition: opacity 0.15s; }
     .gallery-item:hover .gallery-flag-btns { opacity: 1; }
-    /* Free-to-play pill — gallery cover, list row, and gamepage hero */
+    /* Free-to-play pill, gallery cover, list row, and gamepage hero */
     .f2p-pill { display: inline-flex; align-items: center; justify-content: center; font-size: 9px; font-weight: 900; letter-spacing: 0.5px; text-transform: uppercase; line-height: 1; padding: 3px 6px; border-radius: 4px; background: rgba(12,14,17,0.82); color: #5be27a; border: 1px solid rgba(91,226,122,0.55); cursor: pointer; white-space: nowrap; user-select: none; transition: background 0.12s, color 0.12s; }
     .f2p-pill:hover { background: #5be27a; color: #08160d; border-color: #5be27a; }
     .f2p-pill.hidden-mode { color: #9aa0a6; border-color: rgba(154,160,166,0.5); text-decoration: line-through; }
@@ -182,17 +182,17 @@
 
     /* ── Compact chrome (Omarchy / any tiling WM) ───────────────────────────────
        The titlebar is 35px of window controls and a drag handle, and under a tiling WM you
-       can neither drag nor need the controls — the compositor owns both. So the whole bar
+       can neither drag nor need the controls, the compositor owns both. So the whole bar
        goes, and everything useful in it moves into the icon rail, which is already a vertical
        strip of buttons. That is 35px of library back on a tiled window, which on a 900px-tall
        screen is a whole extra row of covers.
 
-       ⚠️ The nav buttons and pills are MOVED, not duplicated — appendChild relocates a node
+       ⚠️ The nav buttons and pills are MOVED, not duplicated, appendChild relocates a node
        and its listeners intact, so nothing needs rebinding and there is no second copy to
        keep in sync. See applyCompactChrome() in the renderer. */
     .compact-chrome #titlebar { display: none; }
     /* ── The hero pills ─────────────────────────────────────────────────────────
-       ⚠️ In the title bar these two carry Couch's own brand colours, hardcoded — a tan
+       ⚠️ In the title bar these two carry Couch's own brand colours, hardcoded, a tan
        gradient with an amber border, owing nothing to the theme. That is fine on a bar that
        is itself chrome, and wrong the moment they sit on the hero of a themed app: on the
        green Omarchy palette they read as something pasted on from another program.
@@ -200,7 +200,7 @@
        palette is loaded, and they recede into the art instead of shouting over it. */
     #hero-pills { display: none; position: absolute; top: 14px; right: 16px; z-index: 12; gap: 7px; align-items: center; -webkit-app-region: no-drag; }
     .compact-chrome #hero-pills { display: flex; }
-    /* Parked on <body> when the active view has no hero to sit in — see placeHeroPills(). */
+    /* Parked on <body> when the active view has no hero to sit in, see placeHeroPills(). */
     body > #hero-pills { position: fixed; top: 32px; right: 34px; z-index: 500; }
 
     .compact-chrome #hero-pills #support-cta,
@@ -258,27 +258,27 @@
     .short #gallery-category-icon { width: 32px !important; height: 32px !important; }
     .short #hero-game-name { font-size: 18px !important; }
     /* The empty-hero placeholder is 48px and centred, which collides with the category title
-       once the hero is short. It is a placeholder — it should recede, not compete. */
+       once the hero is short. It is a placeholder. It should recede, not compete. */
     .short #hero-icon { font-size: 22px !important; letter-spacing: 3px !important; opacity: 0.5; }
     .narrow.short #hero-icon { font-size: 16px !important; letter-spacing: 2px !important; }
     .narrow.short .hero-display { height: 150px !important; }
-    /* Modals have to fit the window they open in, or their buttons end up off-screen — which
+    /* Modals have to fit the window they open in, or their buttons end up off-screen, which
        is exactly how the Control Panel's own settings button became unclickable. */
     .short .modal-box, .short #modal-tools > div, .short #modal-welcome > div,
     .short #modal-themes > div, .short #modal-connect > div { max-height: 92vh !important; }/* ── Responsive shell ───────────────────────────────────────────────────────
        A tiling WM makes a narrow window the normal case rather than the exception: half a
        1440px screen is 720px, and a third is 480px. These breakpoints are driven by a
        ResizeObserver on the shell rather than media queries, because what matters is the
-       WINDOW's width, not the screen's — and on a tiled desktop those are different numbers.
+       WINDOW's width, not the screen's, and on a tiled desktop those are different numbers.
        Classes rather than inline styles so a theme can still override anything. */
     .narrow .titlebar-brand { display: none; }
     .very-narrow #icon-rail { width: 40px; }
     .very-narrow #rail-chrome .couch-cta-text, .very-narrow #rail-chrome .support-cta-text { display: none; }/* Below this the split pane is two columns in a space that barely fits one, so the list
-       goes and the detail takes the width. The list is still reachable — every other layout
+       goes and the detail takes the width. The list is still reachable, every other layout
        still lists games, and this only applies to the split view. */
 
     /* ⚠️ overflow-y:auto, NOT hidden. With hidden, a window shorter than the rail's own
-       contents clipped the bottom buttons and there was no way to reach them — which is
+       contents clipped the bottom buttons and there was no way to reach them, which is
        exactly how the Control Panel button became unclickable on a 720px-tall laptop screen.
        The scrollbar is hidden visually because the rail is a strip of icons, but the content
        must always be reachable. */
@@ -293,7 +293,7 @@
     .rail-btn.active { color: var(--accent); }
     .rail-btn.active::before { content: ''; position: absolute; left: 0; top: 50%; transform: translateY(-50%); width: 3px; height: 22px; background: var(--accent); border-radius: 0 2px 2px 0; }
     .rail-sep { width: 28px; height: 1px; background: var(--border_solid); margin: 3px 0; flex-shrink: 0; }
-    /* Windows XP Systems theme — paint ONLY the titlebar + lateral icon-rail the classic Luna blue (#245DDA)
+    /* Windows XP Systems theme, paint ONLY the titlebar + lateral icon-rail the classic Luna blue (#245DDA)
        with light text; every other surface uses the theme's light bg_menu so all panels/menus/text stay readable. */
     body.sys-xp #titlebar { background: #245dda !important; border-bottom: 1px solid #16409a !important; }
     body.sys-xp #icon-rail { background: #245dda !important; border-right: 1px solid #16409a !important; }
@@ -333,7 +333,7 @@
     #btn-gsearch-clear { position: absolute; right: 11px; top: 50%; transform: translateY(-50%); width: 26px; height: 26px; border-radius: 50%; border: none; background: rgba(255,255,255,0.08); color: var(--text_dim); cursor: pointer; display: none; align-items: center; justify-content: center; font-size: 11px; padding: 0; letter-spacing: 0; text-transform: none; transition: background 0.15s, color 0.15s, transform 0.15s; }
     #btn-gsearch-clear:hover { background: var(--accent); color: var(--bg); transform: translateY(-50%) scale(1.1); box-shadow: 0 0 10px var(--accent); }
     #gallery-search-count { font-size: 10px; font-weight: 900; color: var(--text_dim); letter-spacing: 1.5px; text-transform: uppercase; white-space: nowrap; flex-shrink: 0; min-width: 64px; text-align: right; transition: color 0.2s; }
-    /* Custom select (ported from EmuLatte) — native <select> hidden, replaced by a
+    /* Custom select (ported from EmuLatte), native <select> hidden, replaced by a
        styled button + a portaled list appended to <body> (z-100000). */
     .cust-sel { position: relative; width: 100%; }
     .cust-sel-btn { width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 8px;
@@ -353,7 +353,7 @@
     .cust-sel-item:hover { background: var(--bg_panel); color: var(--text_main); }
     .cust-sel-item.sel { background: var(--accent); color: var(--bg); font-weight: 700; }
     /* Four dropdowns now share this row, so they shrink instead of squeezing the search
-       field to nothing on a narrow window — each keeps a readable floor and the input
+       field to nothing on a narrow window. Each keeps a readable floor and the input
        keeps a hard minimum of its own. */
     #gallery-search-wrap { gap: 10px; flex-wrap: wrap; }
     #gallery-search-inner { min-width: 220px; }
@@ -363,9 +363,9 @@
     #btn-genre-to-playlist:hover { border-color: var(--accent); color: var(--accent); }
     #main-content { flex: 1; display: flex; flex-direction: column; background-color: transparent; position: relative; overflow: hidden; }/* ── CLASSIC SIDEBAR ─────────────────────────────────────────────────────── *//* ── LAYOUT SWITCHING (JS adds layout-rail / layout-sidebar / layout-topnav / layout-split) ─── *//* Default: icon-rail active, sidebar hidden */
     #cp-bar, #cp-chips { display: none; }
-    #app-container.layout-rail #sidebar { display: none !important; }/* Top Nav Bar *//* Split Pane *//* specificity beats the hide rule above, so split-edit overlay wins *//* ── COMMAND LAYOUT ─────────────────────────────────────────────────────── *//* Command bar — floating terminal search */
+    #app-container.layout-rail #sidebar { display: none !important; }/* Top Nav Bar *//* Split Pane *//* specificity beats the hide rule above, so split-edit overlay wins *//* ── COMMAND LAYOUT ─────────────────────────────────────────────────────── *//* Command bar, floating terminal search */
     @keyframes cmd-blink { 0%,100%{opacity:1} 50%{opacity:0} }
-    @keyframes cmd-err { 0%{color:var(--accent)} 45%{color:#e05c5c} 100%{color:var(--accent)} }/* Command icon bar — vertical, top-right *//* Store filter panel — slides in to the left of the floating icon bar */
+    @keyframes cmd-err { 0%{color:var(--accent)} 45%{color:#e05c5c} 100%{color:var(--accent)} }/* Command icon bar, vertical, top-right *//* Store filter panel, slides in to the left of the floating icon bar */
     .csp-row { display:flex; align-items:center; gap:9px; width:100%; background:transparent; border:1px solid transparent; color:#cfcfcf; padding:8px 10px; border-radius:8px; cursor:pointer; font-family:'Fira Code','Courier New',monospace; font-size:12px; text-align:left; transition:background 0.14s, color 0.14s, border-color 0.14s; }
     .csp-row:hover { background:rgba(255,255,255,0.06); color:#fff; }
     .csp-row.active { background:color-mix(in srgb, var(--accent) 17%, transparent); border-color:var(--accent); color:#fff; }
@@ -380,7 +380,7 @@
     .cat-inst-dot { width:7px; height:7px; border-radius:50%; display:inline-block; }
     .cat-inst-dot.on { background:#66bb6a; }
     .cat-inst-dot.off { background:var(--border_solid); }
-    .cat-proton-Platinum,.cat-proton-Native { color:#e8e8e8; }
+    .cat-proton-Platinum.cat-proton-Native { color:#e8e8e8; }
     .cat-proton-Gold { color:#ffd700; }
     .cat-proton-Silver { color:#b0b0b0; }
     .cat-proton-Bronze { color:#cd7f32; }
@@ -396,7 +396,7 @@
     .cat-inst-dot { width:7px; height:7px; border-radius:50%; display:inline-block; }
     .cat-inst-dot.on { background:#66bb6a; }
     .cat-inst-dot.off { background:var(--border_solid); }
-    .cat-proton-Platinum,.cat-proton-Native { color:#e8e8e8; }
+    .cat-proton-Platinum.cat-proton-Native { color:#e8e8e8; }
     .cat-proton-Gold { color:#ffd700; }
     .cat-proton-Silver { color:#b0b0b0; }
     .cat-proton-Bronze { color:#cd7f32; }
@@ -465,7 +465,7 @@
     .vi-genre { width:108px; flex-shrink:0; color:#666; font-size:10px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
     .vi-hltb { width:44px; flex-shrink:0; color:#d4a373; font-size:10px; }
     .vi-proton { width:76px; flex-shrink:0; font-size:10px; }
-    .vi-proton.vp-pl,.vi-proton.vp-na { color:#ccc; } .vi-proton.vp-go { color:#ffd700; } .vi-proton.vp-si { color:#aaa; } .vi-proton.vp-br { color:#cd7f32; } .vi-proton.vp-bo { color:#e05c5c; }
+    .vi-proton.vp-pl.vi-proton.vp-na { color:#ccc; } .vi-proton.vp-go { color:#ffd700; } .vi-proton.vp-si { color:#aaa; } .vi-proton.vp-br { color:#cd7f32; } .vi-proton.vp-bo { color:#e05c5c; }
     .adv-room { color:#66ff66; font-size:12px; font-weight:bold; letter-spacing:1px; margin-bottom:14px; }
     .adv-body { color:#33ff33; font-size:11px; line-height:2; }
     .adv-exits { color:#0a6600; font-size:10px; margin-top:14px; } .adv-exits b { color:#1acc1a; }
@@ -503,10 +503,10 @@
     .grub-sel .grub-arrow { color:#fff; }
     .grub-name { flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
     .grub-meta { font-size:9px; color:#777; flex-shrink:0; }
-    .grub-sel .grub-meta { color:#cce; }/* Shared structural base: font, no border-radius, no box-shadow *//* Shared edit-game structural base *//* Shared titlebar *//* ── MC — navy blue, cyan accent ──────────────────────────────────────── *//* ── Layout zoom ─────────────────────────────────────────────────────────── *//* ── FLAT DETAIL OVERLAY ─────────────────────────────────────────────────── */
+    .grub-sel .grub-meta { color:#cce; }/* Shared structural base: font, no border-radius, no box-shadow *//* Shared edit-game structural base *//* Shared titlebar *//* ── MC, navy blue, cyan accent ──────────────────────────────────────── *//* ── Layout zoom ─────────────────────────────────────────────────────────── *//* ── FLAT DETAIL OVERLAY ─────────────────────────────────────────────────── */
     .fdo-meta-pill { font-size:9px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; color:rgba(255,255,255,0.5); }
     .fdo-meta-pill.accent { color:var(--accent); }
-    .fdo-meta-sep { width:1px; height:10px; background:rgba(255,255,255,0.18); flex-shrink:0; }/* hero band *//* main info *//* cover art — full height *//* info box *//* left column *//* achievements */
+    .fdo-meta-sep { width:1px; height:10px; background:rgba(255,255,255,0.18); flex-shrink:0; }/* hero band *//* main info *//* cover art, full height *//* info box *//* left column *//* achievements */
     .tgp-ach-label { font-size:9px; color:#ffff55; letter-spacing:2px; margin-bottom:12px; border-bottom:2px solid #333; padding-bottom:7px; }
     .tgp-ach-progress { font-size:9px; color:#ffffff; margin-bottom:14px; line-height:2; }
     .tgp-ach-bar-chars { font-family:'Fira Code','Courier New',monospace; letter-spacing:-1px; font-size:14px; }
@@ -528,11 +528,11 @@
     .tgp-hbar-full .hb-f { color:#55ff55; } .tgp-hbar-full .hb-e { color:#1a1a1a; }
     .tgp-proton-plat { color:#55ffff; } .tgp-proton-gold { color:#ffff55; } .tgp-proton-silv { color:#ffffff; } .tgp-proton-brnz { color:#ffaa55; }
     .tgp-mc-badge { display:inline-block; padding:1px 6px; font-size:9px; }
-    .tgp-mc-badge.g { background:#55ff55; color:#000; }/* fkeys DOS blue *//* filter widget *//* font picker widget *//* shared TTY layout font menu *//* per-filter image overrides — default (crt) is the base CSS on the img elements *//* ── Mac OS 1.0 system-wide theme — overrides Clarity theme selector ───────── *//* ── Mac OS 1.0 system-wide theme ─────────────────────────────────────────
+    .tgp-mc-badge.g { background:#55ff55; color:#000; }/* fkeys DOS blue *//* filter widget *//* font picker widget *//* shared TTY layout font menu *//* per-filter image overrides, default (crt) is the base CSS on the img elements *//* ── Mac OS 1.0 system-wide theme, overrides Clarity theme selector ───────── *//* ── Mac OS 1.0 system-wide theme ─────────────────────────────────────────
        Variables live on body so they cascade to modals outside #app-container.
-       Adding future Ancient OS / TTY themes follows the same pattern.        *//* Clarity titlebar — black bar, white text, Chicago font *//* Hardcoded-color outliers that bypass the variable system *//* #modal-tools has no .modal-box wrapper — override its buttons directly *//* Strip hover zoom from trailer search items — causes glitch in Mac layout *//* Playlist picker — thin scrollbar only when needed *//* Playlist picker buttons — strip box-shadow so it doesn't bleed outside container */
+       Adding future Ancient OS / TTY themes follows the same pattern.        *//* Clarity titlebar, black bar, white text, Chicago font *//* Hardcoded-color outliers that bypass the variable system *//* #modal-tools has no .modal-box wrapper, override its buttons directly *//* Strip hover zoom from trailer search items, causes glitch in Mac layout *//* Playlist picker, thin scrollbar only when needed *//* Playlist picker buttons, strip box-shadow so it doesn't bleed outside container */
     /* Disabled Mac dropdown item */
-    .mac-ditem-disabled { opacity:0.35; pointer-events:none; cursor:default !important; }/* Connect modal — Mac OS 1.0 theme *//* Tools modal — Mac OS 1.0 theme *//* Edit game panel — Mac OS 1.0 theme *//* ── Mac OS 1.0 Layout ─────────────────────────────────────────────────── *//* Menubar *//* View dropdown *//* Desktop — CSS Grid guarantees every cell has bounded dimensions *//* Shared Mac window chrome *//* Finder window *//* List — bounded by grid cell, scrolls within its own box */
+    .mac-ditem-disabled { opacity:0.35; pointer-events:none; cursor:default !important; }/* Connect modal, Mac OS 1.0 theme *//* Tools modal, Mac OS 1.0 theme *//* Edit game panel, Mac OS 1.0 theme *//* ── Mac OS 1.0 Layout ─────────────────────────────────────────────────── *//* Menubar *//* View dropdown *//* Desktop, CSS Grid guarantees every cell has bounded dimensions *//* Shared Mac window chrome *//* Finder window *//* List, bounded by grid cell, scrolls within its own box */
     .mac-list-row { display:flex; align-items:center; height:18px; cursor:pointer; font-size:11px; border-bottom:1px solid #e8e8e8; background:#fff; color:#000; user-select:none; }
     .mac-list-row:hover { background:#e8e8e8; }
     .mac-list-row.mac-selected { background:#000; color:#fff; }
@@ -544,7 +544,7 @@
     .mac-info-row { display:flex; gap:4px; margin-bottom:5px; font-size:11px; line-height:1.4; color:#000; }
     .mac-info-key { width:68px; flex-shrink:0; font-weight:bold; color:#555; }
     .mac-info-val { flex:1; min-width:0; word-break:break-word; color:#000; }
-    /* Mac gamepage — Get Info dialog */
+    /* Mac gamepage, Get Info dialog */
     #mac-gamepage { display:none; position:fixed; inset:0; z-index:9999; background:repeating-conic-gradient(rgba(0,0,0,0.4) 0% 25%,transparent 0% 50%) 0 0/2px 2px; align-items:center; justify-content:center; }
     #mac-gamepage.open { display:flex; }
     #mgp-win { background:#fff; border:2px solid #000; box-shadow:4px 4px 0 #000; width:520px; max-width:calc(100vw - 40px); display:flex; flex-direction:column; max-height:calc(100vh - 80px); color:#000 !important; font-family:'Chicago',system-ui,-apple-system,'Helvetica Neue',Arial,sans-serif; -webkit-font-smoothing:none; }
@@ -569,21 +569,21 @@
     .mac-btn { border:1px solid #000; background:#fff; font-family:'Chicago',system-ui,-apple-system,'Helvetica Neue',Arial,sans-serif; font-size:11px; font-weight:bold; padding:3px 14px; cursor:pointer; box-shadow:2px 2px 0 #999; min-width:56px; color:#000 !important; -webkit-font-smoothing:none; }
     .mac-btn:hover { background:#eee; }
     .mac-btn:active { box-shadow:none; transform:translate(1px,1px); }
-    .mac-btn.mac-btn-default { border-width:2px; }/* ── Mandrake Linux 9 / KDE 3 layout ──────────────────────────────────── *//* Konqueror window — gray KDE 3 default decoration *//* Menu bar *//* Toolbar — large icon buttons *//* Location bar *//* Bookmarks bar *//* Body *//* Sidebar: tree + right icon strip *//* Sidebar icon strip (right edge, like Konqueror screenshot) *//* File list */
+    .mac-btn.mac-btn-default { border-width:2px; }/* ── Mandrake Linux 9 / KDE 3 layout ──────────────────────────────────── *//* Konqueror window, gray KDE 3 default decoration *//* Menu bar *//* Toolbar, large icon buttons *//* Location bar *//* Bookmarks bar *//* Body *//* Sidebar: tree + right icon strip *//* Sidebar icon strip (right edge, like Konqueror screenshot) *//* File list */
     .kde-row { display:flex; align-items:center; height:20px; cursor:pointer; border-bottom:1px solid #f0f0f0; font-size:11px; color:#000; }
     .kde-row:nth-child(even) { background:#f8f8fc; }
     .kde-row:hover { background:#d8e8fc; }
     .kde-row.kde-sel { background:#4070c0 !important; color:#fff !important; }
     .kde-row-icon { width:22px; text-align:center; font-size:12px; flex-shrink:0; }
     .kde-row-name { flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; padding:0 4px; }
-    .kde-row-store,.kde-row-genre { width:90px; flex-shrink:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; padding:0 6px; color:#5060a0; font-size:10px; }
+    .kde-row-store.kde-row-genre { width:90px; flex-shrink:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; padding:0 6px; color:#5060a0; font-size:10px; }
     .kde-row-hltb { width:50px; flex-shrink:0; padding:0 6px; color:#5060a0; font-size:10px; text-align:right; }
-    .kde-sel .kde-row-store,.kde-sel .kde-row-genre,.kde-sel .kde-row-hltb { color:#c0d4f8; }/* Status bar *//* Panel — medium blue-gray (matches screenshots) */
+    .kde-sel .kde-row-store.kde-sel .kde-row-genre.kde-sel .kde-row-hltb { color:#c0d4f8; }/* Status bar *//* Panel, medium blue-gray (matches screenshots) */
     #kde-quicklaunch { display:flex; align-items:center; gap:1px; padding:0 3px; border-left:1px solid #4858a0; border-right:1px solid #7888b8; margin:0 2px; }
     .kde-ql-btn { width:26px; height:26px; background:transparent; border:1px solid transparent; border-radius:2px; cursor:pointer; display:flex; align-items:center; justify-content:center; }
     .kde-ql-btn:hover { background:rgba(0,0,0,0.1); border-color:rgba(0,0,0,0.2); }
     .kde-ql-btn:active { background:rgba(0,0,0,0.2); }
-    @font-face { font-family:'DSEG7'; src:url('assets/fonts/DSEG7Classic-Regular.ttf') format('truetype'); }/* K Menu — single column + dark "KDE 3" strip *//* Gamepage dialog — gray title bar *//* KDE modal / panel theming *//* ── Commodore 64 layout ─────────────────────────────────────────────────── *//* All modal text uses C64 font *//* modal-box *//* Playlist picker *//* Segmented controls *//* Connect & Tools modal containers *//* Edit game panel *//* Now playing card *//* Install picker *//* Tools modal — inner inputs and all elements *//* Connect modal — inner elements *//* About modal *//* Add Game modal *//* Playlists nav modal *//* Welcome modal */
+    @font-face { font-family:'DSEG7'; src:url('assets/fonts/DSEG7Classic-Regular.ttf') format('truetype'); }/* K Menu, single column + dark "KDE 3" strip *//* Gamepage dialog, gray title bar *//* KDE modal / panel theming *//* ── Commodore 64 layout ─────────────────────────────────────────────────── *//* All modal text uses C64 font *//* modal-box *//* Playlist picker *//* Segmented controls *//* Connect & Tools modal containers *//* Edit game panel *//* Now playing card *//* Install picker *//* Tools modal, inner inputs and all elements *//* Connect modal, inner elements *//* About modal *//* Add Game modal *//* Playlists nav modal *//* Welcome modal */
     .c64-row { font-family:'C64 Pro Mono',monospace; font-size:12px; color:#7878f8; text-transform:uppercase; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; cursor:pointer; padding:1px 4px; display:flex; align-items:baseline; gap:0; line-height:1.5; }
     .c64-row:hover { background:#7878f8; color:#0000aa; }
     .c64-row.c64-sel { background:#7878f8; color:#0000aa; }
@@ -593,7 +593,7 @@
     @keyframes c64blink { 0%,100%{opacity:1} 50%{opacity:0} }/* C64 gamepage *//* Shell *//* Desktop *//* Main area (window + toolstrip) *//* Main window *//* Title tab *//* Menu bar *//* Content split *//* Left nav panel *//* Right list area */
     .beos-row { display:flex; align-items:center; padding:2px 6px; cursor:pointer; border-bottom:1px solid #c8c8c8; font-size:12px; color:#000; gap:4px; }
     .beos-row:hover { background:#c0d0f0; }
-    .beos-row.beos-sel { background:#2855b0; color:#fff; }/* Status bar *//* Deskbar *//* Tool strip *//* Gamepage "File Info" window *//* BeOS modal theming *//* ── Windows 95 layout ──────────────────────────────────────────────────── *//* Shell & desktop *//* Desktop icons *//* Explorer window *//* Title bar — solid navy, NO gradient *//* Menu bar *//* Toolbar *//* Address bar *//* Split content *//* Left tree panel *//* Right file list */
+    .beos-row.beos-sel { background:#2855b0; color:#fff; }/* Status bar *//* Deskbar *//* Tool strip *//* Gamepage "File Info" window *//* BeOS modal theming *//* ── Windows 95 layout ──────────────────────────────────────────────────── *//* Shell & desktop *//* Desktop icons *//* Explorer window *//* Title bar, solid navy, NO gradient *//* Menu bar *//* Toolbar *//* Address bar *//* Split content *//* Left tree panel *//* Right file list */
     .w95-row { display:flex; align-items:center; padding:1px 6px; cursor:pointer; border-bottom:1px solid transparent; font-size:11px; color:#000; gap:4px; }
     .w95-row:hover { background:#cce8ff; }
     .w95-row.w95-sel { background:#000080; color:#fff; }
@@ -639,8 +639,8 @@
     .xp-row-store { width:110px; flex-shrink:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; padding:0 4px; border-left:1px solid #e8e0d8; font-size:10px; color:#555; }
     .xp-row-genre { width:110px; flex-shrink:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; padding:0 4px; border-left:1px solid #e8e0d8; font-size:10px; color:#555; }
     .xp-row-year  { width:52px; flex-shrink:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; padding:0 4px; border-left:1px solid #e8e0d8; font-size:10px; color:#555; }
-    .xp-row.xp-selected .xp-row-store,.xp-row.xp-selected .xp-row-genre,.xp-row.xp-selected .xp-row-year { color:rgba(255,255,255,0.85); border-left-color:rgba(255,255,255,0.2); }/* Status bar *//* Taskbar *//* Start Menu */
-    /* XP Gamepage — Properties dialog */
+    .xp-row.xp-selected .xp-row-store.xp-row.xp-selected .xp-row-genre.xp-row.xp-selected .xp-row-year { color:rgba(255,255,255,0.85); border-left-color:rgba(255,255,255,0.2); }/* Status bar *//* Taskbar *//* Start Menu */
+    /* XP Gamepage, Properties dialog */
     #xp-gamepage { display:none; position:fixed; inset:0; z-index:9999; background:rgba(0,0,0,0.45); align-items:center; justify-content:center; }
     #xp-gamepage.open { display:flex; }
     #xpgp-win { background:#ece9d8; width:490px; max-width:calc(100vw - 40px); max-height:calc(100vh - 80px); display:flex; flex-direction:column; overflow:hidden; border-radius:8px 8px 0 0; border:1px solid #0a5bca; box-shadow:inset 0 0 0 2px #85b4f8,inset 0 0 0 3px #0a5bca,4px 4px 14px rgba(0,0,0,0.5); }
@@ -673,7 +673,7 @@
     .xp-btn:active { border-style:inset; }
     .xp-btn.xp-btn-primary { border:2px solid #316ac5; font-weight:bold; }
     .xp-btn-play { background:linear-gradient(180deg,#60c840 0%,#3aac18 100%) !important; color:#fff !important; border:2px outset #1a6808 !important; text-shadow:1px 1px 1px rgba(0,0,0,0.3); font-weight:bold !important; }
-    .xp-btn-play:hover { background:linear-gradient(180deg,#78d858 0%,#4aba28 100%) !important; }/* ── Windows XP — CSS variable overrides (fixes all inline var() usages) ──── *//* ── Windows XP — global font for all modal / panel content ──────────────── *//* ── Windows XP — modal overlay ─────────────────────────────────────────── *//* ── .modal-box — XP window frame ───────────────────────────────────────── *//* ── h2/h3 → XP title bar (break out of the 30px modal padding) ─────────── *//* ── Text elements ───────────────────────────────────────────────────────── *//* ── Buttons ─────────────────────────────────────────────────────────────── *//* ── Inputs ──────────────────────────────────────────────────────────────── *//* ── tool-card (used in Welcome, Connect, Tools) ────────────────────────── *//* ── Playlist picker rows ────────────────────────────────────────────────── *//* ── Welcome modal — custom non-.modal-box wrapper ──────────────────────── *//* ── Connect & Tools — custom non-.modal-box wrapper ───────────────────── *//* ── Segmented controls ──────────────────────────────────────────────────── *//* ── Edit game panel ─────────────────────────────────────────────────────── *//* ── Now playing card ────────────────────────────────────────────────────── *//* ── Strip hover transforms / glows in modals ────────────────────────────── *//* ── Clarity titlebar ───────────────────────────────────────────────────────── *//* ── Install picker ──────────────────────────────────────────────────────── */
+    .xp-btn-play:hover { background:linear-gradient(180deg,#78d858 0%,#4aba28 100%) !important; }/* ── Windows XP, CSS variable overrides (fixes all inline var() usages) ──── *//* ── Windows XP, global font for all modal / panel content ──────────────── *//* ── Windows XP, modal overlay ─────────────────────────────────────────── *//* ── .modal-box, XP window frame ───────────────────────────────────────── *//* ── h2/h3 → XP title bar (break out of the 30px modal padding) ─────────── *//* ── Text elements ───────────────────────────────────────────────────────── *//* ── Buttons ─────────────────────────────────────────────────────────────── *//* ── Inputs ──────────────────────────────────────────────────────────────── *//* ── tool-card (used in Welcome, Connect, Tools) ────────────────────────── *//* ── Playlist picker rows ────────────────────────────────────────────────── *//* ── Welcome modal, custom non-.modal-box wrapper ──────────────────────── *//* ── Connect & Tools, custom non-.modal-box wrapper ───────────────────── *//* ── Segmented controls ──────────────────────────────────────────────────── *//* ── Edit game panel ─────────────────────────────────────────────────────── *//* ── Now playing card ────────────────────────────────────────────────────── *//* ── Strip hover transforms / glows in modals ────────────────────────────── *//* ── Clarity titlebar ───────────────────────────────────────────────────────── *//* ── Install picker ──────────────────────────────────────────────────────── */
     .sr-row { margin-bottom:30px; }
     .sr-row-label { font-size:9px; font-weight:900; letter-spacing:2px; color:var(--text_dim); text-transform:uppercase; padding:0 18px 10px; display:flex; align-items:center; gap:10px; }
     .sr-row-label span:first-child { flex:1; }
@@ -711,7 +711,7 @@
     .btn-split-row-fav.active svg, .btn-split-row-want.active svg { fill:currentColor; }
     .split-inst-dot { width:6px; height:6px; border-radius:50%; flex-shrink:0; }
     .split-inst-dot.on { background:#66bb6a; }
-    .split-inst-dot.off { background:transparent; }/* Left footer nav — 2-row 3-col grid *//* Search clear button *//* Right detail panel *//* Welcome screen */
+    .split-inst-dot.off { background:transparent; }/* Left footer nav, 2-row 3-col grid *//* Search clear button *//* Right detail panel *//* Welcome screen */
     #split-cover-zoom { position:fixed; inset:0; z-index:25000; display:none; align-items:center; justify-content:center; background:rgba(0,0,0,0.88); backdrop-filter:blur(24px); -webkit-backdrop-filter:blur(24px); cursor:zoom-out; }
     #split-cover-zoom.active { display:flex; }
     #split-cover-zoom img { max-height:88vh; max-width:65vw; object-fit:contain; border-radius:14px; box-shadow:0 40px 100px rgba(0,0,0,0.95); animation:coverZoomIn 0.3s cubic-bezier(0.34,1.4,0.64,1); }
@@ -726,9 +726,9 @@
     .row { display: flex; gap: 10px; }
     button { background-color: var(--bg_panel); color: var(--text_main); border: 1px solid var(--border_solid); padding: 10px 12px; font-family: var(--ui-font, 'Raleway'), sans-serif; font-weight: 900; cursor: pointer; border-radius: 6px; transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease; text-transform: uppercase; letter-spacing: 1px; }
     button:hover { background-color: var(--text_main); color: var(--bg); }
-    /* Light themes: the invert-to-text_main hover above lands near-black — highlight with the accent instead
+    /* Light themes: the invert-to-text_main hover above lands near-black, highlight with the accent instead
        (window controls keep their red close; danger buttons keep their red). */
-    body.theme-light button:not(.win-btn):not(.cp-rail-danger):hover { background-color: var(--accent) !important; color: var(--bg) !important; border-color: var(--accent) !important; }/* ── Couch launch — Ancient-OS faux-desktop launchers (classic/TTY use the titlebar pill) ── *//* ── Connect button retired everywhere — Connections now lives in the Control Panel ── */
+    body.theme-light button:not(.win-btn):not(.cp-rail-danger):hover { background-color: var(--accent) !important; color: var(--bg) !important; border-color: var(--accent) !important; }/* ── Couch launch, Ancient-OS faux-desktop launchers (classic/TTY use the titlebar pill) ── *//* ── Connect button retired everywhere, Connections now lives in the Control Panel ── */
     
     #btn-open-connect, [data-htop-f="connect"], [data-ranger-f="connect"], [data-bbs-f="connect"], [data-vi-f="connect"], [data-adv-f="connect"], [data-mc-f="connect"], [data-nethack-f="connect"], [data-grub-f="connect"] {
         display: none !important;
@@ -751,7 +751,7 @@
 
     .tool-card { background-color: rgba(0,0,0,0.25); border: 1px solid var(--border); border-radius: 8px; padding: 15px; display: flex; flex-direction: column; gap: 10px; }
 
-    /* ── CONTROL PANEL — full-screen two-pane Tools shell ─────────────────────── */
+    /* ── CONTROL PANEL, full-screen two-pane Tools shell ─────────────────────── */
     #modal-tools .cp-panel { width: min(1100px, 95vw); height: 90vh; max-height: 90vh; background: var(--bg_menu); border-radius: 14px; border: 2px solid var(--border_solid); display: flex; flex-direction: column; box-shadow: 0 20px 50px rgba(0,0,0,0.8); overflow: hidden; }
     .cp-header { display: flex; align-items: center; gap: 14px; padding: 15px 18px; border-bottom: 1px solid var(--border_solid); flex-shrink: 0; }
     /* ⚠️ `flex: 1` here is load-bearing: it pushes .cp-close to the right edge. The search
@@ -772,7 +772,7 @@
     #tools-cards-container.cp-content { flex: 1; overflow-y: auto; padding: 18px 20px; min-width: 0; }
     .cp-pane { display: none; flex-direction: column; gap: 14px; }
     .cp-pane.active { display: flex; }
-    /* Control Panel landing splash — typographic wordmark, theme-aware */
+    /* Control Panel landing splash, typographic wordmark, theme-aware */
     .cp-welcome { position: relative; flex: 1; min-height: 420px; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; user-select: none; overflow: hidden; }
     .cp-welcome-glow { position: absolute; width: 560px; height: 560px; border-radius: 50%; background: radial-gradient(circle, var(--accent) 0%, transparent 62%); opacity: 0.09; pointer-events: none; }
     .cp-welcome-brand { font-family: var(--ui-font, 'Raleway'), sans-serif; font-weight: 900; font-size: clamp(44px, 7vw, 84px); line-height: 0.98; letter-spacing: 10px; text-indent: 10px;
@@ -840,7 +840,7 @@
     .cp-taskbar-fill { height: 100%; width: 0%; background: var(--accent); transition: width 0.2s linear; }
     .cp-taskbar-stop { font-size: 10px; padding: 4px 12px; background: transparent; border: 1px solid #e57373; color: #e57373; border-radius: 6px; cursor: pointer; }
     .cp-footer-actions { display: flex; gap: 8px; margin-left: auto; flex-shrink: 0; }
-    .cp-footer-actions button { font-size: 11px; padding: 8px 16px; }/* ── Control Panel rail — per-layout polish ──────────────────────────────
+    .cp-footer-actions button { font-size: 11px; padding: 8px 16px; }/* ── Control Panel rail, per-layout polish ──────────────────────────────
        Layout palettes cascade via CSS vars, so rail colours already adapt; these
        only fix structure (square + mono on the TTY skins) and hover contrast on
        the light "ancient OS" skins where a white hover is invisible. *//* Light ancient-OS skins: darken hover so it reads on pale backgrounds */
@@ -862,9 +862,9 @@
        z-9999 titlebar so the window controls stay crisp. Split-pane, flat and the themed
        layouts keep their own game pages and are unaffected. */
     body.gamepage-overlay::before { content:''; position:fixed; top:35px; left:0; right:0; bottom:0; z-index:9000; background:rgba(0,0,0,0.34); backdrop-filter:blur(7px); -webkit-backdrop-filter:blur(7px); animation:gpOverlayBackdropIn 0.25s ease both; }
-    /* centered without transform — a transformed ancestor would re-anchor the fixed Play button to this panel and make it scroll. (The open/close animation slides via `top`, not transform, for the same reason.) */
+    /* centered without transform, a transformed ancestor would re-anchor the fixed Play button to this panel and make it scroll. (The open/close animation slides via `top`, not transform, for the same reason.) */
     /* The Edit page (#view-details) shares the exact same floating panel box so it lays directly on
-       top of the gamepage at the same size — it's opened from there and returns there (seamless). */
+       top of the gamepage at the same size, it's opened from there and returns there (seamless). */
     body.gamepage-overlay #view-gamepage.view,
     body.gamepage-overlay #view-details.view { position:fixed; top:55px; left:0; right:0; margin-left:auto; margin-right:auto; width:min(1080px, 94vw); height:auto; max-height:calc(100vh - 78px); overflow-x:hidden; overflow-y:auto; border-radius:16px; background:var(--bg); box-shadow:0 26px 72px rgba(0,0,0,0.62), 0 0 0 1px var(--border); z-index:9001; animation:gpOverlayFadeIn 0.24s ease both; }
     /* Edit form must FIT the floating panel: the inner container's 100vh-120px was taller
@@ -890,7 +890,7 @@
     #btn-gamepage-back:active { background:var(--accent); color:var(--bg); border-color:var(--accent); transform:scale(0.97); box-shadow:0 0 16px var(--accent); }
     /* float the Play/Install button at the panel's bottom-right corner (fixed → never scrolls), above the overlay */
     body.gamepage-overlay #btn-gamepage-play { z-index:9003 !important; right:calc((100vw - min(1080px, 94vw)) / 2 + 28px) !important; bottom:46px !important; }
-    /* Leave animations — `.gamepage-overlay-closing` is added (on top of .gamepage-overlay) for the
+    /* Leave animations, `.gamepage-overlay-closing` is added (on top of .gamepage-overlay) for the
        duration of the close so the panel/backdrop reverse out before the view actually switches.
        Same specificity as the enter rules, placed after → these win while closing. */
     body.gamepage-overlay-closing::before { animation:gpOverlayBackdropOut 0.22s ease both; }
@@ -918,7 +918,7 @@
     ::-webkit-scrollbar-thumb { background: var(--border_solid); border-radius: 5px; }
     ::-webkit-scrollbar-thumb:hover { background: var(--accent); }
 
-    /* Ken Burns (copied from EmuLatte): single composited transform on one element —
+    /* Ken Burns (copied from EmuLatte): single composited transform on one element,
        cheap while focused; paused whenever the view is inactive, and frozen entirely by
        gpu-suspended when the window is blurred/hidden. */
     @keyframes panZoom { 0% { transform: scale(1) translate(0, 0); } 100% { transform: scale(1.15) translate(2%, 2%); } }
@@ -990,7 +990,7 @@
     .mp-name { font-size:13px; font-weight:700; color:var(--text_main); word-break:break-all; }
     .mp-sub { font-size:11px; color:var(--text_dim); margin-top:2px; word-break:break-all; }
     .mp-head { font-size:11px; font-weight:800; letter-spacing:0.8px; text-transform:uppercase; color:var(--accent); border-bottom:1px solid var(--border_solid); padding-bottom:5px; }
-    /* Catalogue groups — one section per game, click the header to fold it away. */
+    /* Catalogue groups, one section per game, click the header to fold it away. */
     .ci-group { display:flex; align-items:center; gap:8px; cursor:pointer; user-select:none; padding:9px 4px 6px; font-size:11px; font-weight:800; letter-spacing:0.8px; text-transform:uppercase; color:var(--accent); border-bottom:1px solid var(--border_solid); }
     .ci-group:hover { color:var(--text_main); }
     .ci-group-caret { font-size:10px; width:10px; }
@@ -998,7 +998,7 @@
     .ci-group-body { display:flex; flex-direction:column; gap:10px; padding:10px 0 4px; }
 
     /* Play-task picker: one GOG release can ship several ways to start, and they are not
-       interchangeable — Quake's DOS build plays the CD soundtrack its GLQuake primary
+       interchangeable, Quake's DOS build plays the CD soundtrack its GLQuake primary
        cannot. Two lines per entry because the file is often what separates tasks whose
        names read alike ("Quake" vs "Quake (Software Mode)"). */
     .pt-menu { max-width:400px; }
@@ -1074,15 +1074,15 @@
   </style>
   <!-- ── Pre-paint state ────────────────────────────────────────────────────────
        ⚠️ Everything here exists to stop the window being shown mid-transformation. The
-       settings that decide the app's SHAPE — theme, compact chrome, interface scale, and
-       whether the window is narrow or short — all live in the database, and reading them is
+       settings that decide the app's SHAPE, theme, compact chrome, interface scale, and
+       whether the window is narrow or short, all live in the database, and reading them is
        an async IPC round trip. Anything applied after that round trip is applied to a window
        the user is already looking at, so the title bar rendered with its buttons and then
        visibly restructured about two seconds later.
        So the last known values are mirrored into localStorage, which is synchronous, and
        applied here before the first paint. The database remains the source of truth and
        corrects any of this when it arrives; this only removes the flash.
-       Nothing here may throw — a corrupt cache must degrade to "looks like a first run",
+       Nothing here may throw, a corrupt cache must degrade to "looks like a first run",
        never to a blank window. -->
   <script>(function(){
     var d = document.documentElement;
@@ -1094,7 +1094,7 @@
       if(cc==='1' || (cc===null && window.api && window.api.isOmarchy)) d.classList.add('compact-chrome');
     }catch(e){}
     try{ if(localStorage.getItem('clarity_omarchy_geometry')) { d.classList.add('omarchy-geometry'); d.style.setProperty('--omarchy-radius', localStorage.getItem('clarity_omarchy_geometry')+'px'); } }catch(e){}
-    // The width/height classes are cheap to derive right here — no storage needed, and the
+    // The width/height classes are cheap to derive right here, no storage needed, and the
     // window is already at its final size before the first paint.
     try{
       var w = d.clientWidth || window.innerWidth, h = d.clientHeight || window.innerHeight;
@@ -1105,7 +1105,7 @@
     // Zoom last: it reflows everything, so doing it before the first paint rather than after
     // is the difference between a window that opens at the right size and one that jumps.
     // ⚠️ Key bumped to _v2 deliberately: the old key holds whatever the retired auto-derivation
-    // cached (usually 0.75), and this script runs BEFORE the reset that clears it — so without a
+    // cached (usually 0.75), and this script runs BEFORE the reset that clears it, so without a
     // new key the window would still paint at 75% for a frame on the first launch after the fix.
     try{ var z=localStorage.getItem('clarity_ui_scale_cache_v2'); if(z && window.api && window.api.setZoomLevel) window.api.setZoomLevel(parseFloat(z)); }catch(e){}
   })();</script>
@@ -1127,7 +1127,7 @@
         <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
         <span id="dl-badge" style="display:none; position:absolute; top:-1px; right:1px; min-width:14px; height:14px; padding:0 3px; border-radius:7px; background:var(--accent); color:var(--bg); font-size:9px; font-weight:900; line-height:14px; text-align:center; box-sizing:border-box;"></span>
       </button>
-      <button id="support-cta" title="Support the project — ways to donate &amp; help">
+      <button id="support-cta" title="Support the project, ways to donate &amp; help">
         <svg class="support-cta-heart" viewBox="0 0 7 6" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg">
           <rect x="1" y="0" width="2" height="1" fill="#ff4b3e"/>
           <rect x="4" y="0" width="2" height="1" fill="#ff4b3e"/>
@@ -1150,7 +1150,7 @@
   </div>
 
   <!-- ⚠️ Deliberately NOT inside the hero, and not inside #main-content either. The hero only
-       exists in the gallery view, and #main-content is display:none in the split layout — the
+       exists in the gallery view, and #main-content is display:none in the split layout. The
        pills would vanish in both cases. Fixed to the viewport puts them over the hero's top
        right corner where they were asked for, and keeps them there in every layout. Only
        visible in compact chrome; otherwise they live in the title bar as before. -->
@@ -1170,7 +1170,7 @@
       <div id="rail-top">
         <!-- ⚠️ A gamepad, not a house. "All Games" and "Home dashboard" shipped the same house
              SVG byte for byte, which was survivable while one lived in the title bar and the
-             other in the rail — and stopped being survivable when compact chrome put both in
+             other in the rail, and stopped being survivable when compact chrome put both in
              the rail, a few pixels apart and indistinguishable. The house belongs to Home. -->
         <button class="rail-btn active" id="rail-all" data-rail="all" title="All Games">
           <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="6" y1="12" x2="10" y2="12"/><line x1="8" y1="10" x2="8" y2="14"/><line x1="15" y1="13" x2="15.01" y2="13"/><line x1="18" y1="11" x2="18.01" y2="11"/><rect x="2" y="6" width="20" height="12" rx="5"/></svg>
@@ -1264,14 +1264,14 @@
         <!-- ── COMMAND LAYOUT OVERLAYS ─────────────────────────────────────────── -->
         <!-- Floating terminal command bar (command layout, gallery view only) -->
         <!-- Floating vertical icon bar (command layout, gallery view only) -->
-        <!-- Store filter panel (command layout, gallery view only) — slides in from the right -->
+        <!-- Store filter panel (command layout, gallery view only), slides in from the right -->
 
-        <!-- Gamepage floating back button — lives outside the scrollable view so it's always at the top -->
+        <!-- Gamepage floating back button, lives outside the scrollable view so it's always at the top -->
         <div id="gamepage-back-bar" style="display:none; position:absolute; top:0; left:0; right:0; z-index:10; padding:15px 20px 24px; background:linear-gradient(to bottom, var(--bg) 50%, transparent 100%); pointer-events:none;">
           <button id="btn-gamepage-back" data-i18n="html.btn_back">&lt; BACK TO LIBRARY</button>
         </div>
 
-        <!-- ════════ HOME — "Control Room" dashboard (optional start screen) ════════ -->
+        <!-- ════════ HOME, "Control Room" dashboard (optional start screen) ════════ -->
         <style>
           #btn-titlebar-home, #btn-titlebar-library, #btn-titlebar-downloads { -webkit-app-region:no-drag; background:transparent; border:none; color:var(--text_sec); cursor:pointer; padding:0 9px; display:flex; align-items:center; }
           #btn-titlebar-home:hover, #btn-titlebar-library:hover, #btn-titlebar-downloads:hover { color:var(--accent); }
@@ -1280,7 +1280,7 @@
           .home-head-left { flex:1 1 0; min-width:180px; }
           .home-hello { font-size:27px; font-weight:900; letter-spacing:0.5px; color:var(--text_main); }
           .home-sub { display:flex; align-items:center; gap:14px; flex-wrap:wrap; font-size:12px; color:var(--text_dim); letter-spacing:1.5px; text-transform:uppercase; margin-top:6px; }
-          /* Faux-LCD clock — recessed bezel with faint "unlit" 88:88 ghost segments behind the lit digits. */
+          /* Faux-LCD clock, recessed bezel with faint "unlit" 88:88 ghost segments behind the lit digits. */
           .home-lcd { flex:0 0 auto; position:relative; padding:9px 18px 11px; border-radius:12px;
                       background:linear-gradient(165deg, color-mix(in srgb, var(--bg) 52%, #000), color-mix(in srgb, var(--bg) 82%, #000));
                       box-shadow: inset 0 2px 7px rgba(0,0,0,0.65), inset 0 0 18px color-mix(in srgb, var(--accent) 9%, transparent), 0 6px 18px rgba(0,0,0,0.4); }
@@ -1300,10 +1300,10 @@
           #home-edit-bar { position:fixed; top:44px; right:24px; z-index:600; display:flex; align-items:center; gap:10px; background:var(--bg_menu); padding:9px 11px 9px 14px; border-radius:12px; border:1px solid var(--accent); box-shadow:0 12px 34px rgba(0,0,0,0.55); animation:hebDrop 0.22s ease both; }
           #home-edit-bar .heb-label { font-size:10px; font-weight:900; letter-spacing:1.5px; text-transform:uppercase; color:var(--accent); margin-right:2px; white-space:nowrap; }
           @keyframes hebDrop { from { opacity:0; transform:translateY(-8px); } to { opacity:1; transform:translateY(0); } }
-          /* Full-bleed Home — takes over the whole window (over the sidebar), under the titlebar + modals */
+          /* Full-bleed Home, takes over the whole window (over the sidebar), under the titlebar + modals */
           body.viewing-home #view-home.view { position:fixed; top:35px; left:0; right:0; bottom:0; z-index:500; padding:0 !important; background:var(--bg); overflow-y:auto; }
-          /* ⚠️ In compact chrome the dashboard must NOT cover the icon rail. It always did —
-             left:0 under a z-index:500 overlay — and that was survivable while navigation
+          /* ⚠️ In compact chrome the dashboard must NOT cover the icon rail. It always did,
+             left:0 under a z-index:500 overlay, and that was survivable while navigation
              lived in the title bar. Compact chrome moves navigation INTO the rail, so covering
              it leaves no way out of the dashboard at all. `top` drops to 0 for the same
              reason: the 35px was clearance for a title bar that is no longer there. */
@@ -1323,7 +1323,7 @@
           .hc-eb { width:27px; height:27px; border:none; border-radius:7px; background:rgba(0,0,0,0.62); color:#fff; font-size:16px; font-weight:900; cursor:pointer; display:flex; align-items:center; justify-content:center; line-height:1; padding:0; }
           .hc-eb:hover { background:var(--accent); color:var(--bg); }
           .hc-eb-x:hover { background:#c0392b; color:#fff; }
-          /* Resize handle — two parallel bars along the corner diagonal (long + short), pointing into the corner (edit mode only) */
+          /* Resize handle, two parallel bars along the corner diagonal (long + short), pointing into the corner (edit mode only) */
           /* (cancel gridstack's built-in -45deg handle rotation so our SVG renders exactly as drawn) */
           .grid-stack-item > .ui-resizable-se { width:34px; height:34px; right:0; bottom:0; background:none; transform:none; z-index:7; }
           .grid-stack-item > .ui-resizable-se::after { content:''; position:absolute; right:3px; bottom:3px; width:24px; height:24px; background:var(--accent); opacity:0.9; transition:opacity .15s, transform .15s;
@@ -1443,7 +1443,7 @@
           .pw-old { color:var(--text_dim); }
           .pw-tier { font-weight:900; }
 
-          /* ── FLAT CLASSIC LAYOUTS — sharp corners everywhere, except true circles + gallery cover art ── */
+          /* ── FLAT CLASSIC LAYOUTS, sharp corners everywhere, except true circles + gallery cover art ── */
           body.corners-flat *, body.corners-flat *::before, body.corners-flat *::after { border-radius: 0 !important; }
           body.corners-flat .install-dot, body.corners-flat .cat-inst-dot, body.corners-flat .split-inst-dot,
           body.corners-flat #btn-gsearch-clear, body.corners-flat #btn-see-config, body.corners-flat #btn-close-themes,
@@ -1569,7 +1569,7 @@
             <div id="hero-game-name" style="position: absolute; bottom: 20px; right: 25px; z-index: 10; font-size: 28px; font-weight: 900; color: #ffffff; text-shadow: 0 5px 15px rgba(0,0,0,0.9); text-align: right; max-width: 70%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"></div>
             <div class="hero-icon" id="hero-icon" style="position:relative; z-index: 2; font-size: 48px; font-weight: 900; color: rgba(255,255,255,0.3); letter-spacing: 5px;" data-i18n="html.no_artwork">NO ARTWORK FOUND</div>
 
-            <!-- PICO-8 category hero buttons — shown only when PICO-8 filter is active -->
+            <!-- PICO-8 category hero buttons, shown only when PICO-8 filter is active -->
             <div id="pico8-hero-btns" style="display:none; position:absolute; bottom:20px; left:20px; z-index:10; flex-direction:row; gap:8px; align-items:center;">
               <button id="btn-p8-config" class="btn-hero btn-hero-sq" title="PICO-8 Configuration">
                 <img src="assets/icons/pico8-config.svg" alt="Config">
@@ -1638,7 +1638,7 @@
               <option value="openbor">OpenBOR</option>
             </select>
             <select id="gallery-sort" title="Sort by" aria-label="Sort">
-              <option value="alpha">A — Z</option>
+              <option value="alpha">A, Z</option>
               <option value="played">Last Played</option>
               <option value="favs">Favourites First</option>
               <option value="want">Want to Play First</option>
@@ -1670,7 +1670,7 @@
             <div id="gamepage-hero" style="position: relative; height: 350px; background-size: cover; background-position: center; border-radius: 12px; margin-bottom: 25px; overflow: hidden; display: flex; flex-direction: column; justify-content: flex-end; padding: 30px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); border: 1px solid var(--border); background-color: var(--bg_menu);">
                 <div style="position: absolute; top:-2px; left:-2px; width:calc(100% + 4px); height:calc(100% + 4px); background: linear-gradient(to top, rgba(20,20,20,0.95) 0%, rgba(20,20,20,0.4) 50%, transparent 100%); z-index: 1;"></div>
 
-                <div id="gamepage-f2p-pill" class="f2p-pill" style="display: none;" title="Free-to-play — click to show/hide these">FREE TO PLAY</div>
+                <div id="gamepage-f2p-pill" class="f2p-pill" style="display: none;" title="Free-to-play, click to show/hide these">FREE TO PLAY</div>
 
                 <img id="gamepage-logo" src="" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); max-height: 250px; max-width: 80%; object-fit: contain; filter: drop-shadow(0 10px 25px rgba(0,0,0,0.9)); z-index: 5; display: none;">
 
@@ -1838,7 +1838,7 @@
               <fieldset style="display: flex; flex-direction: column; gap: 10px; flex: 1; overflow-y: auto; margin-bottom: 0;">
                 <legend style="display:flex; align-items:center; justify-content:space-between; width:calc(100% - 4px); margin:0 2px; background:transparent; padding:0; box-shadow:none;">
                   <span data-i18n="html.legend_metadata" style="font-weight:900; padding:4px 12px; color:var(--bg); background:var(--accent); border-radius:6px; font-size:11px; letter-spacing:2px; text-transform:uppercase; box-shadow:0 2px 5px rgba(0,0,0,0.3);">Metadata &amp; Launch</span>
-                  <button id="btn-fetch-text-meta" style="font-size:10px; font-weight:900; padding:4px 10px; border-radius:5px; border:1px solid var(--border_solid); background:var(--bg_menu); color:var(--text_dim); cursor:pointer; font-family:var(--ui-font,'Raleway'),sans-serif; letter-spacing:0.5px; white-space:nowrap; transition:color 0.15s, border-color 0.15s;" title="Scrape text metadata only — preserves existing artwork">SCRAPE TEXT</button>
+                  <button id="btn-fetch-text-meta" style="font-size:10px; font-weight:900; padding:4px 10px; border-radius:5px; border:1px solid var(--border_solid); background:var(--bg_menu); color:var(--text_dim); cursor:pointer; font-family:var(--ui-font,'Raleway'),sans-serif; letter-spacing:0.5px; white-space:nowrap; transition:color 0.15s, border-color 0.15s;" title="Scrape text metadata only, preserves existing artwork">SCRAPE TEXT</button>
                 </legend>
                 <div class="row" style="margin-top: 5px; margin-bottom: 5px; padding-bottom: 12px; border-bottom: 1px solid var(--border_solid); flex-shrink: 0;">
                   <label style="color: var(--accent); font-weight: bold; cursor: pointer;"><input type="checkbox" id="edit-fav"> <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:4px;vertical-align:-2px;"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg><span data-i18n="html.chk_fav">Favorite</span></label>
@@ -2049,7 +2049,7 @@
   <!-- ── COMMODORE 64 SHELL ──────────────────────────────────────────────── -->
   </div><!-- /#app-container -->
 
-  <!-- ── FLAT DETAIL OVERLAY — shown when clicking a game from any flat layout ─ -->
+  <!-- ── FLAT DETAIL OVERLAY, shown when clicking a game from any flat layout ─ -->
 
   <!-- TTY Gamepage (DOS) -->
 
@@ -2058,9 +2058,9 @@
       <h2 style="margin: 0; color: var(--text_main); font-weight: 900; letter-spacing: 2px;">CLARITY</h2>
       <h3 style="margin: 0; color: var(--accent); font-weight: 900; letter-spacing: 4px;">GAMING SUITE</h3>
       <p id="about-version" style="font-size: 11px; color: var(--text_dim); margin: 6px 0 0; letter-spacing: 2px; font-weight: 700;"></p>
-      <p id="about-platform-badge" style="display:none; font-size: 10px; color: #e58a70; margin: 6px 0 0; letter-spacing: 1.5px; font-weight: 900; text-transform: uppercase;">macOS build — Experimental</p>
+      <p id="about-platform-badge" style="display:none; font-size: 10px; color: #e58a70; margin: 6px 0 0; letter-spacing: 1.5px; font-weight: 900; text-transform: uppercase;">macOS build, Experimental</p>
 
-      <p style="font-size: 13px; color: var(--text_sec); margin: 15px 0 5px 0;" data-i18n="html.about_tagline">One app, many faces — your whole gaming world in one good plwed under one roof.</p>
+      <p style="font-size: 13px; color: var(--text_sec); margin: 15px 0 5px 0;" data-i18n="html.about_tagline">One app, many faces, your whole gaming world in one good plwed under one roof.</p>
 
       <p style="font-size: 12px; color: var(--text_sec); margin: 5px 0; text-align: justify;" data-i18n-html="html.about_clarity"><strong>The Manager</strong> is the desktop hub: detail-obsessed, devoted to your library, doing all the heavy lifting &mdash; automatic and manual importing, artwork and metadata scraping. <strong>Installer</strong> works quietly under the hood, installing and launching your GOG and Epic games. Check the <span id="btn-open-manual" style="color: var(--accent); cursor: pointer; text-decoration: underline; font-weight: bold;">manual</span> for everything else.</p>
 
@@ -2088,14 +2088,14 @@
         <p style="font-size: 9px; font-weight: 900; letter-spacing: 4px; color: var(--text_dim); margin: 0 0 8px; text-transform: uppercase;">Clarity</p>
         <h3 style="margin: 0 0 10px; color: var(--accent); text-transform: uppercase; letter-spacing: 2px;">Welcome to the System</h3>
         <p style="margin: 0; color: var(--text_sec); line-height: 1.6;">One thing matters here: getting your games onto the shelf. Everything else can wait.</p>
-        <p style="margin: 6px 0 0; color: var(--text_dim); font-size: 11px; line-height: 1.5; font-style: italic;">Nothing is mandatory — everything here also lives in Connect and the menu.</p>
+        <p style="margin: 6px 0 0; color: var(--text_dim); font-size: 11px; line-height: 1.5; font-style: italic;">Nothing is mandatory, everything here also lives in Connect and the menu.</p>
       </div>
 
       <!-- Scrollable steps -->
       <div style="flex: 1; overflow-y: auto; padding: 14px 20px; display: flex; flex-direction: column; gap: 12px;">
 
         <!-- STEP 0: WHAT THIS MACHINE HAS.
-             Rendered from real detection at open time, never from assumptions —
+             Rendered from real detection at open time, never from assumptions,
              the gaming-stack gap comes from omarchy-status, the store lines from
              the same auth check the Connections page uses. Hidden entirely when
              there is nothing to report. -->
@@ -2104,7 +2104,7 @@
           <div id="wlc-detect-body" style="display:flex; flex-direction:column; gap:7px; font-size:11.5px; line-height:1.5;"></div>
           <button id="btn-wlc-install-tools" class="primary" style="width:100%; margin-top:9px; display:none;">Install the missing tools</button>
           <p id="wlc-detect-note" style="margin:7px 0 0; color:var(--text_dim); font-size:10.5px; line-height:1.5; font-style:italic; display:none;">
-            Opens a terminal and shows you the command — nothing is installed behind your back, and you type your own password.
+            Opens a terminal and shows you the command, nothing is installed behind your back, and you type your own password.
           </p>
         </div>
 
@@ -2112,7 +2112,7 @@
         <div class="tool-card">
           <div class="tool-card-title"><span style="color:var(--accent);">1</span> &nbsp;Import Your Games</div>
 
-          <p style="margin: 0 0 8px; color: var(--text_sec); font-size: 11px; line-height: 1.6;"><strong style="color:#66c0f4;">Steam</strong> — grab a free API key at <strong style="color: var(--text_main);">steamcommunity.com/dev/apikey</strong> and your SteamID64 from your profile URL. <span style="color: var(--accent);">Game details must be set to Public.</span></p>
+          <p style="margin: 0 0 8px; color: var(--text_sec); font-size: 11px; line-height: 1.6;"><strong style="color:#66c0f4;">Steam</strong>, grab a free API key at <strong style="color: var(--text_main);">steamcommunity.com/dev/apikey</strong> and your SteamID64 from your profile URL. <span style="color: var(--accent);">Game details must be set to Public.</span></p>
           <input type="password" id="wlc-steam-id" placeholder="STEAMID64" style="margin-bottom: 6px;">
           <input type="password" id="wlc-steam-api-key" placeholder="STEAM API KEY">
           <button id="btn-welcome-sync-steam" class="primary" style="width: 100%; margin-top: 6px;">Fetch Steam Library</button>
@@ -2120,18 +2120,18 @@
 
           <div style="border-top: 1px solid var(--border_solid); margin: 10px 0;"></div>
 
-          <p style="margin: 0 0 8px; color: var(--text_sec); font-size: 11px; line-height: 1.6;"><strong style="color:#a78bfa;">GOG &amp; Epic</strong> — sign in once and your libraries import automatically. New purchases show up every time you hit <em>Refresh Library</em>.</p>
+          <p style="margin: 0 0 8px; color: var(--text_sec); font-size: 11px; line-height: 1.6;"><strong style="color:#a78bfa;">GOG &amp; Epic</strong>, sign in once and your libraries import automatically. New purchases show up every time you hit <em>Refresh Library</em>.</p>
           <div style="display: flex; gap: 8px;">
             <button id="btn-welcome-login-gog"  style="flex: 1; background: transparent; border: 1px solid #a78bfa; color: #a78bfa;">Sign in to GOG</button>
             <button id="btn-welcome-login-epic" style="flex: 1; background: transparent; border: 1px solid #a78bfa; color: #a78bfa;">Sign in to Epic</button>
           </div>
           <div id="wlc-installer-status" style="font-size: 12px; font-weight: bold; min-height: 16px; text-align: center; margin-top: 6px;"></div>
 
-          <p style="margin: 8px 0 0; color: var(--text_dim); font-size: 10.5px; line-height: 1.5; font-style: italic; text-align: center;">Flatpak, PICO-8 and itch.io are picked up automatically — and you can add anything else by hand.</p>
+          <p style="margin: 8px 0 0; color: var(--text_dim); font-size: 10.5px; line-height: 1.5; font-style: italic; text-align: center;">Flatpak, PICO-8 and itch.io are picked up automatically, and you can add anything else by hand.</p>
         </div>
 
-        <!-- ⚠️ Steps 2 and 3 are DEFERRED, not deleted. A first run has exactly one job — get
-             games onto the shelf — and artwork scraping and app-menu entries are chores that
+        <!-- ⚠️ Steps 2 and 3 are DEFERRED, not deleted. A first run has exactly one job, get
+             games onto the shelf, and artwork scraping and app-menu entries are chores that
              follow, both of which already live in the Control Panel. Leaving them expanded made
              the first screen a four-part form; collapsing them keeps them one click away. -->
         <details id="wlc-more" style="margin-top:2px;">
@@ -2152,7 +2152,7 @@
         <!-- STEP 3: SYSTEM MENU -->
         <div class="tool-card">
           <div class="tool-card-title"><span style="color:var(--accent);">3</span> &nbsp;Add to Your App Menu</div>
-          <p style="margin: 0 0 10px; line-height: 1.6; color: var(--text_sec); font-size: 11px;">Puts <strong style="color: var(--text_main);">Clarity</strong> and <strong style="color: var(--text_main);">Couch</strong> (the fullscreen TV mode) in your launcher — GNOME, KDE, anything. If <strong style="color: var(--text_main);">EmuLatte</strong>'s AppImage is in the folder, it's added too.</p>
+          <p style="margin: 0 0 10px; line-height: 1.6; color: var(--text_sec); font-size: 11px;">Puts <strong style="color: var(--text_main);">Clarity</strong> and <strong style="color: var(--text_main);">Couch</strong> (the fullscreen TV mode) in your launcher, GNOME, KDE, anything. If <strong style="color: var(--text_main);">EmuLatte</strong>'s AppImage is in the folder, it's added too.</p>
           <button id="btn-welcome-add-menu" class="primary" style="width: 100%;">Add to Application Menu</button>
           <div id="wlc-menu-status" style="font-size: 12px; font-weight: bold; min-height: 16px; text-align: center; margin-top: 4px;"></div>
         </div>
@@ -2163,7 +2163,7 @@
         <div style="background: rgba(102,187,106,0.06); border: 1px solid rgba(102,187,106,0.3); border-left: 4px solid #66bb6a; border-radius: 6px; padding: 12px 16px; text-align: center;">
 
 
-          <p style="margin: 0; color: var(--text_sec); line-height: 1.65; font-size: 11px;"><strong style="color: #66bb6a;">That's it.</strong> Grab a controller and press the Couch button anytime to go fullscreen — same library, couch edition.</p>
+          <p style="margin: 0; color: var(--text_sec); line-height: 1.65; font-size: 11px;"><strong style="color: #66bb6a;">That's it.</strong> Grab a controller and press the Couch button anytime to go fullscreen, same library, couch edition.</p>
         </div>
 
       </div>
@@ -2196,7 +2196,7 @@
   <div id="modal-refine-search" class="modal-overlay"><div class="modal-box"><h3 style="margin: 0; color: var(--accent); text-transform: uppercase;">Refine Search</h3><p style="font-size: 12px; color: var(--text_sec); margin: 0;">No exact matches found. Modify the title to search again:</p><input type="text" id="refine-search-input" style="margin-top: 10px;"><button id="btn-refine-search-submit" class="primary" style="padding: 10px;">Search Again</button><button id="btn-close-refine-search" style="margin-top: 5px;">Cancel</button></div></div>
   <div id="modal-steam-results" class="modal-overlay"><div class="modal-box" style="max-height: 80vh;"><h3 style="margin: 0; color: var(--accent); text-transform: uppercase;">Multiple Results Found</h3><p style="font-size: 12px; color: var(--text_sec); margin: 0;">Select the correct game from the Steam database:</p><div id="steam-results-list" style="display: flex; flex-direction: column; gap: 8px; overflow-y: auto; padding-right: 5px;"></div><button id="btn-close-steam-results" style="margin-top: 10px;">Cancel</button></div></div>
 
-  <!-- Scan for Updates — results (z-index above the Control Panel it opens from) -->
+  <!-- Scan for Updates, results (z-index above the Control Panel it opens from) -->
   <!-- Everything Clarity knows how to install from a download you already have.
        Opened from the Control Panel, which is itself a modal-overlay, hence z-index 26000. -->
   <div id="modal-custom" class="modal-overlay" style="z-index:26000;">
@@ -2291,7 +2291,7 @@
     </div>
   </div>
 
-  <!-- Add game to desktop / app menu — target picker (above the gamepage overlay) -->
+  <!-- Add game to desktop / app menu, target picker (above the gamepage overlay) -->
   <div id="modal-shortcut" class="modal-overlay" style="z-index:26000;">
     <div class="modal-box" style="width:400px; max-width:95vw; text-align:left;">
       <h3 style="margin:0; color:var(--accent); text-transform:uppercase;">Add to Desktop</h3>
@@ -2315,10 +2315,10 @@
       <!-- Scrollable cards -->
       <div id="connect-cards-container" style="flex: 1; overflow-y: auto; padding: 14px 20px; display: flex; flex-direction: column; gap: 12px;">
 
-        <!-- GOG & Epic — headless sign-in (Installer is the under-the-hood engine) -->
+        <!-- GOG & Epic, headless sign-in (Installer is the under-the-hood engine) -->
         <div class="tool-card connect-section" data-search="installer gog epic install launcher proton umu wine configure setup sign in login connect account">
           <div class="tool-card-title" style="color: #a78bfa;">GOG &amp; Epic</div>
-          <p style="font-size: 11px; color: var(--text_sec); margin: 0 0 8px; line-height: 1.6;">Sign in once and your libraries import automatically — new purchases arrive on every <em>Refresh Library</em>. Games install and launch through the built-in engine; you never have to open it.</p>
+          <p style="font-size: 11px; color: var(--text_sec); margin: 0 0 8px; line-height: 1.6;">Sign in once and your libraries import automatically, new purchases arrive on every <em>Refresh Library</em>. Games install and launch through the built-in engine; you never have to open it.</p>
           <div class="row" style="gap:6px;">
             <button id="btn-connect-login-gog"  style="flex:1; font-size:11px; background:transparent; border:1px solid #a78bfa; color:#a78bfa;">Sign in to GOG</button>
             <button id="btn-connect-login-epic" style="flex:1; font-size:11px; background:transparent; border:1px solid #a78bfa; color:#a78bfa;">Sign in to Epic</button>
@@ -2355,7 +2355,7 @@
         <!-- IGDB -->
         <div class="tool-card connect-section" data-search="igdb twitch metadata scraping client id secret api">
           <div class="tool-card-title" data-i18n="html.connect_igdb_section">IGDB Integration</div>
-          <p style="font-size: 11px; color: var(--text_sec); margin: 0 0 8px;" data-i18n="html.connect_igdb_hint">Get free API credentials at dev.twitch.tv — register an app, copy your Client ID and Secret.</p>
+          <p style="font-size: 11px; color: var(--text_sec); margin: 0 0 8px;" data-i18n="html.connect_igdb_hint">Get free API credentials at dev.twitch.tv, register an app, copy your Client ID and Secret.</p>
           <input type="text" id="igdb-client-id" placeholder="CLIENT ID">
           <input type="password" id="igdb-client-secret" placeholder="CLIENT SECRET">
           <button id="btn-save-igdb" class="primary" style="padding: 8px; margin-top: 2px;" data-i18n="html.btn_igdb_save">Save & Test Connection</button>
@@ -2446,8 +2446,8 @@
               <div class="cp-welcome-sub">GAME MANAGER</div>
               <!-- Version chip + "what's new" link out to the GitHub releases page (no in-app updater). -->
               <div class="cp-welcome-ver">
-                <span class="cp-ver-chip" id="cp-app-version"><span class="cp-ver-dot"></span><span id="cp-app-version-num">VERSION —</span></span>
-                <span class="cp-ver-chip" id="cp-platform-badge" style="display:none; border-color:#e58a70; color:#e58a70;" title="This macOS build is unsigned and still under active development — see docs/mac-port-handoff.md">macOS · EXPERIMENTAL</span>
+                <span class="cp-ver-chip" id="cp-app-version"><span class="cp-ver-dot"></span><span id="cp-app-version-num">VERSION,</span></span>
+                <span class="cp-ver-chip" id="cp-platform-badge" style="display:none; border-color:#e58a70; color:#e58a70;" title="This macOS build is unsigned and still under active development, see docs/mac-port-handoff.md">macOS · EXPERIMENTAL</span>
                 <button class="cp-ver-btn" id="btn-check-app-updates" data-i18n-title="html.cp_updates_title" title="Opens the releases page in your browser">
                   <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-3.36-7"/><polyline points="21 3 21 9 15 9"/></svg>
                   <span data-i18n="html.cp_check_updates">Check for Updates</span>
@@ -2482,7 +2482,7 @@
             <button class="segmented-btn corners-btn" data-val="sharp">Sharp</button>
             <button class="segmented-btn corners-btn" data-val="round">Round</button>
           </div>
-          <div style="font-size:10px; color:var(--text_dim); margin:8px 0 0; letter-spacing:0.5px;">Ken Burns Hero Effect <span style="opacity:0.7;">(pan &amp; zoom — turn off on less powerful machines)</span></div>
+          <div style="font-size:10px; color:var(--text_dim); margin:8px 0 0; letter-spacing:0.5px;">Ken Burns Hero Effect <span style="opacity:0.7;">(pan &amp; zoom, turn off on less powerful machines)</span></div>
           <div class="segmented-control" id="kenburns-segmented-control" style="margin-top: 4px;">
             <button class="segmented-btn kenburns-btn active" data-val="on">On</button>
             <button class="segmented-btn kenburns-btn" data-val="off">Off</button>
@@ -2552,7 +2552,7 @@
 
         <div class="tool-card tools-section" data-search="install folder directory path default location download where games installed gog epic installer drive disk change move">
           <div class="tool-card-title"><svg class="cp-tico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>Game Install Folder</div>
-          <div style="font-size: 11px; color: var(--text_dim); line-height: 1.5; margin-bottom: 2px;">Where GOG &amp; Epic downloads are installed — each game gets its own sub-folder. You can still pick a different folder for any single game while installing it.</div>
+          <div style="font-size: 11px; color: var(--text_dim); line-height: 1.5; margin-bottom: 2px;">Where GOG &amp; Epic downloads are installed, each game gets its own sub-folder. You can still pick a different folder for any single game while installing it.</div>
           <input id="install-dir-current" type="text" readonly style="width:100%; box-sizing:border-box; font-family:monospace; font-size:11px; padding:8px 10px; background:var(--bg); border:1px solid var(--border_solid); color:var(--text_main); border-radius:6px;">
           <div class="row" style="margin-top: 4px;">
             <button id="btn-install-dir-change" class="primary" style="flex:2; font-size:11px;"><svg class="cp-bico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>Change Folder</button>
@@ -2643,7 +2643,7 @@
 
         <div class="tool-card tools-section" data-search="genre genres category categorise categorize arpg crpg fps rpg racing shooter tag tags classify sort">
           <div class="tool-card-title"><svg class="cp-tico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41 13.42 20.58a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><circle cx="7" cy="7" r="1.4" fill="currentColor"/></svg><span data-i18n="html.card_genres">Game Genres</span></div>
-          <div style="font-size: 11px; color: var(--text_dim); line-height: 1.5; margin-bottom: 2px;" data-i18n="html.genres_hint">Sort your library into real genres — ARPG, CRPG, FPS, Metroidvania, Racing — using the tags players voted on, so you can filter by what a game actually <i>is</i>. Anything you set by hand is never overwritten.</div>
+          <div style="font-size: 11px; color: var(--text_dim); line-height: 1.5; margin-bottom: 2px;" data-i18n="html.genres_hint">Sort your library into real genres, ARPG, CRPG, FPS, Metroidvania, Racing, using the tags players voted on, so you can filter by what a game actually <i>is</i>. Anything you set by hand is never overwritten.</div>
           <div id="genre-coverage-bar" style="font-size:11px; color:var(--text_sec); margin:2px 0 6px;"></div>
           <button id="btn-scan-genres" class="primary" style="width: 100%; font-size: 12px; padding: 10px; letter-spacing: 1px;"><svg class="cp-bico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41 13.42 20.58a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><circle cx="7" cy="7" r="1.4" fill="currentColor"/></svg><span data-i18n="html.btn_scan_genres">Detect Genres</span></button>
         </div>
@@ -2668,7 +2668,7 @@
 
         <div class="tool-card tools-section" id="mac-native-tool-card" style="display:none;" data-search="mac native macos apple filter games run compatibility badge steam gog epic">
           <div class="tool-card-title"><svg class="cp-tico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a1 1 0 0 1 1 1v2"/><path d="M12 8c-4 0-7 3-7 8 0 4 2 6 4 6 1 0 1.5-1 3-1s2 1 3 1c2 0 4-2 4-6 0-2.5-1-4.5-2.5-6 1-1 1.5-2.5 1.5-4-2 0-3.5.8-4.5 2-.6-.1-1.3 0-1.5 0z"/></svg>Mac-Native Games</div>
-          <p style="font-size:10px; color:var(--text_dim); margin:0 0 8px; line-height:1.5;">Which games have a real macOS build, not just Windows through a compatibility layer — GOG/Epic checked locally, Steam checked live per game. Marked with a small apple on the cover, and filterable from the category dropdown above the gallery ("Mac-Native").</p>
+          <p style="font-size:10px; color:var(--text_dim); margin:0 0 8px; line-height:1.5;">Which games have a real macOS build, not just Windows through a compatibility layer, GOG/Epic checked locally, Steam checked live per game. Marked with a small apple on the cover, and filterable from the category dropdown above the gallery ("Mac-Native").</p>
           <button id="btn-scan-mac-native" style="width:100%; font-size:12px; padding:10px; letter-spacing:1px;" class="primary"><span>Scan for Mac Compatibility</span></button>
           <p id="mac-native-scan-status" style="font-size:10px; color:var(--text_dim); margin:8px 0 0; line-height:1.5;"></p>
         </div>
@@ -2783,7 +2783,7 @@
 
       <div id="pr-explain" style="display:none; font-size:11px; color:var(--text_dim); line-height:1.7; background:rgba(0,0,0,0.25); border:1px solid var(--border_solid); border-radius:8px; padding:10px 12px;">
         Windows games run through <b style="color:var(--text_sec);">Proton</b>, a compatibility layer. Clarity can install
-        <b style="color:var(--text_sec);">GE-Proton</b> for you — it's a one-time download of about 400&nbsp;MB that every Windows game then shares.
+        <b style="color:var(--text_sec);">GE-Proton</b> for you, it's a one-time download of about 400&nbsp;MB that every Windows game then shares.
       </div>
 
       <div id="pr-found" style="display:none;">
@@ -2831,7 +2831,7 @@
            rule every time it is opened, so new games that fit simply appear in it. -->
       <label style="display:block; font-size:10px; font-weight:900; letter-spacing:1px; text-transform:uppercase; color:var(--text_dim); margin-bottom:5px;">Fill it automatically</label>
       <select id="new-playlist-genre" style="width:100%; padding:9px 10px; background:var(--bg); border:1px solid var(--border_solid); color:var(--text_main); border-radius:4px; font-size:12px; cursor:pointer; box-sizing:border-box;">
-        <option value="">Hand-picked — I'll add games myself</option>
+        <option value="">Hand-picked, I'll add games myself</option>
       </select>
       <div id="new-playlist-preview" style="font-size:11px; color:var(--text_dim); margin:7px 0 12px; min-height:14px;"></div>
       <div style="display:flex; gap:8px;">
@@ -2938,7 +2938,7 @@
        Everything Installer's setup modal owned, in the Manager. Writes go through
        installer-compat-set, which allowlists the columns it will touch. -->
   <!-- ── Command palette (Ctrl+K) ──────────────────────────────────────────────
-       Omarchy is keyboard-driven — everything else on this desktop is reachable
+       Omarchy is keyboard-driven, everything else on this desktop is reachable
        from a fuzzy menu, and the library was the exception. -->
   <div id="palette" class="modal-overlay" style="z-index:30000; align-items:flex-start;">
     <div id="palette-box">
@@ -3044,7 +3044,7 @@
     <div class="modal-box" style="max-width: 520px; width: 520px;">
       <h3 style="margin: 0; color: var(--accent); text-transform: uppercase; letter-spacing: 2px;">Spread the good vibes</h3>
       <p style="font-size: 12px; color: var(--text_sec); line-height: 1.6; margin: 0 0 4px;">
-        If Clarity got your gaming life together, consider sending a little support my way — it keeps the good vibes flowing.
+        If Clarity got your gaming life together, consider sending a little support my way. It keeps the good vibes flowing.
         <strong>&ldquo;more caffeine is <em>more good</em>.&rdquo;</strong>
       </p>
       <div style="display:flex; flex-direction:column; gap:10px; margin-top:6px;">
@@ -3064,7 +3064,7 @@
         </div>
       </div>
       <p style="font-size: 11px; color: var(--text_dim); line-height: 1.6; margin: 14px 0 0;">
-        Free help counts too — star the repo, report what breaks, tell someone who would like it.
+        Free help counts too, star the repo, report what breaks, tell someone who would like it.
         If you do donate, mail <code style="color:var(--text_sec);">joserobertoazevedo@hey.com</code> so I can thank you properly.
       </p>
       <div style="display:flex; gap:8px; margin-top:16px;">
@@ -3076,7 +3076,7 @@
   <div id="modal-dlc" class="modal-overlay">
     <div class="modal-box" style="max-width: 600px; width: 600px; max-height: 84vh; display:flex; flex-direction:column;">
       <h3 style="margin: 0; color: var(--accent); text-transform: uppercase; letter-spacing: 2px;">Manage DLCs <span id="dlc-modal-game" style="opacity:0.6; font-weight:400; text-transform:none; letter-spacing:0;"></span></h3>
-      <p style="font-size: 12px; color: var(--text_sec); line-height: 1.5; margin: 0;">Owned DLCs for this GOG game. GOG installs DLCs as a set — <strong>Install all DLCs</strong> adds every owned DLC (the base game is never removed). Reset DLCs reinstalls the base with none.</p>
+      <p style="font-size: 12px; color: var(--text_sec); line-height: 1.5; margin: 0;">Owned DLCs for this GOG game. GOG installs DLCs as a set, <strong>Install all DLCs</strong> adds every owned DLC (the base game is never removed). Reset DLCs reinstalls the base with none.</p>
       <div id="dlc-status" style="display:none; font-size:13px; color:var(--text_dim); padding:24px 0; text-align:center;"></div>
       <div id="dlc-list" style="display:flex; flex-direction:column; gap:8px; overflow-y:auto; padding-right:4px; min-height:40px; margin-top:4px;"></div>
       <div style="display:flex; gap:8px; margin-top:10px; flex-shrink:0;">
@@ -3107,8 +3107,8 @@
   <div id="modal-saves-help" class="modal-overlay" style="z-index:20010;">
     <div class="modal-box" style="width:min(720px,95vw); max-height:88vh; display:flex; flex-direction:column; padding:0; overflow:hidden;">
       <div style="padding:22px 26px 16px; border-bottom:1px solid var(--border); flex-shrink:0;">
-        <h3 style="margin:0; color:var(--accent); text-transform:uppercase; letter-spacing:2px; font-size:19px;">Save Manager — Guide</h3>
-        <p style="font-size:14px; color:var(--text_dim); line-height:1.55; margin:9px 0 0;">Everything you need to back up and restore your GOG saves on Linux — including how to find saves the app can't detect on its own.</p>
+        <h3 style="margin:0; color:var(--accent); text-transform:uppercase; letter-spacing:2px; font-size:19px;">Save Manager, Guide</h3>
+        <p style="font-size:14px; color:var(--text_dim); line-height:1.55; margin:9px 0 0;">Everything you need to back up and restore your GOG saves on Linux, including how to find saves the app can't detect on its own.</p>
       </div>
       <div style="overflow-y:auto; padding:20px 26px 10px; font-size:15px; color:var(--text_sec); line-height:1.7;">
         <style>
@@ -3122,28 +3122,28 @@
         </style>
 
         <h4>Why this exists</h4>
-        <p>Neither GOG Galaxy nor the Epic Games launcher runs on Linux, so your GOG and Epic save files normally have no backup at all. The Save Manager finds a game's saves, packs them into a portable <strong>.zip</strong>, and restores them whenever you need. It covers <strong>GOG and Epic</strong> — Steam has its own cloud saves, so it isn't included here.</p>
+        <p>Neither GOG Galaxy nor the Epic Games launcher runs on Linux, so your GOG and Epic save files normally have no backup at all. The Save Manager finds a game's saves, packs them into a portable <strong>.zip</strong>, and restores them whenever you need. It covers <strong>GOG and Epic</strong>, Steam has its own cloud saves, so it isn't included here.</p>
 
         <h4>How saves are located</h4>
         <p>When you open the Save Manager it shows one or more save folders, each with a small tag:</p>
         <ul>
-          <li><span class="sm-badge" style="color:#5be27a;">from GOG</span> / <span class="sm-badge" style="color:#5be27a;">from Epic</span> — the store itself declared this location. The most reliable.</li>
-          <li><span class="sm-badge" style="color:var(--text_dim);">detected</span> — found by scanning the game's Wine prefix (the usual save spots).</li>
-          <li><span class="sm-badge" style="color:var(--accent);">you chose this</span> — a folder you picked yourself with <em>Locate saves…</em>.</li>
+          <li><span class="sm-badge" style="color:#5be27a;">from GOG</span> / <span class="sm-badge" style="color:#5be27a;">from Epic</span>, the store itself declared this location. The most reliable.</li>
+          <li><span class="sm-badge" style="color:var(--text_dim);">detected</span>, found by scanning the game's Wine prefix (the usual save spots).</li>
+          <li><span class="sm-badge" style="color:var(--accent);">you chose this</span>, a folder you picked yourself with <em>Locate saves…</em>.</li>
         </ul>
-        <p>If it says <em>“No saves found yet”</em> and you <strong>have</strong> played the game, its saves live somewhere unusual — jump to <strong>“Can't find your saves?”</strong> below.</p>
+        <p>If it says <em>“No saves found yet”</em> and you <strong>have</strong> played the game, its saves live somewhere unusual, jump to <strong>“Can't find your saves?”</strong> below.</p>
 
         <h4>Backing up</h4>
         <ul>
-          <li>Tick the folder(s) you want (some games split saves across two folders — all ticked ones go into one zip).</li>
+          <li>Tick the folder(s) you want (some games split saves across two folders, all ticked ones go into one zip).</li>
           <li>Press <strong>Back Up Now</strong> and choose where to save the <code>.zip</code>.</li>
-          <li>Keep that zip anywhere — an external drive, cloud storage, or copy it to another PC.</li>
+          <li>Keep that zip anywhere, an external drive, cloud storage, or copy it to another PC.</li>
         </ul>
 
         <h4>Restoring</h4>
         <ul>
           <li>Press <strong>Restore…</strong> to pick any backup zip, or press <strong>Restore</strong> next to one listed under “Previous backups”.</li>
-          <li>Before anything is overwritten, your <em>current</em> saves are packed into an automatic <strong>pre-restore snapshot</strong> — so a restore is always undoable.</li>
+          <li>Before anything is overwritten, your <em>current</em> saves are packed into an automatic <strong>pre-restore snapshot</strong>, so a restore is always undoable.</li>
           <li>Restoring on a <strong>different PC</strong> works too: the folders are re-homed to that machine's prefix automatically.</li>
         </ul>
 
@@ -3153,21 +3153,21 @@
         <h4>Can't find your saves? Locate them yourself</h4>
         <p>If detection comes up empty or points at the wrong folder, press <strong>Locate saves…</strong>. The folder picker opens <em>inside</em> the game's Windows environment, here:</p>
         <p><code>~/.config/installer/prefixes/&lt;Game&gt;/drive_c/users/steamuser/</code></p>
-        <p>From there, saves are almost always in one of these — open them and look for the folder holding the actual save files:</p>
+        <p>From there, saves are almost always in one of these, open them and look for the folder holding the actual save files:</p>
         <ul>
           <li><code>Documents\My Games\&lt;Game&gt;</code></li>
           <li><code>Saved Games\&lt;Game or Studio&gt;</code></li>
           <li><code>AppData\Roaming\&lt;Studio&gt;</code>, <code>AppData\Local\&lt;Studio&gt;</code>, or <code>AppData\LocalLow\&lt;Studio&gt;</code></li>
-          <li>Some older games save <strong>inside the game's own install folder</strong> — look for a <code>Save</code>, <code>SAVE</code> or <code>SAVEGAME</code> subfolder there.</li>
+          <li>Some older games save <strong>inside the game's own install folder</strong>, look for a <code>Save</code>, <code>SAVE</code> or <code>SAVEGAME</code> subfolder there.</li>
         </ul>
         <p>Select the folder that contains the save files and confirm. Your choice is remembered for that game; you can switch back later with <em>“Use auto-detect instead.”</em></p>
 
         <h4>Native-Linux games</h4>
-        <p>Some GOG games install as native Linux builds (Epic titles always run through Proton). A native build has no Windows prefix, so it can't be auto-detected — use <strong>Locate saves…</strong> and point at wherever the game stores them, commonly under <code>~/.local/share</code>, <code>~/.config</code>, or the game's install folder.</p>
+        <p>Some GOG games install as native Linux builds (Epic titles always run through Proton). A native build has no Windows prefix, so it can't be auto-detected, use <strong>Locate saves…</strong> and point at wherever the game stores them, commonly under <code>~/.local/share</code>, <code>~/.config</code>, or the game's install folder.</p>
 
         <h4>Your saves are safe</h4>
         <ul>
-          <li>Backing up <strong>only reads</strong> your saves — it never changes them.</li>
+          <li>Backing up <strong>only reads</strong> your saves, it never changes them.</li>
           <li>Restoring always snapshots the current saves first.</li>
           <li>Nothing is ever deleted unless you press <strong>Delete</strong> on a backup.</li>
         </ul>
@@ -3268,7 +3268,7 @@
       </div>
       <div id="igdb-ss-no-key-panel" style="display:none; flex-direction:column; gap:10px; padding:16px; background:var(--bg_menu); border-radius:8px; border:1px solid var(--border_solid); margin-bottom:8px;">
         <p style="margin:0; font-size:12px; color:var(--text_sec); line-height:1.7;">Screenshots are sourced from <strong style="color:var(--text_main);">IGDB</strong>, which requires a free Twitch Developer account.<br>
-        1. Go to <strong style="color:var(--accent);">dev.twitch.tv/console/apps</strong> — log in and click <em>Register Your Application</em>.<br>
+        1. Go to <strong style="color:var(--accent);">dev.twitch.tv/console/apps</strong>, log in and click <em>Register Your Application</em>.<br>
         2. Set the OAuth Redirect URL to <strong style="color:var(--accent);">http://localhost</strong> and category to <em>Application Integration</em>.<br>
         3. Copy your <strong style="color:var(--text_main);">Client ID</strong> and generate a <strong style="color:var(--text_main);">Client Secret</strong>, then paste them below.</p>
         <input type="text" id="igdb-ss-client-id" placeholder="Client ID">
@@ -3290,7 +3290,7 @@
   <div id="modal-trailer-search" class="modal-overlay"><div class="modal-box" style="width: 800px; max-height: 80vh;">
     <h3 style="margin: 0 0 10px; color: var(--accent); text-transform: uppercase;" data-i18n="html.trailer_select">Select Trailer to Download</h3>
     <div style="background:color-mix(in srgb,var(--accent) 8%,transparent); border:1px solid color-mix(in srgb,var(--accent) 30%,transparent); border-radius:8px; padding:11px 14px; margin-bottom:10px; font-size:11px; color:var(--text_dim); line-height:1.7;">
-      <span style="color:var(--accent); font-weight:900; letter-spacing:0.5px;">⬇ Offline Playback</span> — The trailer you select will be saved to your hard drive and played instantly on demand, even without an internet connection. You can delete it at any time from the <strong style="color:var(--text_sec);">trailer player</strong> or the <strong style="color:var(--text_sec);">Edit Game screen</strong>.
+      <span style="color:var(--accent); font-weight:900; letter-spacing:0.5px;">⬇ Offline Playback</span>, The trailer you select will be saved to your hard drive and played instantly on demand, even without an internet connection. You can delete it at any time from the <strong style="color:var(--text_sec);">trailer player</strong> or the <strong style="color:var(--text_sec);">Edit Game screen</strong>.
     </div>
     <div id="yt-search-status" style="color: var(--text_dim); font-size: 12px; font-weight: bold;">Searching YouTube...</div><div id="yt-search-list" style="display: flex; flex-direction: column; gap: 10px; overflow-y: auto; padding: 5px;"></div><button id="btn-close-yt-search" style="margin-top: 10px;">Cancel</button>
   </div></div>
@@ -3306,7 +3306,7 @@
     </div>
   </div>
 
-  <!-- Launcher picker — shown when a game has multiple launch commands -->
+  <!-- Launcher picker, shown when a game has multiple launch commands -->
   <div id="modal-launcher-pick" class="modal-overlay">
     <div class="modal-box" style="max-width:420px; gap:14px;">
       <h2 style="margin:0; font-size:15px; letter-spacing:1.5px; color:var(--accent); text-transform:uppercase;">Choose Launcher</h2>
@@ -3364,7 +3364,7 @@
       </div>
   </div>
 
-  <!-- PICO-8 Config Panel — must be before renderer.js script tag so elements exist when listeners are set up -->
+  <!-- PICO-8 Config Panel, must be before renderer.js script tag so elements exist when listeners are set up -->
   <!-- SEE filter visibility config panel -->
   <div id="see-config-panel" style="display:none; position:fixed; inset:0; z-index:500; background:rgba(0,0,0,0.82); align-items:center; justify-content:center;">
     <div style="width:400px; max-height:80vh; background:var(--bg_menu); border:1px solid var(--border_solid); border-radius:10px; display:flex; flex-direction:column; overflow:hidden; box-shadow:0 20px 50px rgba(0,0,0,0.9);">
@@ -3498,7 +3498,7 @@
         <div id="np-label">Now Playing</div>
         <div id="np-title"></div>
         <!-- First launch on a machine downloads umu's runtime, and every new game builds a Wine
-             prefix — minutes of nothing otherwise. Shown only when a launch is actually slow. -->
+             prefix, minutes of nothing otherwise. Shown only when a launch is actually slow. -->
         <div id="np-progress" style="display:none; margin-top:12px;">
           <div style="height:6px; background:rgba(0,0,0,0.35); border-radius:3px; overflow:hidden;">
             <div id="np-bar" style="height:100%; width:0%; background:var(--accent); transition:width 0.4s ease;"></div>
@@ -3509,7 +3509,7 @@
     </div>
   </div>
 
-  <!-- Global operation toast — keeps install/sync/scrape progress visible even when the modal is hidden -->
+  <!-- Global operation toast, keeps install/sync/scrape progress visible even when the modal is hidden -->
   <div id="op-toast" class="op-toast" title="Open the Download Manager">
     <div class="op-toast-label" id="op-toast-label"></div>
     <div class="op-toast-track"><div class="op-toast-fill" id="op-toast-fill"></div></div>

@@ -1,6 +1,6 @@
 'use strict';
 /*
- * @clarity/core — the genre vocabulary and the classifier that fills it.
+ * @clarity/core, the genre vocabulary and the classifier that fills it.
  *
  * The library's GENRE column is a free-text string from two scrapers with different
  * vocabularies ("RPG" from Steam, "Role-playing (RPG)" from IGDB) and it is far too
@@ -11,7 +11,7 @@
  * and hand them here. Keeping it that way makes the whole vocabulary testable against
  * the real library without touching either.
  *
- * SPECIFICITY is the heart of it. Community tags list the umbrella first — Baldur's
+ * SPECIFICITY is the heart of it. Community tags list the umbrella first, Baldur's
  * Gate 3's top tag is "RPG" and its 7th is "CRPG"; Dead Space 2 leads with "Horror"
  * and follows with "Survival Horror". Raw vote order therefore gives the *least*
  * useful answer. Each genre carries a weight instead, and the score is
@@ -281,7 +281,7 @@ function normTag(t) {
         .trim();
 }
 
-// A handful of genres are only ever implied by a *combination* of tags — no source
+// A handful of genres are only ever implied by a *combination* of tags, no source
 // ships a "CRPG" tag for every CRPG. Each rule fires when `all` are present, adding a
 // synthetic tag scored as a fraction of the strongest tag that triggered it.
 const COMBO_RULES = [
@@ -294,13 +294,13 @@ const COMBO_RULES = [
     { all: ['exploration', 'story rich', 'walking simulator'], add: 'walking-sim', share: 1 },
 ];
 // Deliberately absent: "First-Person" + "Shooter" ⇒ FPS. Perspective is a descriptor,
-// not a genre — that rule called Red Dead Redemption 2 an FPS, and across the library
+// not a genre, that rule called Red Dead Redemption 2 an FPS, and across the library
 // it caught exactly one game that the explicit "FPS" tag had not already caught.
 
 /*
  * Score a game's raw tags into the vocabulary.
  *
- *   tags  — { 'Action RPG': 35022, … } (SteamSpy) or an array of names (IGDB, GENRE
+ *   tags, { 'Action RPG': 35022, … } (SteamSpy) or an array of names (IGDB, GENRE
  *           column); an array is treated as descending-priority with synthetic votes.
  *
  * Returns { primary, genres: [{ slug, label, score }] } sorted best-first, or
@@ -342,7 +342,7 @@ function classify(tags) {
         .map(([slug, score]) => ({ slug, label: BY_SLUG.get(slug).label, score: Math.round(score * 1000) / 1000 }))
         .sort((a, b) => b.score - a.score || a.slug.localeCompare(b.slug));
 
-    // Secondary genres are worth keeping — a game really can be an FPS *and* horror —
+    // Secondary genres are worth keeping, a game really can be an FPS *and* horror,
     // but a tag that barely registered is noise, and noise here is worse than silence:
     // it files a platformer under Racing because eleven people tagged it that way. Both
     // an absolute floor and a share of the primary, measured on the real library at
