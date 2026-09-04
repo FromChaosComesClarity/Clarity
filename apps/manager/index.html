@@ -118,6 +118,9 @@
     .gallery-cover-wrap { position: relative; width: 100%; }
     .gallery-store-badges { position: absolute; bottom: 7px; right: 7px; display: flex; flex-direction: row; gap: 4px; pointer-events: none; }
     .gallery-store-badge { width: 22px; height: 22px; background-color: rgba(255,255,255,0.75); -webkit-mask-size: contain; -webkit-mask-repeat: no-repeat; -webkit-mask-position: center; }
+    /* Steam-via-CrossOver: tinted rather than white, so at a glance it reads as a different
+       kind of thing from the store logos it sits next to (see isSteamCrossOver). */
+    .gallery-cx-badge { background-color: rgba(126,203,255,0.95); }
     .install-dot { position: absolute; top: 8px; left: 8px; width: 10px; height: 10px; border-radius: 50%; border: 1.5px solid rgba(0,0,0,0.5); pointer-events: none; z-index: 2; }
     .install-dot.is-installed { background: #66bb6a; }
     .install-dot.not-installed { background: #ff9800; }
@@ -1641,6 +1644,7 @@
               <option value="favs">Favourites</option>
               <option value="want">Want to Play</option>
               <option value="mac-native" id="gallery-category-mac-native">Mac-Native</option>
+              <option value="crossover" id="gallery-category-crossover">Steam via CrossOver</option>
               <option value="steam">Steam</option>
               <option value="gog">GOG</option>
               <option value="epic">Epic</option>

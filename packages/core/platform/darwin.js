@@ -190,27 +190,163 @@ const desktop = {
 };
 
 // ── Steam ────────────────────────────────────────────────────────────────────
+// Two kinds of Steam exist on this host, and this section is the only place that
+// knows the difference:
+//
+//   1. Mac Steam, ~/Library/Application Support/Steam. Native games, launched by
+//      handing steam:// to the OS, exactly as before.
+//   2. WINDOWS Steam, installed by the user inside a CrossOver bottle. Its layout
+//      is byte-for-byte a normal Steam layout (appmanifest_<id>.acf, common/,
+//      libraryfolders.vdf), just sitting under a bottle's drive_c. Verified against
+//      a real bottle holding DOOM 64 (appid 1148590).
+//
+// Because every Steam feature in this codebase (install detection, SizeOnDisk
+// accounting, the local-appmanifest import, uninstall reconciliation) reads from
+// whatever steamLibraryPaths() returns, teaching THIS function about bottles is
+// what makes all of that work for bottled games at once. Nothing downstream
+// changes. Linux has no equivalent and its own platform file is untouched: this is
+// a macOS-only capability.
+
+function steamVdfExtraLibraries(sa, toUnix) {
+    // libraryfolders.vdf lists additional library roots. Inside a bottle those are
+    // WINDOWS paths ("C:\\Program Files (x86)\\Steam"), so they have to be translated
+    // through the bottle's dosdevices/ before they mean anything here. `toUnix` is
+    // that translation, or identity for Mac Steam whose paths are already unix.
+    const out = [];
+    try {
+        const vdf = path.join(sa, 'libraryfolders.vdf');
+        if (!fs.existsSync(vdf)) return out;
+        for (const m of fs.readFileSync(vdf, 'utf8').matchAll(/"path"\s+"([^"]+)"/g)) {
+            const base = toUnix(m[1].replace(/\\\\/g, '\\'));
+            if (!base) continue;
+            const extra = path.join(base, 'steamapps');
+            if (fs.existsSync(extra)) out.push(extra);
+        }
+    } catch (e) {}
+    return out;
+}
+
+// A bottle maps drive letters through dosdevices/ symlinks (c: -> ../drive_c,
+// z: -> /). Resolving the link rather than assuming drive_c is what makes a Steam
+// library on another volume work.
+function bottleWinPathToUnix(bottleDir, winPath) {
+    const m = /^([A-Za-z]):[\\/](.*)$/.exec(String(winPath || ''));
+    if (!m) return null;
+    try {
+        const target = fs.realpathSync(path.join(bottleDir, 'dosdevices', `${m[1].toLowerCase()}:`));
+        return path.join(target, m[2].replace(/\\/g, '/'));
+    } catch { return null; }
+}
+
+// Where bottles live: CrossOver's own default, plus the per-game prefixes this app
+// creates (both places the installer config can sit, see findInstallerDb).
+function bottleSearchRoots() {
+    return [
+        path.join(HOME, 'Library', 'Application Support', 'CrossOver', 'Bottles'),
+        path.join(HOME, 'Library', 'Application Support', 'clarity-installer', 'prefixes'),
+        path.join(portableBaseDir(), 'InstallerConfig', 'prefixes'),
+    ];
+}
+
+// Windows Steam installs to one of these inside a bottle. 32-bit first, which is
+// where it lands by default and where the verified install actually is.
+const BOTTLE_STEAM_SUBDIRS = [
+    path.join('drive_c', 'Program Files (x86)', 'Steam'),
+    path.join('drive_c', 'Program Files', 'Steam'),
+];
+
+// Cached because reconcile loops call steamLibraryPaths() repeatedly and this walks
+// several directories. Only the *shape* (which bottles hold a Steam) is cached, never
+// which games are installed, that stays a live fs.existsSync on the appmanifest so a
+// fresh install is noticed immediately.
+let _bottleSteamCache = null, _bottleSteamAt = 0;
+function bottleSteamLibraries() {
+    if (_bottleSteamCache && Date.now() - _bottleSteamAt < 5000) return _bottleSteamCache;
+    const libs = [];
+    for (const root of bottleSearchRoots()) {
+        let entries = [];
+        try { entries = fs.readdirSync(root, { withFileTypes: true }).filter(d => d.isDirectory()); }
+        catch { continue; }
+        for (const e of entries) {
+            const bottleDir = path.join(root, e.name);
+            if (!isRuntimeDir(bottleDir)) continue;   // no system.reg = not a real bottle
+            for (const sub of BOTTLE_STEAM_SUBDIRS) {
+                const steamRoot = path.join(bottleDir, sub);
+                const sa = path.join(steamRoot, 'steamapps');
+                if (!fs.existsSync(sa)) continue;
+                const bottle = { name: e.name, dir: bottleDir, parent: root,
+                                 steamExe: path.join(steamRoot, 'steam.exe') };
+                libs.push({ dir: sa, bottle });
+                for (const extra of steamVdfExtraLibraries(sa, w => bottleWinPathToUnix(bottleDir, w))) {
+                    if (!libs.some(l => l.dir === extra)) libs.push({ dir: extra, bottle });
+                }
+            }
+        }
+    }
+    _bottleSteamCache = libs; _bottleSteamAt = Date.now();
+    return libs;
+}
+
+// Which bottle holds this appid, or null if it is a Mac Steam game (or absent).
+function steamBottleForApp(appId) {
+    const id = String(appId || '').trim();
+    if (!/^\d+$/.test(id)) return null;
+    for (const lib of bottleSteamLibraries()) {
+        if (fs.existsSync(path.join(lib.dir, `appmanifest_${id}.acf`))) return lib.bottle;
+    }
+    return null;
+}
+function steamBottleByName(name) {
+    return bottleSteamLibraries().find(l => l.bottle.name === name)?.bottle || null;
+}
+
 function steamLibraryPaths() {
     const root = path.join(HOME, 'Library', 'Application Support', 'Steam');
     const sa = path.join(root, 'steamapps');
     const dirs = new Set();
     if (fs.existsSync(sa)) {
         dirs.add(sa);
-        try {
-            const vdf = path.join(sa, 'libraryfolders.vdf');
-            if (fs.existsSync(vdf)) {
-                const content = fs.readFileSync(vdf, 'utf8');
-                for (const m of content.matchAll(/"path"\s+"([^"]+)"/g)) {
-                    const extra = path.join(m[1], 'steamapps');
-                    if (fs.existsSync(extra)) dirs.add(extra);
-                }
-            }
-        } catch (e) {}
+        for (const extra of steamVdfExtraLibraries(sa, p => p)) dirs.add(extra);
     }
+    for (const lib of bottleSteamLibraries()) dirs.add(lib.dir);
     return [...dirs];
 }
 
-function steamLaunchCommand(appId) { return `open steam://rungameid/${appId}`; }
+// ⚠️ A bottled game gets a `steambottle://` command rather than a literal wine
+// invocation. The absolute path to CrossOver is deliberately NOT written into the
+// database: it would go stale the moment CrossOver moves or is reinstalled, and
+// every stored command would break at once. The scheme is resolved at launch time
+// instead, the same way installer:// already is.
+function steamLaunchCommand(appId) {
+    const bottle = steamBottleForApp(appId);
+    return bottle ? `steambottle://launch/${encodeURIComponent(bottle.name)}/${appId}`
+                  : `open steam://rungameid/${appId}`;
+}
+
+// Resolve a steambottle:// command into something spawnable. Windows Steam is asked
+// to start the game with -applaunch, rather than running the game exe directly,
+// because a Steam build expects its client to be up (verified: DOOM 64 launched this
+// way, bottle "Steam", appid 1148590). Returns null when it cannot be satisfied, so
+// callers can report instead of spawning nonsense.
+function steamBottleLaunch(bottleName, appId) {
+    const cx = findCrossOver();
+    if (!cx) return { error: 'CrossOver is not installed, so bottled Steam games cannot launch.' };
+    const bottle = steamBottleByName(bottleName);
+    if (!bottle) return { error: `The CrossOver bottle "${bottleName}" no longer holds a Windows Steam.` };
+    return {
+        cmd: cx.wine,
+        args: ['--bottle', bottle.name, '--no-gui', bottle.steamExe, '-applaunch', String(appId)],
+        env: { CX_BOTTLE_PATH: bottle.parent },
+        method: 'crossover-steam',
+    };
+}
+
+// Parse a steambottle:// command back into its parts. One place, so the launcher,
+// the label and the install check cannot drift apart on the format.
+function parseSteamBottleCommand(cmd) {
+    const m = /^steambottle:\/\/launch\/([^/]+)\/(\d+)\s*$/i.exec(String(cmd || '').trim());
+    return m ? { bottle: decodeURIComponent(m[1]), appId: m[2] } : null;
+}
 
 // ── Other stores this host knows about ───────────────────────────────────────
 // No Flatpak on macOS. scan-flatpak already no-ops on `supported: false`; find-flatpak-icon
@@ -627,6 +763,7 @@ module.exports = {
     installerDbCandidates, findInstallerDb, installerDbCreatePath,
     which, dirSizeBytesCommand, dirSizeHumanCommand, legendaryConfigDir,
     steamLibraryPaths, steamLaunchCommand, extraStore, desktop,
+    steamBottleForApp, steamBottleLaunch, parseSteamBottleCommand,
     nativeOsKey, gogdlPlatform, legendaryPlatform,
     launchNative, findNativeGameExe, findNativeInstallResult,
     dosbox,

@@ -1584,7 +1584,7 @@ function isGameInstalled(g) {
     return !!g && !!g.LaunchCommand && (g.Installed == null || g.Installed == 1);
 }
 
-const QUALIFIER_FILTERS = new Set(['installed','favs','want','playable','mac-native']);
+const QUALIFIER_FILTERS = new Set(['installed','favs','want','playable','mac-native','crossover']);
 
 // ── Genres ───────────────────────────────────────────────────────────────────
 // The vocabulary lives in packages/core/genres.js and arrives via the genre-list IPC,
@@ -2112,6 +2112,31 @@ if (window.api.platform === 'darwin') {
     document.getElementById('gallery-category-mac-native')?.remove();
     document.getElementById('mac-native-tool-card')?.remove();
 }
+// ── STEAM-VIA-CROSSOVER FILTER (macOS only) ─────────────────────────────────
+// A Windows Steam game the user installed into a CrossOver bottle. Deliberately derived
+// from the launch command rather than a stored column: the command is already reconciled
+// against what is really on disk (see reconcileSteamBottleCommands in main.js), so there is
+// no second piece of state to keep in sync, and a game that leaves the bottle stops being
+// tagged the moment its command is rewritten back.
+//
+// This is the opposite of Mac-Native, and both can be on screen at once: one says "a real
+// macOS build", this one says "a Windows build, running through CrossOver".
+const CX_BOTTLE_MASK = "data:image/svg+xml;utf8," + encodeURIComponent(
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">' +
+    '<path fill="#000" d="M10 2h4v1.2h-1.1v3.1c0 .7.2 1.1.7 1.7l1.9 2.3c.6.7.9 1.5.9 2.4V20a2 2 0 0 1-2 2H9.6a2 2 0 0 1-2-2v-7.3c0-.9.3-1.7.9-2.4l1.9-2.3c.5-.6.7-1 .7-1.7V3.2H10z"/>' +
+    '<path fill="#000" d="M8 14h8v1.4H8z"/></svg>');
+
+function isSteamCrossOver(game) {
+    if (!game) return false;
+    const cmds = [game.LaunchCommand];
+    try { for (const l of JSON.parse(game.LaunchCommands || '[]')) if (l && l.cmd) cmds.push(l.cmd); } catch {}
+    return cmds.some(c => /^steambottle:\/\//i.test(String(c || '').trim()));
+}
+if (window.api.platform !== 'darwin') {
+    // Removed, not hidden, for the same DOM-walking reason as the Mac-Native option above.
+    document.getElementById('gallery-category-crossover')?.remove();
+}
+
 document.getElementById('btn-scan-mac-native')?.addEventListener('click', async () => {
     const btn = document.getElementById('btn-scan-mac-native');
     const status = document.getElementById('mac-native-scan-status');
@@ -4865,6 +4890,7 @@ function applyFilters() {
             if (f === 'favs'       && game.FAV !== 'YES') return false;
             if (f === 'want'       && game.WANT_TO_PLAY !== 'YES') return false;
             if (f === 'mac-native' && !isMacNative(game)) return false;
+            if (f === 'crossover'  && !isSteamCrossOver(game)) return false;
             if (f === 'installed') {
                 // ⚠️ The manual/emulation special case is gone: it accepted any row with a
                 // launch command, which is exactly how uninstalled emulator and RetroArch
@@ -5211,7 +5237,8 @@ function renderGallery(recent, regular) {
         const imgHtml = imgSrc ? `<img src="${imgSrc}" class="gallery-cover" loading="lazy">` : `<div class="gallery-cover" style="display:flex; align-items:center; justify-content:center; color:#555; font-size:12px;">${t('game.no_cover')}</div>`;
         const _badges = (game.Store ? String(game.Store).split(',') : []).map(s => s.trim()).filter(Boolean).map(s => { const l = getStoreLogo(s); return l ? `<div class="gallery-store-badge" style="-webkit-mask-image:url('${l}');"></div>` : ''; }).join('');
         const _macBadge = isMacNative(game) ? `<div class="gallery-store-badge gallery-mac-badge" style="-webkit-mask-image:url('assets/logos/apple.png');" title="Runs natively on macOS"></div>` : '';
-        const badgeHtml = (_badges || _macBadge) ? `<div class="gallery-store-badges">${_badges}${_macBadge}</div>` : '';
+        const _cxBadge = isSteamCrossOver(game) ? `<div class="gallery-store-badge gallery-cx-badge" style="-webkit-mask-image:url('${CX_BOTTLE_MASK}');" title="Windows Steam game, runs through CrossOver"></div>` : '';
+        const badgeHtml = (_badges || _macBadge || _cxBadge) ? `<div class="gallery-store-badges">${_badges}${_macBadge}${_cxBadge}</div>` : '';
         const f2pHtml = isFreeToPlay(game) ? `<div class="f2p-pill gallery-f2p-pill" data-f2p-pill="1" title="Free-to-play, click to show/hide these">FREE</div>` : '';
         const installCmdG = getInstallCommand(game);
         const isInstalled = isGameInstalled(game);

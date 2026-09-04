@@ -3338,6 +3338,20 @@ function handleJukeboxInput(action) {
 // GALLERY VIEW
 // ══════════════════════════════════════════════════════════════════════════
 
+// A Windows Steam game running through a CrossOver bottle (macOS). Derived from the
+// launch command, which main.js keeps reconciled against what is actually on disk, so
+// there is no second piece of state to drift. Mirrors the Manager's own badge.
+const CX_BOTTLE_MASK = "data:image/svg+xml;utf8," + encodeURIComponent(
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">' +
+    '<path fill="#000" d="M10 2h4v1.2h-1.1v3.1c0 .7.2 1.1.7 1.7l1.9 2.3c.6.7.9 1.5.9 2.4V20a2 2 0 0 1-2 2H9.6a2 2 0 0 1-2-2v-7.3c0-.9.3-1.7.9-2.4l1.9-2.3c.5-.6.7-1 .7-1.7V3.2H10z"/>' +
+    '<path fill="#000" d="M8 14h8v1.4H8z"/></svg>');
+function isSteamCrossOver(game) {
+    if (!game) return false;
+    const cmds = [game.LaunchCommand];
+    try { for (const l of JSON.parse(game.LaunchCommands || '[]')) if (l && l.cmd) cmds.push(l.cmd); } catch {}
+    return cmds.some(c => /^steambottle:\/\//i.test(String(c || '').trim()));
+}
+
 function getGalleryStoreLogo(store) {
   if (!store) return null;
   const s = store.toLowerCase();
@@ -3491,7 +3505,8 @@ function renderGalleryGrid() {
     }
     const _gcellBadges = (game.Store ? String(game.Store).split(',') : []).map(s => s.trim()).filter(Boolean).map(s => { const l = getGalleryStoreLogo(s); return l ? `<div class="gcell-store-badge" style="-webkit-mask-image:url('${l}');"></div>` : ''; }).join('');
     const _gcellMacBadge = game.MacNative == 1 ? `<div class="gcell-store-badge" style="-webkit-mask-image:url('assets/logos/apple.png');" title="Runs natively on macOS"></div>` : '';
-    const storeBadgeGroup = (_gcellBadges || _gcellMacBadge) ? `<div style="display:flex;gap:3px;flex-shrink:0;">${_gcellBadges}${_gcellMacBadge}</div>` : '';
+    const _gcellCxBadge = isSteamCrossOver(game) ? `<div class="gcell-store-badge gcell-cx-badge" style="-webkit-mask-image:url('${CX_BOTTLE_MASK}');" title="Windows Steam game, runs through CrossOver"></div>` : '';
+    const storeBadgeGroup = (_gcellBadges || _gcellMacBadge) ? `<div style="display:flex;gap:3px;flex-shrink:0;">${_gcellBadges}${_gcellMacBadge}${_gcellCxBadge}</div>` : '';
     const coverArea = imgSrc
       ? `<div class="gcell-cover-area"><img src="${imgSrc}" alt="" loading="lazy" decoding="async"></div>`
       : `<div class="gcell-cover-area"><div class="gcell-noart">${game.Game}</div></div>`;
