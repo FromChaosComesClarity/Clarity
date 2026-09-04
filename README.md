@@ -4,9 +4,9 @@
 
 ### *the game manager for Omarchy*
 
-![version](https://img.shields.io/badge/version-1.12.0-2fe0d6?style=flat-square)
+![version](https://img.shields.io/badge/version-1.14.0-2fe0d6?style=flat-square)
 ![status](https://img.shields.io/badge/status-Experimental-ff5fa2?style=flat-square)
-![platform](https://img.shields.io/badge/platform-Linux-0e1113?style=flat-square)
+![platform](https://img.shields.io/badge/platform-Linux%20%7C%20macOS-0e1113?style=flat-square)
 ![license](https://img.shields.io/badge/license-GPL--3.0-2fe0d6?style=flat-square)
 
 </div>
@@ -14,8 +14,11 @@
 Every game you own, Steam, GOG, Epic, itch, PICO-8, emulators, fan games, source ports and
 mods, in one place. One AppImage, three faces, no cloud, no launcher farm.
 
-**2.0 is what this is becoming.** What you can download today is the experimental line: used
-daily on the machine it is built on, and rough in places. There is no date on 2.0.
+**2.0 is what this is becoming.** What you can download today is used daily on the machine it
+is built on, and still rough in places. There is no date on 2.0.
+
+macOS builds are attached to the same release, one version behind, because the Mac cannot be
+packaged from Linux.
 
 ## The three faces
 
