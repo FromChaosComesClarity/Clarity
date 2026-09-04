@@ -958,14 +958,14 @@ const customInstallers = require('../../packages/core/custom-installers.js');
 // ── Which screen games open on (KDE only) ────────────────────────────────────
 // See packages/core/kwin-display.js for why this is a KWin script rather than anything
 // inside the game, and why it is one script for all games rather than one per game.
-const kwinDisplay = host.desktop.displayPicker;
+const kwinDisplay = host.desktop?.displayPicker || null;
 
 // The choice belongs with the rest of our settings, which travel with the AppImage.
 // A loaded KWin script is gone after a logout, so the stored choice is put back into
 // effect on every start. Nothing to do, and nothing written, if there is no choice.
 try {
-    kwinDisplay.configure(configDir);
-    if (kwinDisplay.isSupported()) kwinDisplay.apply();
+    kwinDisplay?.configure(configDir);
+    if (kwinDisplay?.isSupported()) kwinDisplay.apply();
 } catch {}
 
 // Hyprland window rules, for the same reason the KWin script is re-applied above: they are
