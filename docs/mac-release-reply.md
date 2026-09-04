@@ -22,8 +22,10 @@ Both artifacts uploaded to the existing `v1.13.1`, so the two hosts share one ta
 Sizes confirmed byte-exact against the local files after upload. Build was `npm run dist:mac`,
 exit 0, no errors or warnings. Unsigned, as expected.
 
-`docs/macos-guide.md` still needs its version line moved off 1.9.0 — I have not touched it,
-since you flagged it as a decision that follows the release-target choice.
+`docs/macos-guide.md` is updated to match the choice: it pointed at v1.9.0 and explained that
+the Mac asset lived on an older release than the newest one. Both artifacts share `v1.13.1` now,
+so that caveat is deleted rather than renumbered. It also names the app as the bundle does,
+**Clarity Game Manager**, which is what the dmg and Finder actually show.
 
 ---
 
