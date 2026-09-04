@@ -209,6 +209,9 @@ contextBridge.exposeInMainWorld('api', {
                                 installerCompatSet: (payload) => ipcRenderer.invoke('installer-compat-set', payload),
                                 installerSetLaunchTarget: (payload) => ipcRenderer.invoke('installer-set-launch-target', payload),
                                 installerStorageList: () => ipcRenderer.invoke('installer-storage-list'),
+                                installerStorageTargets: (currentPath) => ipcRenderer.invoke('installer-storage-targets', currentPath),
+                                installerMoveGame:    (payload) => ipcRenderer.invoke('installer-move-game', payload),
+                                installerDeleteGame:  (payload) => ipcRenderer.invoke('installer-delete-game', payload),
                                 omarchyStatus:   () => ipcRenderer.invoke('omarchy-status'),
                                 omarchyInstallTools: (keys) => ipcRenderer.invoke('omarchy-install-tools', keys),
                                 omarchyRunInstaller: (key) => ipcRenderer.invoke('omarchy-run-installer', key),
@@ -233,6 +236,7 @@ contextBridge.exposeInMainWorld('api', {
                                 getInstallSize:    (gid, platform) => ipcRenderer.invoke('get-install-size', gid, platform),
                                 installerPlatforms:  (gid) => ipcRenderer.invoke('installer-platforms', gid),
                                 onInstallerInstallProgress: (cb) => ipcRenderer.on('installer-install-progress', (e, d) => cb(d)),
+                                onInstallerMoveProgress: (cb) => ipcRenderer.on('installer-move-progress', (e, d) => cb(d)),
 
                                 // --- Proton (compatibility layer for Windows games) ---
                                 protonList:          ()  => ipcRenderer.invoke('proton-list'),

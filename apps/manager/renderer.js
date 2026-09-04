@@ -2307,12 +2307,127 @@ async function openStorageModal() {
     if (!res.games.length) { summary.textContent = 'No installed games found.'; return; }
     summary.textContent = `${res.games.length} installed game${res.games.length === 1 ? '' : 's'} · ${_fmtBytes(res.total)} on disk`;
     list.innerHTML = res.games.map(g => `
-        <div class="storage-row">
+        <div class="storage-row" data-id="${escHtml(g.id)}">
             <span class="sr-name" title="${escHtml(g.install_path || '')}">${escHtml(g.title || g.id)}</span>
             <span class="sr-store">${escHtml(g.store || '')}</span>
             <span class="sr-size">${_fmtBytes(g.bytes)}</span>
+            <span class="sr-act">
+                <button class="sr-move" data-id="${escHtml(g.id)}">Move</button>
+                <button class="sr-del"  data-id="${escHtml(g.id)}">Delete</button>
+            </span>
         </div>`).join('');
+
+    // One handler on the list rather than two per row: the list is rebuilt on every
+    // open, and per-row listeners would leak a set each time.
+    list.onclick = async (e) => {
+        const btn = e.target.closest('button');
+        if (!btn) return;
+        const game = res.games.find(g => String(g.id) === btn.dataset.id);
+        if (!game) return;
+        if (btn.classList.contains('sr-move')) openMoveDialog(game);
+        else if (btn.classList.contains('sr-del')) deleteInstalledGame(game);
+    };
 }
+
+// ── Delete an installed game ─────────────────────────────────────────────────
+// The confirm names the game, the folder and the size, because "are you sure?" on
+// its own is a question nobody can answer.
+async function deleteInstalledGame(game) {
+    const ok = await showConfirm(
+        `Delete ${game.title || game.id}?\n\n` +
+        `This removes the installed files from:\n${game.install_path}\n\n` +
+        `That frees ${_fmtBytes(game.bytes)}. The game stays in your library and can be installed again.\n\n` +
+        `Save games and artwork are not touched.`,
+        'Delete', true);
+    if (!ok) return;
+    const res = await window.api.installerDeleteGame({ gameId: game.id, installerGameId: game.id });
+    if (!res || !res.ok) { showAlert(res?.error || 'Could not delete it.'); return; }
+    await openStorageModal();
+}
+
+// ── Move an installed game to another drive or folder ────────────────────────
+let _moveTarget = null;
+async function openMoveDialog(game) {
+    const modal = document.getElementById('modal-storage-move');
+    const listEl = document.getElementById('move-target-list');
+    const goBtn = document.getElementById('btn-move-go');
+    const wrap = document.getElementById('move-progress-wrap');
+    if (!modal) return;
+
+    _moveTarget = null;
+    goBtn.disabled = true;
+    wrap.style.display = 'none';
+    document.getElementById('move-progress-bar').style.width = '0%';
+    document.getElementById('move-game-name').textContent = game.title || game.id;
+    document.getElementById('move-game-where').textContent = `${game.install_path}  ·  ${_fmtBytes(game.bytes)}`;
+    listEl.innerHTML = '<p style="font-size:11px; color:var(--text_dim); margin:4px 0;">Looking for drives…</p>';
+    modal.classList.add('active');
+
+    const res = await window.api.installerStorageTargets(game.install_path);
+    const targets = (res && res.ok ? res.targets : []).filter(x => x.path !== _parentDir(game.install_path));
+    if (!targets.length) {
+        listEl.innerHTML = '<p style="font-size:11px; color:var(--text_dim); margin:4px 0;">No other drive found. Use the button below to pick a folder.</p>';
+    } else {
+        listEl.innerHTML = targets.map(x => `
+            <button class="move-target${x.freeBytes !== null && x.freeBytes < game.bytes ? ' tight' : ''}" data-path="${escHtml(x.path)}">
+                <span class="mt-label">${escHtml(x.label)}<span class="mt-path">${escHtml(x.path)}</span></span>
+                <span class="mt-free">${x.freeBytes === null ? '' : _fmtBytes(x.freeBytes) + ' free'}</span>
+            </button>`).join('');
+        listEl.onclick = (e) => {
+            const b = e.target.closest('.move-target');
+            if (!b) return;
+            listEl.querySelectorAll('.move-target').forEach(n => n.classList.remove('selected'));
+            b.classList.add('selected');
+            _moveTarget = b.dataset.path;
+            goBtn.disabled = false;
+        };
+    }
+
+    const close = () => { modal.classList.remove('active'); listEl.onclick = null; };
+    document.getElementById('btn-move-cancel').onclick = close;
+    modal.onclick = e => { if (e.target === modal) close(); };
+
+    document.getElementById('btn-move-browse').onclick = async () => {
+        // ⚠️ This handler answers with a plain path string or null, not an object.
+        const picked = await window.api.installerPickDir(_moveTarget || game.install_path);
+        if (!picked) return;
+        _moveTarget = picked;
+        listEl.querySelectorAll('.move-target').forEach(n => n.classList.remove('selected'));
+        document.getElementById('move-game-where').textContent =
+            `${game.install_path}  ->  ${picked}`;
+        goBtn.disabled = false;
+    };
+
+    goBtn.onclick = async () => {
+        if (!_moveTarget) return;
+        goBtn.disabled = true;
+        document.getElementById('btn-move-browse').disabled = true;
+        wrap.style.display = '';
+        document.getElementById('move-progress-note').textContent = 'Starting…';
+        const res2 = await window.api.installerMoveGame({ gameId: game.id, targetDir: _moveTarget });
+        document.getElementById('btn-move-browse').disabled = false;
+        if (!res2 || !res2.ok) {
+            wrap.style.display = 'none';
+            goBtn.disabled = false;
+            showAlert(res2?.error || 'Could not move it.');
+            return;
+        }
+        close();
+        showAlert(`${game.title || game.id} now lives in:\n${res2.to}` +
+                  (res2.sameFs ? '' : '\n\nIt was copied across drives, so this took a while.'));
+        await openStorageModal();
+    };
+}
+function _parentDir(p) { return String(p || '').replace(/\/[^/]*$/, '') || '/'; }
+
+// Live progress while a move is running.
+window.api.onInstallerMoveProgress?.(d => {
+    const bar = document.getElementById('move-progress-bar');
+    const note = document.getElementById('move-progress-note');
+    if (!bar || !note) return;
+    bar.style.width = `${Math.max(0, Math.min(100, d.pct || 0))}%`;
+    note.textContent = d.note ? `${d.note}… ${d.pct || 0}%` : `${d.pct || 0}%`;
+});
 document.getElementById('btn-close-storage')?.addEventListener('click', () =>
     document.getElementById('modal-storage').classList.remove('active'));
 document.getElementById('modal-storage')?.addEventListener('click', e => {

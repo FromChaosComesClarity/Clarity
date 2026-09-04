@@ -805,6 +805,22 @@
     .storage-row .sr-name { flex:1; font-size:12.5px; color:var(--text_main); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
     .storage-row .sr-store { font-size:10px; color:var(--text_dim); text-transform:uppercase; letter-spacing:1px; }
     .storage-row .sr-size { font-size:12px; color:var(--accent); font-variant-numeric:tabular-nums; white-space:nowrap; }
+    /* Per-game actions in Manage Storage. Always visible: this screen exists to act on
+       games, and an action you have to hover to discover is one most people never find. */
+    .storage-row .sr-act { display:flex; gap:4px; flex-shrink:0; }
+    .storage-row .sr-act button { font-size:10px; padding:3px 9px; letter-spacing:0.5px; opacity:0.75; transition:opacity 0.14s; }
+    .storage-row:hover .sr-act button { opacity:1; }
+    .storage-row .sr-act .sr-del { background:rgba(198,40,40,0.14); border:1px solid #c62828; color:#ef5350; }
+    .storage-row .sr-act .sr-del:hover { background:rgba(198,40,40,0.26); }
+    /* Destination rows in the move dialog. */
+    .move-target { display:flex; align-items:center; gap:10px; padding:9px 11px; background:var(--bg_panel);
+                   border:1px solid var(--border); border-radius:4px; cursor:pointer; text-align:left; width:100%; }
+    .move-target:hover { border-color:var(--accent); }
+    .move-target.selected { border-color:var(--accent); background:var(--bg_menu); }
+    .move-target .mt-label { flex:1; font-size:12.5px; color:var(--text_main); }
+    .move-target .mt-path { font-size:10px; color:var(--text_dim); display:block; word-break:break-all; }
+    .move-target .mt-free { font-size:11.5px; color:var(--accent); font-variant-numeric:tabular-nums; white-space:nowrap; }
+    .move-target.tight .mt-free { color:#ef5350; }
     /* ── Command palette ── */
     #palette { padding-top: 12vh; }
     #palette-box { width: min(620px, 92vw); background: var(--bg_menu); border: 1px solid var(--border_solid); border-radius: 10px; box-shadow: 0 24px 70px rgba(0,0,0,0.6); overflow: hidden; display: flex; flex-direction: column; max-height: 66vh; }
@@ -3030,6 +3046,33 @@
     </div>
   </div>
 
+  <!-- ── Move a game to another drive or folder ──────────────────────────────── -->
+  <div id="modal-storage-move" class="modal-overlay" style="z-index:29500;">
+    <div class="modal-box" style="max-width:560px; width:560px; max-height:80vh;">
+      <h3 style="margin:0; color:var(--accent); text-transform:uppercase; letter-spacing:2px;">Move game</h3>
+      <p id="move-game-name" style="font-size:13px; color:var(--text_main); margin:0; font-weight:700;"></p>
+      <p id="move-game-where" style="font-size:11px; color:var(--text_dim); margin:0; word-break:break-all;"></p>
+
+      <p style="font-size:11px; color:var(--text_sec); margin:6px 0 0; text-transform:uppercase; letter-spacing:1px;">Choose a destination</p>
+      <div id="move-target-list" style="display:flex; flex-direction:column; gap:6px; overflow-y:auto; max-height:34vh; padding-right:4px;"></div>
+
+      <button id="btn-move-browse" style="width:100%; margin-top:2px;">Choose another folder…</button>
+
+      <div id="move-progress-wrap" style="display:none; margin-top:6px;">
+        <div style="height:6px; background:var(--bg_panel); border:1px solid var(--border); border-radius:3px; overflow:hidden;">
+          <div id="move-progress-bar" style="height:100%; width:0%; background:var(--accent); transition:width 0.2s;"></div>
+        </div>
+        <p id="move-progress-note" style="font-size:11px; color:var(--text_dim); margin:6px 0 0;"></p>
+      </div>
+
+      <div style="display:flex; gap:8px; margin-top:6px;">
+        <button id="btn-move-cancel" style="flex:1;">Cancel</button>
+        <button id="btn-move-go" class="primary" style="flex:1;" disabled>Move</button>
+      </div>
+    </div>
+  </div>
+
+
   <div id="modal-hidden-games" class="modal-overlay">
     <div class="modal-box" style="max-width: 560px; width: 560px; max-height: 82vh;">
       <h3 style="margin: 0; color: var(--accent); text-transform: uppercase; letter-spacing: 2px;">Hidden Games <span style="opacity:0.6; font-weight:400;">(<span id="hidden-games-count">0</span>)</span></h3>
@@ -3045,7 +3088,7 @@
       <h3 style="margin: 0; color: var(--accent); text-transform: uppercase; letter-spacing: 2px;">Spread the good vibes</h3>
       <p style="font-size: 12px; color: var(--text_sec); line-height: 1.6; margin: 0 0 4px;">
         If Clarity got your gaming life together, consider sending a little support my way. It keeps the good vibes flowing.
-        <strong>&ldquo;more caffeine is <em>more good</em>.&rdquo;</strong>
+        <strong>&ldquo;stay positive and <em>love your life</em>.&rdquo;</strong>
       </p>
       <div style="display:flex; flex-direction:column; gap:10px; margin-top:6px;">
         <div class="support-row">

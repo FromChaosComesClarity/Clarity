@@ -1416,6 +1416,185 @@ ipcMain.handle('installer-uninstall', async (event, { gameId, installerGameId } 
     }
 });
 
+// ── Manage Storage: move and delete ──────────────────────────────────────────
+// Candidate destinations for a move, in the shape Steam offers: every writable
+// filesystem the machine actually has, with what is free on each.
+//
+// ⚠️ Read from /proc/mounts rather than a hardcoded list. A second drive is the
+// whole reason this feature exists, and where it is mounted is the user's choice.
+function storageTargets(currentPath) {
+    const seen = new Set();
+    const out  = [];
+    const add  = (dir, label) => {
+        if (!dir || seen.has(dir)) return;
+        seen.add(dir);
+        let free = null, dev = null;
+        try { const st = fs.statfsSync(dir); free = st.bavail * st.bsize; } catch { return; }
+        try { dev = fs.statSync(dir).dev; } catch {}
+        out.push({ path: dir, label, freeBytes: free, dev });
+    };
+
+    // The directory the app installs into by default, and where this game is now.
+    try { add(installerDefaultDir(), 'Default install folder'); } catch {}
+    if (currentPath) { try { add(path.dirname(currentPath), 'Where it is now'); } catch {} }
+
+    // Real filesystems. Pseudo and virtual ones are not places to put a game.
+    const SKIP_FS = new Set(['proc','sysfs','devtmpfs','devpts','tmpfs','cgroup','cgroup2','pstore',
+        'securityfs','debugfs','tracefs','configfs','fusectl','bpf','mqueue','hugetlbfs','autofs',
+        'binfmt_misc','efivarfs','ramfs','squashfs','overlay','nsfs']);
+    try {
+        for (const line of fs.readFileSync('/proc/mounts', 'utf8').split('\n')) {
+            const [, mountRaw, fstype] = line.split(' ');
+            if (!mountRaw || SKIP_FS.has(fstype)) continue;
+            const mount = mountRaw.replace(/\\040/g, ' ');
+            if (mount === '/' ) { add(path.join(os.homedir(), 'Games'), 'Home'); continue; }
+            if (!/^\/(mnt|media|run\/media)\//.test(mount) && mount !== os.homedir()) continue;
+            try { fs.accessSync(mount, fs.constants.W_OK); } catch { continue; }
+            add(mount, mount.split('/').filter(Boolean).pop() || mount);
+        }
+    } catch {}
+    return out;
+}
+
+ipcMain.handle('installer-storage-targets', (_, currentPath) => {
+    try { return { ok: true, targets: storageTargets(currentPath) }; }
+    catch (e) { return { ok: false, error: e.message }; }
+});
+
+// Every place a game's own folder is written down. install_path is the one that
+// matters; the other two only carry a path for games that are not GOG/Epic, and
+// a move that updated the folder but not these would leave the game unlaunchable.
+function repointGamePaths(oldDir, newDir, gameId) {
+    let touched = 0;
+    try {
+        _installerEngineDb.prepare('UPDATE games SET install_path=? WHERE install_path=?').run(newDir, oldDir);
+        touched++;
+    } catch {}
+    if (!db) return touched;
+    for (const [table, col] of [['games','LaunchCommand'], ['games','LaunchCommands'], ['game_manuals','path']]) {
+        try {
+            const r = db.prepare(`UPDATE ${table} SET ${col} = REPLACE(${col}, ?, ?) WHERE ${col} LIKE ?`)
+                        .run(oldDir, newDir, `%${oldDir}%`);
+            touched += r.changes || 0;
+        } catch {}
+    }
+    return touched;
+}
+
+// Copy a tree, then remove the original. Only for a move across filesystems, where
+// rename() cannot work. Progress is by bytes so a 60GB game does not look frozen.
+async function copyTreeWithProgress(src, dest, totalBytes, onProgress) {
+    let copied = 0, lastTick = 0;
+    const walk = async (from, to) => {
+        await fs.promises.mkdir(to, { recursive: true });
+        for (const entry of await fs.promises.readdir(from, { withFileTypes: true })) {
+            const s = path.join(from, entry.name), d = path.join(to, entry.name);
+            if (entry.isSymbolicLink()) {
+                const link = await fs.promises.readlink(s);
+                try { await fs.promises.symlink(link, d); } catch {}
+            } else if (entry.isDirectory()) {
+                await walk(s, d);
+            } else if (entry.isFile()) {
+                await fs.promises.copyFile(s, d);
+                try { copied += (await fs.promises.stat(d)).size; } catch {}
+                const now = Date.now();
+                if (now - lastTick > 250) {
+                    lastTick = now;
+                    onProgress(Math.min(99, Math.round((copied / Math.max(1, totalBytes)) * 100)));
+                }
+            }
+        }
+    };
+    await walk(src, dest);
+}
+
+ipcMain.handle('installer-move-game', async (event, { gameId, targetDir } = {}) => {
+    if (_installerBusy) return { ok: false, error: 'Another install or move is in progress.' };
+    if (!ensureInstallerEngine()) return { ok: false, error: 'Installer data not found.' };
+    if (!targetDir) return { ok: false, error: 'No destination chosen.' };
+
+    let row;
+    try { row = _installerEngineDb.prepare('SELECT id,title,install_path FROM games WHERE id=?').get(gameId); }
+    catch (e) { return { ok: false, error: e.message }; }
+    if (!row || !row.install_path) return { ok: false, error: 'That game has no recorded folder.' };
+
+    const src = row.install_path;
+    if (!fs.existsSync(src)) return { ok: false, error: `Its folder is already gone:\n${src}` };
+
+    const dest = path.join(targetDir, path.basename(src));
+    if (dest === src) return { ok: false, error: 'It is already there.' };
+    // Moving a folder inside itself would recurse until the disk filled.
+    if (dest.startsWith(src + path.sep)) return { ok: false, error: 'That destination is inside the game\'s own folder.' };
+    if (fs.existsSync(dest)) return { ok: false, error: `Something is already there:\n${dest}` };
+
+    let size = 0;
+    try { size = dirSizeBytes(src); } catch {}
+    try {
+        const st = fs.statfsSync(fs.existsSync(targetDir) ? targetDir : path.dirname(targetDir));
+        if (st.bavail * st.bsize < size) return { ok: false, error: 'Not enough room on that drive.' };
+    } catch {}
+
+    _installerBusy = true;
+    const send = (pct, note) => { try { event.sender.send('installer-move-progress', { gameId, pct, note }); } catch {} };
+    try {
+        await fs.promises.mkdir(targetDir, { recursive: true });
+        let sameFs = false;
+        try { sameFs = fs.statSync(path.dirname(src)).dev === fs.statSync(targetDir).dev; } catch {}
+
+        if (sameFs) {
+            send(50, 'Moving');
+            await fs.promises.rename(src, dest);      // instant, whatever the size
+        } else {
+            send(0, 'Copying');
+            await copyTreeWithProgress(src, dest, size, pct => send(pct, 'Copying'));
+            send(99, 'Removing the original');
+            await fs.promises.rm(src, { recursive: true, force: true });
+        }
+        repointGamePaths(src, dest, gameId);
+        invalidateInstallerInstalledCache();
+        try { event.sender.send('install-status-updated'); } catch {}
+        send(100, 'Done');
+        return { ok: true, from: src, to: dest, sameFs, bytes: size };
+    } catch (e) {
+        // A half-copied destination is worse than none: it would read as installed.
+        try { if (fs.existsSync(dest) && !fs.existsSync(src)) { /* rename already succeeded */ } 
+              else if (fs.existsSync(dest)) await fs.promises.rm(dest, { recursive: true, force: true }); } catch {}
+        return { ok: false, error: e.message };
+    } finally { _installerBusy = false; }
+});
+
+// Delete: a proper uninstall where the store engine can do one, and the folder
+// otherwise. Both end with the game marked uninstalled in both databases.
+ipcMain.handle('installer-delete-game', async (event, { gameId, installerGameId } = {}) => {
+    if (_installerBusy) return { ok: false, error: 'Another install or move is in progress.' };
+    if (!ensureInstallerEngine()) return { ok: false, error: 'Installer data not found.' };
+
+    let row;
+    try { row = _installerEngineDb.prepare('SELECT id,title,install_path FROM games WHERE id=?').get(gameId); }
+    catch (e) { return { ok: false, error: e.message }; }
+    if (!row) return { ok: false, error: 'That game is not in the installer library.' };
+
+    const parsed = parseInstallerId(installerGameId || gameId);
+    _installerBusy = true;
+    _installerProgressCb = (data) => { try { event.sender.send('installer-install-progress', data); } catch {} };
+    try {
+        if (parsed) {
+            await installerEngine.headlessUninstall(parsed.store, parsed.appId);
+        } else if (row.install_path && fs.existsSync(row.install_path)) {
+            await fs.promises.rm(row.install_path, { recursive: true, force: true });
+            try { _installerEngineDb.prepare('UPDATE games SET installed=0 WHERE id=?').run(gameId); } catch {}
+        } else {
+            try { _installerEngineDb.prepare('UPDATE games SET installed=0 WHERE id=?').run(gameId); } catch {}
+        }
+        invalidateInstallerInstalledCache();
+        if (db) { try { db.prepare('UPDATE games SET Installed=0 WHERE InstallerGameId=?').run(gameId); } catch {} }
+        try { event.sender.send('install-status-updated'); } catch {}
+        return { ok: true, freed: row.install_path || '' };
+    } catch (e) {
+        return { ok: false, error: e.message };
+    } finally { _installerBusy = false; _installerProgressCb = null; }
+});
+
 // Default install dir + a native folder picker for the install dialog.
 ipcMain.handle('installer-default-dir', () => { ensureInstallerEngine(); return installerDefaultDir(); });
 ipcMain.handle('installer-pick-dir', async (_, current) => {
