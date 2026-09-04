@@ -157,6 +157,15 @@ move(path.join(appDir, 'CafeNeurotico.AppImage'),     path.join(appDir, 'Clarity
 move(path.join(appDir, 'CafeNeurotico_old.AppImage'), path.join(appDir, 'Clarity_old.AppImage'));
 move(path.join(gmc, 'grinder-progress.json'),             path.join(gmc, 'installer-progress.json'));
 
+// ⚠️ The installer's config directory, for installs that keep it beside the app data rather
+// than in the engine's own userData. This is findInstallerDb's SECOND candidate, and on macOS
+// it is the one actually in use, because the Manager face creates the database next to the app
+// data. It carries library.db, gogdl_auth.json and the wine prefixes, and the engine resolves
+// the latter two from `path.dirname(dbPath)` — so they have to travel together, under one
+// rename of the whole directory rather than file by file.
+move(path.join(appDir, 'GRINDERConfig'), path.join(appDir, 'InstallerConfig'));
+const instCfg = live(path.join(appDir, 'InstallerConfig'), path.join(appDir, 'GRINDERConfig'));
+
 // Companion apps keep their own state inside the shared library directory, so they
 // move with it, but their *names* are part of the rebrand too.
 console.log('\n▸ Companion app data');
@@ -166,16 +175,23 @@ const apps = path.join(HOME, 'Apps');
 move(path.join(apps, 'CafeNeuroticoClock.AppImage'), path.join(apps, 'ClarityClock.AppImage'));
 
 console.log('\n▸ Installer database (library.db)');
-const libDb = path.join(engine, 'library.db');
-for (const ext of ['', '-wal', '-shm']) move(path.join(engine, `grinder.db${ext}`), `${libDb}${ext}`);
-for (const f of fs.existsSync(engine) ? fs.readdirSync(engine) : []) {
-    if (f.startsWith('grinder.db.bak-')) move(path.join(engine, f), path.join(engine, f.replace('grinder.db.bak-', 'library.db.bak-')));
+// ⚠️ Both candidate homes, in findInstallerDb's own order. Migrating only the engine's
+// userData left a Mac's real database behind as GRINDERConfig/grinder.db, where nothing looks
+// for it any more, and the next sign-in or install then created an empty library.db beside a
+// full games directory it could no longer see. That is the exact failure this script exists to
+// prevent, so it has to cover every path the app is willing to read.
+for (const dir of [engine, instCfg]) {
+    const libDb = path.join(dir, 'library.db');
+    for (const ext of ['', '-wal', '-shm']) move(path.join(dir, `grinder.db${ext}`), `${libDb}${ext}`);
+    for (const f of fs.existsSync(dir) ? fs.readdirSync(dir) : []) {
+        if (f.startsWith('grinder.db.bak-')) move(path.join(dir, f), path.join(dir, f.replace('grinder.db.bak-', 'library.db.bak-')));
+    }
+    const libDbNow = fs.existsSync(libDb) ? libDb : path.join(dir, 'grinder.db');
+    if (fs.existsSync(libDbNow)) {
+        backup(libDbNow);
+        rewrite(libDbNow, 'games', 'install_path', '/Games/CafeNeurotico/', '/Games/Clarity/');
+    } else skip(`no library.db in ${H(dir)}, nothing to rewrite`);
 }
-const libDbNow = fs.existsSync(libDb) ? libDb : path.join(engine, 'grinder.db');
-if (fs.existsSync(libDbNow)) {
-    backup(libDbNow);
-    rewrite(libDbNow, 'games', 'install_path', '/Games/CafeNeurotico/', '/Games/Clarity/');
-} else skip('library.db not found, nothing to rewrite');
 
 console.log('\n▸ Manager database (games.db)');
 const gamesDb = path.join(gmc, 'games.db');
