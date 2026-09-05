@@ -7995,13 +7995,15 @@ function renderThemesInCategory(category) {
     (THEME_CATEGORIES[category] || []).forEach(name => {
         const t = THEMES[name];
         if (!t) return;
+        const label = themeLabel(name);
         const wrap = document.createElement('div');
         wrap.className = 'theme-swatch' + (name === activeTheme ? ' active' : '');
-        wrap.title = name;
+        wrap.dataset.themeKey = name;
+        wrap.title = label;
         wrap.innerHTML = `
             <div style="background:${t.bg}; padding:10px 12px; display:flex; flex-direction:column; gap:6px;">
                 <div style="background:${t.bg_menu}; border-radius:4px; padding:6px 8px; border:1px solid ${t.border_solid};">
-                    <div style="font-size:9px; font-weight:900; color:${t.accent}; letter-spacing:1px; text-transform:uppercase; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${name}</div>
+                    <div style="font-size:9px; font-weight:900; color:${t.accent}; letter-spacing:1px; text-transform:uppercase; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" class="theme-swatch-name">${label}</div>
                 </div>
                 <div style="display:flex; gap:5px; align-items:center;">
                     <div style="width:14px; height:14px; border-radius:50%; background:${t.accent}; flex-shrink:0;"></div>
@@ -8396,8 +8398,7 @@ async function renderOmarchyCard(s) {
         themeBtn.disabled = !themeAvailable;
         const sync = () => {
             const on = activeTheme === OMARCHY_THEME_KEY;
-            themeBtn.textContent = !themeAvailable ? 'No palette to read from this theme'
-                : on ? '✓ Matching your Omarchy theme' : 'Match My Omarchy Theme';
+            themeBtn.textContent = omarchyButtonLabel(themeAvailable, on);
             themeBtn.classList.toggle('primary', on);
         };
         sync();
@@ -8423,6 +8424,38 @@ async function renderOmarchyCard(s) {
 // exist yet. Hence the promise this chains from rather than a parallel fetch.
 const OMARCHY_THEME_KEY = 'OMARCHY';
 let _omarchyThemeName = '';
+
+// What a theme is CALLED, which is not always what it is keyed by. The desktop entry is
+// keyed OMARCHY so that the saved-theme setting survives `omarchy theme set`: the key has to
+// stay put while the palette underneath it changes. Nobody chooses a theme called "OMARCHY"
+// though. They choose the one their desktop is already wearing, so that is the name drawn on
+// it. Falls back to the key on a desktop whose theme has no readable name.
+function themeLabel(key) {
+    return key === OMARCHY_THEME_KEY && _omarchyThemeName ? _omarchyThemeName : key;
+}
+
+// The words on the "wear my desktop palette" button. One function because two places set it:
+// the card when it is built, and the live follow when `omarchy theme set` renames the palette
+// underneath it. Naming the theme is the point: "Matching your Omarchy theme" reports a state
+// you can already see, where "Wearing tokyo-night" reports WHICH, which is the thing you would
+// otherwise go and look up. The generic wording stays for a desktop whose theme has no
+// readable name.
+function omarchyButtonLabel(themeAvailable, wearing) {
+    const n = _omarchyThemeName;
+    if (!themeAvailable) return 'No palette to read from this theme';
+    if (wearing) return n ? `✓ Wearing ${n}` : '✓ Matching your Omarchy theme';
+    return n ? `Wear ${n}` : 'Match My Omarchy Theme';
+}
+
+// Keep a swatch already on screen in step with `omarchy theme set`, without rebuilding the
+// grid underneath someone's cursor.
+function refreshOmarchySwatch() {
+    const el = document.querySelector(`#theme-grid .theme-swatch[data-theme-key="${OMARCHY_THEME_KEY}"]`);
+    const nameEl = el && el.querySelector('.theme-swatch-name');
+    if (!el || !nameEl) return;
+    nameEl.textContent = themeLabel(OMARCHY_THEME_KEY);
+    el.title = themeLabel(OMARCHY_THEME_KEY);
+}
 
 // Applied alongside the palette rather than on its own: "match my desktop" means both, and
 // tying it to the theme choice means it needs no toggle of its own. Cleared when the user
@@ -8468,6 +8501,12 @@ window.api.onOmarchyThemeChanged?.(d => {
     if (activeTheme === OMARCHY_THEME_KEY) applyTheme(OMARCHY_THEME_KEY);
     const label = document.getElementById('omarchy-theme-name');
     if (label) label.textContent = _omarchyThemeName || '-';
+    refreshOmarchySwatch();
+    // ⚠️ Relabelled in place rather than by re-running initOmarchyCard(): that function
+    // removes the whole card when a status probe comes back empty, and renaming a palette is
+    // no reason to risk losing it.
+    const themeBtn = document.getElementById('btn-omarchy-theme');
+    if (themeBtn) themeBtn.textContent = omarchyButtonLabel(!!THEMES[OMARCHY_THEME_KEY], activeTheme === OMARCHY_THEME_KEY);
 });
 
 _omarchyThemeReady.then(initOmarchyCard).catch(() => {});
