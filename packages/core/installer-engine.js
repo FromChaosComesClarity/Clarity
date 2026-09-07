@@ -130,6 +130,19 @@ function sanitizeLogName(title) {
     return (title || 'unknown').replace(/[^a-zA-Z0-9_\-]/g, '_').replace(/_+/g, '_').replace(/^_|_$/g, '').slice(0, 80) || 'unknown';
 }
 
+// The `$ ...` line at the top of a launch log is read by a person working out why a game did
+// not start, and it is the first thing they trust. Joining argv with spaces makes one argument
+// that holds a space look like two, so `-file "mods/Brutal Doom/x.pk3"` prints as `-file
+// mods/Brutal Doom/x.pk3` and reads as a quoting bug in the launcher. The spawn is an argv
+// array and was always correct; this is about the line saying so, and staying pasteable into a
+// shell when someone wants to run it by hand.
+function quoteArg(value) {
+    const s = String(value);
+    return s !== '' && !/[\s"'\\$`!*?~<>|&;()#]/.test(s) ? s : `"${s.replace(/(["\\$`])/g, '\\$1')}"`;
+}
+
+const commandLine = (cmd, args) => [cmd, ...(args || [])].map(quoteArg).join(' ');
+
 function expandTilde(p) {
     if (!p) return p;
     if (p === '~') return HOME;
@@ -931,7 +944,7 @@ async function launchGame(gameId, opts = {}) {
         if (!onOutput && launchLogPath) {
             try {
                 logFd = fs.openSync(launchLogPath, 'w');
-                fs.writeSync(logFd, `$ ${cmd} ${args.join(' ')}\n\n`);
+                fs.writeSync(logFd, `$ ${commandLine(cmd, args)}\n\n`);
             } catch { logFd = null; }
         }
         const spawnOpts = onOutput
@@ -947,7 +960,7 @@ async function launchGame(gameId, opts = {}) {
         try { _onGameSession(true, { gameId, title: game.title || '' }); } catch {}
         proc.once('exit', () => { try { _onGameSession(false, { gameId, title: game.title || '' }); } catch {} });
         proc.once('error', () => { try { _onGameSession(false, { gameId, title: game.title || '' }); } catch {} });
-        if (onOutput) streamOutput(proc, `$ ${cmd} ${args.join(' ')}\n`);
+        if (onOutput) streamOutput(proc, `$ ${commandLine(cmd, args)}\n`);
         if (cometProc) proc.once('exit', () => { try { cometProc.kill('SIGTERM'); } catch {} });
 
         if (!onOutput) {
