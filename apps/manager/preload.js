@@ -272,8 +272,5 @@ contextBridge.exposeInMainWorld('api', {
                                 // --- WINDOW CONTROLS ---
                                 minimizeApp: () => ipcRenderer.send('window-minimize'),
                                 maximizeApp: () => ipcRenderer.send('window-maximize'),
-                                closeApp: () => ipcRenderer.send('window-close'),
-
-                                // --- COMMAND BAR ---
-                                runShellCmd: (cmd) => ipcRenderer.invoke('run-shell-cmd', cmd)
+                                closeApp: () => ipcRenderer.send('window-close')
 });
