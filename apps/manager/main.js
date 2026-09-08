@@ -399,6 +399,32 @@ function spawnInstaller(subArgs) {
     return child;
 }
 
+// Fire-and-forget spawn of something the user asked for by pressing a button.
+//
+// ⚠️ spawn reports a missing OR non-executable binary through an ASYNCHRONOUS 'error' event,
+// never a throw, so a surrounding try/catch does not see it, and an unhandled 'error' on a
+// ChildProcess is fatal to the whole process. linux.js documents this trap for its own
+// optional tools; the same rule applies to anything launched from the interface.
+//
+// ⚠️ `fs.existsSync()` is not enough of a check on its own, which is what made this reachable:
+// it answers true for a file with no executable bit, and an AppImage downloaded without one is
+// the commonest mistake there is. The Manager exited on the spot instead of saying so.
+function spawnDetached(bin, args = [], opts = {}, onError = null) {
+    try {
+        const child = spawn(bin, args, { detached: true, stdio: 'ignore', ...opts });
+        child.on('error', err => {
+            console.error('[spawn]', bin, err && err.code ? err.code : err);
+            if (onError) { try { onError(err); } catch {} }
+        });
+        child.unref();
+        return child;
+    } catch (err) {
+        console.error('[spawn]', bin, err && err.message);
+        if (onError) { try { onError(err); } catch {} }
+        return null;
+    }
+}
+
 // Returns a Map<appId, installerId> from Installer's DB for installer:// launch routing
 function getInstallerMap() {
     const gdbPath = host.findInstallerDb(baseDir);
@@ -3384,10 +3410,12 @@ ipcMain.on('launch-couch', () => {
 ipcMain.on('launch-emulatte', () => {
     const p = findEmuLattePath();
     if (!p) return;
-    const child = spawn(p, [], { detached: true, stdio: 'ignore' });
-    child.unref();
+    // ⚠️ readdir found the file, which says nothing about whether it can be RUN.
+    let ok = true;
+    const child = spawnDetached(p, [], {}, () => { ok = false; });
+    if (!child) return;
     const win = BrowserWindow.getAllWindows()[0];
-    if (win) win.minimize();
+    if (win && ok) win.minimize();
 });
 
 ipcMain.handle('install-to-menu', () => {
@@ -4045,7 +4073,7 @@ ipcMain.on('launch-game', (event, cmd, launchArgs, executable) => {
             if (get('pico8_mute')          === '1') args.push('-volume', '0');
             if (get('pico8_pixel_perfect') === '1') args.push('-pixel_perfect', '1');
             if (get('pico8_joystick')      === '1') args.push('-joystick', '1');
-            spawn(bin, args, { detached: true, stdio: 'ignore' }).unref();
+            spawnDetached(bin, args);
         }
         return;
     }
@@ -4089,7 +4117,7 @@ ipcMain.handle('browse-pico8-binary', async () => {
 
 ipcMain.handle('launch-pico8-splore', () => {
     const bin = _getPico8Bin();
-    if (bin) spawn(bin, ['-splore'], { detached: true, stdio: 'ignore' }).unref();
+    if (bin) spawnDetached(bin, ['-splore']);
     return !!bin;
 });
 
@@ -5429,8 +5457,15 @@ ipcMain.handle('get-recently-imported', (_, limit) => {
 // ── COMMAND BAR SHELL LAUNCHER ────────────────────────────────────────────────
 ipcMain.handle('run-shell-cmd', async (_, cmdStr) => {
     const { execFileSync } = require('child_process');
-    const parts = cmdStr.trim().split(/\s+/);
+    // ⚠️ Quote-aware, because a plain split on whitespace loses the user's quoting.
+    // `gimp "/tmp/My File.png"` became the two arguments `"/tmp/My` and `File.png"`, literal
+    // quote characters and all, so the file never opened. It appeared to work for the TUI
+    // commands only by accident: that path rejoins the pieces and hands the whole line to
+    // bash, which parses the quoting again. The GUI path spawns argv directly and had no such
+    // luck, so the bar worked for `nvim` and silently failed for `gimp`.
+    const parts = customInstallers.parseArgs(cmdStr);
     const [cmd, ...args] = parts;
+    if (!cmd) return { ok: false, msg: 'nothing to run' };
 
     // Verify binary exists in PATH
     let binPath;
@@ -5481,7 +5516,9 @@ ipcMain.handle('run-shell-cmd', async (_, cmdStr) => {
         }
         if (!term) return { ok: false, msg: 'no terminal emulator found' };
 
-        const fullCmd = [cmd, ...args].join(' ');
+        // Re-quoted rather than re-joined: parseArgs stripped the quotes above, and pasting
+        // the bare pieces back together would hand bash a different command than was typed.
+        const fullCmd = installerEngine.commandLine(cmd, args);
         // Keep terminal open after the command exits so TUIs that close naturally
         // don't leave a ghost window, drop to an interactive shell instead.
         const bashInvoc = ['bash', '-c', `${fullCmd}; exec bash`];
@@ -5491,9 +5528,9 @@ ipcMain.handle('run-shell-cmd', async (_, cmdStr) => {
         else if (['kitty', 'foot'].includes(term)) termArgs = bashInvoc;
         else termArgs = ['-e', ...bashInvoc]; // alacritty, xterm, konsole, xfce4-terminal, x-terminal-emulator
 
-        spawn(term, termArgs, { detached: true, stdio: 'ignore' }).unref();
+        spawnDetached(term, termArgs);
     } else {
-        spawn(binPath, args, { detached: true, stdio: 'ignore' }).unref();
+        spawnDetached(binPath, args);
     }
 
     return { ok: true };
