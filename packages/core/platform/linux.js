@@ -190,8 +190,18 @@ function desktopDir() {
 function launcherFileName(id) { return `${id}.desktop`; }
 
 // entry: { id, name, comment, exec, args[], icon, categories[], keywords[], wmClass, extraLines[] }
+// ⚠️ Every argument is quoted individually, and a literal % is doubled.
+//
+// The exec was already quoted here and the arguments were not, so an argument holding a space
+// split into two the moment anything read the line back. The macOS backend, the same function
+// for the same `entry` shape, has always quoted each one. Linux was the odd one out.
+//
+// The % rule is the freedesktop spec's, not ours: in an Exec line % introduces a field code,
+// so a path containing one has to write it as %% or the launcher eats it.
+const desktopArg = a => '"' + String(a).replace(/(["$`\\])/g, '\\$1').replace(/%/g, '%%') + '"';
+
 function launcherContent(entry) {
-    const args = (entry.args || []).length ? ' ' + entry.args.join(' ') : '';
+    const args = (entry.args || []).length ? ' ' + entry.args.map(desktopArg).join(' ') : '';
     const lines = [
         '[Desktop Entry]', 'Version=1.0', 'Type=Application',
         `Name=${String(entry.name || '').replace(/[\r\n]/g, ' ')}`,
