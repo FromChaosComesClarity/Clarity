@@ -2076,6 +2076,7 @@ async function epicInstallInfo(appName) {
 module.exports = {
     init, setDb, ensureSchema, writeProgress,
     sanitizeLogName, expandTilde, resolvePathCaseInsensitive,
+    quoteArg, commandLine,
     which, findLegendary, findGogdl, findComet, findUmu, findWineCached, findRuntime,
     scanProtonVersions, resolveProton, isProtonDir, diagnoseLaunchFailure,
     GOG_CLIENT_ID, GOG_CLIENT_SECRET, GOG_REDIRECT_URI,
