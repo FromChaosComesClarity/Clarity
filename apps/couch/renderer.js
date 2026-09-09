@@ -1847,6 +1847,17 @@ async function refreshDatabase() {
       updateGalleryGamepageContent(galleryCurrentGame);
     }
   }
+  // The immersive gamepage has an action button too, and the classic page above is the
+  // only one that was ever re-read after a refresh. Install a game with this page open and
+  // the button went on saying INSTALL for something already installed.
+  // ⚠️ Re-look-up the row rather than reusing the object: `_cfgpGame` is the copy captured
+  // when the page opened, and Installed is exactly the field that just changed.
+  if (gameState === 'Couch_FGP' && _cfgpGame) {
+    _cfgpGame = allGames.find(g => g.id === _cfgpGame.id) || _cfgpGame;
+    _cfgpUpdatePlayButton(_cfgpGame);
+    _cfgpUpdateBadges(_cfgpGame);
+  }
+
   // `categories` is dynamic now (playlists / Recently Imported), so if a refresh
   // changed the set while we're on the start screen, rebuild it, otherwise the
   // carousel/list DOM desyncs from the category count.
@@ -3501,7 +3512,7 @@ function renderGalleryGrid() {
     if (game.LaunchCommand && String(game.LaunchCommand).trim()) {
       actionBtn = isInstalled
         ? `<button class="gcell-play-btn gcell-installed-btn">▶ ${t('status.installed')}</button>`
-        : `<button class="gcell-play-btn gcell-install-btn">⬇ ${t('status.install')}</button>`;
+        : `<button class="gcell-play-btn gcell-install-btn">${t('status.install')}</button>`;
     }
     const _gcellBadges = (game.Store ? String(game.Store).split(',') : []).map(s => s.trim()).filter(Boolean).map(s => { const l = getGalleryStoreLogo(s); return l ? `<div class="gcell-store-badge" style="-webkit-mask-image:url('${l}');"></div>` : ''; }).join('');
     const _gcellMacBadge = game.MacNative == 1 ? `<div class="gcell-store-badge" style="-webkit-mask-image:url('assets/logos/apple.png');" title="Runs natively on macOS"></div>` : '';
@@ -3511,7 +3522,7 @@ function renderGalleryGrid() {
       ? `<div class="gcell-cover-area"><img src="${imgSrc}" alt="" loading="lazy" decoding="async"></div>`
       : `<div class="gcell-cover-area"><div class="gcell-noart">${game.Game}</div></div>`;
     if (!actionBtn && isManualCategory(game)) {
-      actionBtn = `<button class="gcell-play-btn gcell-install-btn">⬇ ${t('status.install')}</button>`;
+      actionBtn = `<button class="gcell-play-btn gcell-install-btn">${t('status.install')}</button>`;
     }
     const f2pTag = game.FreeToPlay == 1 ? '<span class="gcell-f2p">FREE</span>' : '';
     const footerRow = (actionBtn || storeBadgeGroup || f2pTag) ? `<div class="gcell-footer-row">${actionBtn}${f2pTag}${storeBadgeGroup}</div>` : '';
@@ -3834,7 +3845,7 @@ function _cRenderGrid() {
     } else {
       const lock = document.createElement('div');
       lock.className = 'c-lock';
-      lock.textContent = '🔒';
+      lock.textContent = '';
       info.appendChild(lock);
     }
     card.appendChild(info);
@@ -3982,13 +3993,13 @@ function updateGalleryGamepageContent(game) {
       playBtn.dataset.installMode = '';
       playBtn.classList.remove('install-mode');
     } else {
-      playBtn.innerText = `⬇ ${t('status.install')}`;
+      playBtn.innerText = t('status.install');
       playBtn.dataset.installMode = '1';
       playBtn.classList.add('install-mode');
     }
   } else if (isManualCategory(game)) {
     playBtn.style.display = 'block';
-    playBtn.innerText = `⬇ ${t('status.install')}`;
+    playBtn.innerText = t('status.install');
     playBtn.dataset.installMode = 'add_cmd';
     playBtn.classList.add('install-mode');
   } else {
@@ -4352,6 +4363,30 @@ function closeCfgpDescOverlay() {
   gameState = 'Couch_FGP';
 }
 
+// The immersive gamepage's action button, pulled out of the open path so a refresh can
+// re-run it. Installing a game while its page is open changes what this button should say,
+// and re-opening the whole page to find that out would restart the trailer and the pan.
+function _cfgpUpdatePlayButton(game) {
+  const playBtn = document.getElementById('cfgp-btn-play');
+  if (!playBtn) return;
+  const _pHasCmd = game.LaunchCommand && String(game.LaunchCommand).trim();
+  const _pInst2 = game.Installed == null || game.Installed == 1;
+  if (_pHasCmd) {
+    playBtn.style.display = '';
+    if (_pInst2) { playBtn.innerText = t('html.btn_play'); playBtn.dataset.installMode = ''; playBtn.classList.remove('install-mode'); }
+    else { playBtn.innerText = t('status.install'); playBtn.dataset.installMode = '1'; playBtn.classList.add('install-mode'); }
+  } else if (isManualCategory(game)) {
+    playBtn.style.display = '';
+    playBtn.innerText = t('status.install');
+    playBtn.dataset.installMode = 'add_cmd';
+    playBtn.classList.add('install-mode');
+  } else {
+    playBtn.style.display = 'none';
+    playBtn.dataset.installMode = '';
+    playBtn.classList.remove('install-mode');
+  }
+}
+
 async function openCouchFlatGamepage(game) {
   _cfgpGame = game;
   gameState = 'Couch_FGP';
@@ -4453,23 +4488,7 @@ async function openCouchFlatGamepage(game) {
   _cfgpUpdateBadges(game);
 
   // Play / Install button, same logic as the classic gamepage
-  const playBtn = document.getElementById('cfgp-btn-play');
-  const _pHasCmd = game.LaunchCommand && String(game.LaunchCommand).trim();
-  const _pInst2 = game.Installed == null || game.Installed == 1;
-  if (_pHasCmd) {
-    playBtn.style.display = '';
-    if (_pInst2) { playBtn.innerText = t('html.btn_play'); playBtn.dataset.installMode = ''; playBtn.classList.remove('install-mode'); }
-    else { playBtn.innerText = `⬇ ${t('status.install')}`; playBtn.dataset.installMode = '1'; playBtn.classList.add('install-mode'); }
-  } else if (isManualCategory(game)) {
-    playBtn.style.display = '';
-    playBtn.innerText = `⬇ ${t('status.install')}`;
-    playBtn.dataset.installMode = 'add_cmd';
-    playBtn.classList.add('install-mode');
-  } else {
-    playBtn.style.display = 'none';
-    playBtn.dataset.installMode = '';
-    playBtn.classList.remove('install-mode');
-  }
+  _cfgpUpdatePlayButton(game);
 
   // Conditional bar buttons + FREE pill (mirror the Manager's hero row)
   const _cstL = (game.Store || '').toLowerCase();
