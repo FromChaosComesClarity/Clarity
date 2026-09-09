@@ -87,6 +87,19 @@ let db;
 
 function createWindow () {
     const win = new BrowserWindow({ width: 1280, height: 720, fullscreen: true, frame: false, backgroundColor: '#2C1E16', webPreferences: { preload: path.join(__dirname, 'preload.js'), contextIsolation: true, nodeIntegration: false, webSecurity: false } });
+    // ⚠️ Couch is a fullscreen face and has to stay one, or the immersion is gone.
+    //
+    // MEASURED on Hyprland, not assumed: ANY window mapping on this workspace drops Couch out
+    // of fullscreen (Hyprland's fullscreen goes 2 to 0), and the compositor never puts it
+    // back when that window closes. A game is exactly such a window, so returning from one
+    // left Couch sitting there tiled.
+    //
+    // Re-asserted on focus, because that is the moment a game exits and the compositor hands
+    // the screen back, and it does not depend on the player pressing the wake combo first.
+    // Electron's own isFullScreen() does track the compositor correctly here, so the guard
+    // makes this a no-op in the normal case, and a plain set is enough: no off-then-on
+    // toggle, which would flash.
+    win.on('focus', () => { if (!win.isFullScreen()) win.setFullScreen(true); });
     win.loadFile(path.join(__dirname, 'index.html')); win.webContents.on('did-finish-load', () => { win.webContents.insertCSS('* { cursor: none !important; }'); startSteamInstallWatcher(win); });
 }
 
@@ -522,6 +535,10 @@ ipcMain.on('force-focus', () => {
     if (win.isMinimized()) win.restore();
     win.show();
     win.focus();
+    // Explicitly too, not only through the focus handler above: this path runs when the
+    // player wakes Couch after a game, and the window may already hold focus, in which case
+    // no focus event fires and nothing would put fullscreen back.
+    if (!win.isFullScreen()) win.setFullScreen(true);
     app.focus({ steal: true }); // Electron's own steal flag, works on some Linux WMs
 
     // Visually pin on top, then release after the launcher has been pushed behind
