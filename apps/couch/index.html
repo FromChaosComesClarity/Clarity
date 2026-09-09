@@ -15,6 +15,11 @@
   }
   .jb-shell {
     height: 100%;
+    /* ⚠️ Without this the padding is ADDED to the 100%, so the shell is taller than the
+       screen it sits in, and .screen clips whatever hangs off the bottom. That is the
+       footer, every time. Measured at 1920x1080: a 1045px shell in a 993px viewport, with
+       the footer running from 990 to 1019, which is off the bottom edge. */
+    box-sizing: border-box;
     display: flex;
     flex-direction: column;
     padding: clamp(18px, 2.6vh, 42px) clamp(22px, 3vw, 56px);
@@ -118,7 +123,7 @@
   }
   .jb-queue::-webkit-scrollbar { display: none; }
 
-  .jb-foot { letter-spacing: 0.08em; }
+  .jb-foot { letter-spacing: 0.08em; flex-shrink: 0; }
 
     /* All fonts bundled locally (no network dependency), files in assets/fonts/. */
     @font-face { font-family: 'Raleway'; src: url('assets/fonts/Raleway-Regular.ttf') format('truetype'); font-weight: 400; }
@@ -868,7 +873,7 @@
           <button id="ggp-btn-want" class="ggp-btn">WANT TO PLAY</button>
           <button id="ggp-btn-playlist" class="ggp-btn">+ PLAYLIST</button>
           <button id="ggp-btn-steam" class="ggp-btn" style="display:none;">STEAM</button>
-          <button id="ggp-btn-trailer" class="ggp-btn" style="display:none;">🎬 WATCH TRAILER</button>
+          <button id="ggp-btn-trailer" class="ggp-btn" style="display:none;">WATCH TRAILER</button>
           <button id="ggp-btn-play" class="ggp-btn" style="display:none;">▶ PLAY</button>
         </div>
       </div>
@@ -903,7 +908,7 @@
       </div>
       <div id="ggp-slideshow" class="hidden">
         <div id="ggp-trailer-header">
-          <div id="ggp-trailer-label">🎬 TRAILER</div>
+          <div id="ggp-trailer-label">TRAILER</div>
           <div id="ggp-trailer-game-name"></div>
         </div>
         <img id="ggp-ss-img" src="" alt="">
