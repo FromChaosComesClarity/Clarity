@@ -1068,6 +1068,12 @@ async function launchGame(gameId, opts = {}) {
         catch (e) { console.error('[launch] New California fix failed:', e.message); }
     }
 
+    // Per-game fix (see applyFalloutLondonFix). Same reason and the same place as above.
+    if (isFalloutLondon(game) && installPath) {
+        try { applyFalloutLondonFix(installPath, prefix); }
+        catch (e) { console.error('[launch] Fallout: London fix failed:', e.message); }
+    }
+
     // Awaited so a host whose runtime needs a real async step before it can launch anything
     // (CrossOver: creating the game's bottle, first time only) isn't forced into blocking the
     // whole process synchronously to do it. A no-op for Linux, whose buildLaunch is plain sync.
@@ -1228,6 +1234,105 @@ async function injectGogRegistry(game, prefix, proton) {
         proc.on('close', () => { try { fs.unlinkSync(regFile); } catch {} resolve(); });
         proc.on('error', () => { try { fs.unlinkSync(regFile); } catch {} resolve(); });
     });
+}
+
+// ── Per-game fix: Fallout: London One-click Edition (GOG 1897848199) ─────────
+//
+// Same class of fault as New California above, and the same cause: gogdl downloads the depot
+// and never performs the finishing steps GOG's Windows installer would.
+//
+// Without them two things go wrong, and the player sees the second one first:
+//   • Loose file loading stays off, so a bundled checker puts up "Check if loose files
+//     enabled. PRKF will NOT works properly." and opens the ArchiveInvalidation page on
+//     Nexus. The game exits.
+//   • No Plugins.txt or DLCList.txt in AppData\Local\Fallout4, so London's plugins never
+//     load. Even a game that got past the checker would boot to music over a black screen.
+//
+// ⚠️ The [Archive] block has to reach Fallout4Custom.ini, NOT the Fallout4.ini that GOG's own
+// script targets. Measured on a real install: with the block only in Fallout4.ini the checker
+// still refused and still opened Nexus; the same block in Fallout4Custom.ini is what let the
+// game start, and it survives the INI rewriting Fallout 4 does on every launch. Custom is the
+// file the engine reads last, and the one every modding guide uses for exactly this reason.
+//
+// ⚠️ Copied only when absent, like New California's, because after the first run these hold
+// the player's own settings and re-copying would reset the game every launch. Custom.ini is
+// the exception: it is APPENDED to, and only when it carries no [Archive] of its own, so a
+// player who has already set this up by hand is left alone.
+const FL_APP_ID = '1897848199';
+
+// gog-support/<appId>/<source> → <windows user dir>/<destination>, mirroring the supportData
+// actions in goggame-1897848199.script.
+const FL_SUPPORT_FILES = [
+    ['docs/Fallout4.ini',                 'Documents/My Games/Fallout4/Fallout4.ini'],
+    ['docs/Fallout4Prefs.ini',            'Documents/My Games/Fallout4/Fallout4Prefs.ini'],
+    ['appdata/Plugins.txt',               'AppData/Local/Fallout4/Plugins.txt'],
+    ['appdata/DLCList.txt',               'AppData/Local/Fallout4/DLCList.txt'],
+    ['appdata/UserDownloadedContent.txt', 'AppData/Local/Fallout4/UserDownloadedContent.txt'],
+    ['appdata/Plugins.fo4viewsettings',   'AppData/Local/Fallout4/Plugins.fo4viewsettings'],
+];
+
+function isFalloutLondon(game) {
+    return (game?.store || '').toLowerCase() === 'gog' && String(game?.app_id) === FL_APP_ID;
+}
+
+// Lift [Archive] out of the INI GOG ships and put it where Fallout 4 will actually read it.
+function seedLooseFileSettings(supportDir, docsDir) {
+    let block = '';
+    try {
+        const src = fs.readFileSync(path.join(supportDir, 'docs', 'Fallout4.ini'), 'utf8');
+        const m = src.match(/^\[Archive\][^\[]*/mi);
+        if (!m) return false;
+        block = m[0].trimEnd().replace(/\r?\n/g, '\r\n');
+    } catch { return false; }
+
+    const custom = resolvePathCaseInsensitive(path.join(docsDir, 'Fallout4Custom.ini'))
+                || path.join(docsDir, 'Fallout4Custom.ini');
+    let existing = '';
+    try { existing = fs.readFileSync(custom, 'utf8'); } catch {}
+    if (/^\[Archive\]/mi.test(existing)) return false;      // the player's own, leave it
+
+    try {
+        fs.mkdirSync(path.dirname(custom), { recursive: true });
+        const gap = existing && !/\n$/.test(existing) ? '\r\n' : '';
+        fs.writeFileSync(custom, existing + gap + '\r\n' + block + '\r\n', 'utf8');
+        fs.chmodSync(custom, 0o644);   // the game rewrites this as it runs
+        return true;
+    } catch { return false; }
+}
+
+function applyFalloutLondonFix(installPath, prefix) {
+    const support = path.join(installPath, 'gog-support', FL_APP_ID);
+    if (!fs.existsSync(support)) return;   // not the GOG build this fix describes
+
+    // Every real user directory in the prefix, for the same reason as New California: Proton
+    // runs games as `steamuser`, a prefix built by bare wine uses the unix login name.
+    const usersRoot = path.join(prefix, 'drive_c', 'users');
+    let userDirs = [];
+    try {
+        userDirs = fs.readdirSync(usersRoot, { withFileTypes: true })
+            .filter(e => e.isDirectory() && e.name !== 'Public')
+            .map(e => path.join(usersRoot, e.name));
+    } catch {}
+    if (!userDirs.length) userDirs = [path.join(usersRoot, 'steamuser')];
+
+    let seeded = 0;
+    for (const userDir of userDirs) {
+        for (const [from, to] of FL_SUPPORT_FILES) {
+            const src = path.join(support, ...from.split('/'));
+            const dst = path.join(userDir, ...to.split('/'));
+            // Case-insensitive: the game writes FALLOUT4.INI, which on a case-sensitive
+            // filesystem is a different name from the Fallout4.ini we would copy.
+            if (!fs.existsSync(src) || fs.existsSync(resolvePathCaseInsensitive(dst))) continue;
+            try {
+                fs.mkdirSync(path.dirname(dst), { recursive: true });
+                fs.copyFileSync(src, dst);
+                fs.chmodSync(dst, 0o644);
+                seeded++;
+            } catch {}
+        }
+        if (seedLooseFileSettings(support, path.join(userDir, 'Documents', 'My Games', 'Fallout4'))) seeded++;
+    }
+    if (seeded) console.log(`[launch] Fallout: London, restored ${seeded} file(s) GOG's installer would have written`);
 }
 
 // ── Per-game fix: Fallout: New California (GOG 1168267909) ───────────────────
@@ -2086,6 +2191,7 @@ module.exports = {
     getDiskSpace, gogInstallInfo, epicInstallInfo, epicListUpdates, syncOwnedLibrary, cancelActiveInstall,
     gogListDlcs, gogInstalledDlcs,
     gogExchangeCode, gogStatus, gogLogout, epicAuthCode, epicStatus,
+    isFalloutLondon, applyFalloutLondonFix,
     findNativeDosbox, dosboxInstallHint, isGogDosGame, applyGogSupportFiles, engineSetting,
     findShippedWrappers,
     gogPlayTasks, setGogLaunchTarget,
