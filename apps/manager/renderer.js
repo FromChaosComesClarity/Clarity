@@ -4467,6 +4467,7 @@ function loadGames() {
                     currentPlaylistGames = await window.api.getPlaylistGames(currentPlaylistId);
                 }
                 applyFilters();
+                try { _paintBatchScope(); } catch {}   // the counts move whenever the library does
             } catch (e) { console.error('[loadGames]', e); }
             finally { resolvers.forEach(r => { try { r(); } catch {} }); }
         }, 80);
@@ -7605,7 +7606,59 @@ async function runBatchScrape(gamesToFetch, label) {
 }
 
 // Standalone button: scrape every game missing data
-document.getElementById('btn-batch-fetch').addEventListener('click', () => runBatchScrape(gamesMissingData(allGames), 'Batch Scrape'));
+// ── Batch scrape: which games are even considered ────────────────────────────
+// Two separate questions, and only the first one is new here.
+//   1. WHICH games: all of them, or only what is installed. A library with hundreds of owned
+//      but uninstalled titles made "scrape what's missing" a long job before it reached the
+//      handful you can actually play. The same choice the macOS edition gained.
+//   2. Which of those need anything. That is gamesMissingData(), unchanged: it already skips
+//      every row that has all its art and text.
+// "Installed" is isGameInstalled(), the rule the library's Installed filter uses, so "Installed
+// Only" scrapes exactly the games that filter shows.
+let _batchScope = 'all';
+
+function _batchScopeList() {
+    return _batchScope === 'installed' ? allGames.filter(isGameInstalled) : allGames;
+}
+
+// The skip in (2) used to be invisible: a run that correctly passed over almost everything
+// looked the same as a run that failed. The count is shown before it starts.
+function _paintBatchScope() {
+    const ctl = document.getElementById('batch-scope-control');
+    if (!ctl) return;
+    ctl.querySelectorAll('.batch-scope-btn').forEach(b => b.classList.toggle('active', b.dataset.val === _batchScope));
+    const hint = document.getElementById('batch-scope-hint');
+    if (!hint) return;
+    const inScope = _batchScopeList();
+    const need = gamesMissingData(inScope).length;
+    const installed = _batchScope === 'installed';
+    const vars = { n: need, total: inScope.length };
+    const pick = (key, count) => (count === 1 && t(`html.${key}_one`) !== `html.${key}_one`) ? `html.${key}_one` : `html.${key}`;
+    hint.textContent =
+        !inScope.length ? t(installed ? 'html.batch_scope_none_installed' : 'html.batch_scope_none')
+      : need === 0      ? t(pick(installed ? 'batch_scope_complete_installed' : 'batch_scope_complete', inScope.length), vars)
+      :                   t(pick(installed ? 'batch_scope_missing_installed' : 'batch_scope_missing', inScope.length), vars);
+}
+
+document.querySelectorAll('.batch-scope-btn').forEach(btn =>
+    btn.addEventListener('click', () => {
+        _batchScope = btn.dataset.val;
+        _paintBatchScope();
+        window.api.setSetting('batch_scrape_scope', _batchScope);
+    }));
+
+(async () => {
+    try {
+        const saved = await window.api.getSetting('batch_scrape_scope');
+        if (saved === 'all' || saved === 'installed') _batchScope = saved;
+    } catch {}
+    _paintBatchScope();
+})();
+
+// Standalone button: scrape every game in scope that is missing data
+document.getElementById('btn-batch-fetch').addEventListener('click', () => runBatchScrape(
+    gamesMissingData(_batchScopeList()),
+    _batchScope === 'installed' ? 'Batch Scrape (installed only)' : 'Batch Scrape'));
 
 document.getElementById('btn-check-install').addEventListener('click', async () => {
     const btn = document.getElementById('btn-check-install');
