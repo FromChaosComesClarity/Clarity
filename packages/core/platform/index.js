@@ -18,7 +18,9 @@
 const fs   = require('fs');
 const path = require('path');
 
-const BACKENDS = { linux: 'linux.js', darwin: 'darwin.js' };
+// Linux only. macOS is a separate repository now, Clarity-Mac, forked at v1.15.3; the two
+// editions diverge on purpose and nothing is merged between them.
+const BACKENDS = { linux: 'linux.js' };
 
 const file = BACKENDS[process.platform];
 if (!file || !fs.existsSync(path.join(__dirname, file))) {

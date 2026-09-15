@@ -147,15 +147,9 @@ function createWindow () {
         x = fits ? Math.round(wa.x + (wa.width  - width)  / 2) : undefined;
         y = fits ? Math.round(wa.y + (wa.height - height) / 2) : undefined;
     }
-    // macOS: keep the real traffic lights instead of the custom-drawn win-btn row, inset to
-    // sit inside our own #titlebar rather than Electron's default top-left corner. Every other
-    // host stays frame:false with the custom row, unchanged.
-    const chrome = process.platform === 'darwin'
-        ? { titleBarStyle: 'hidden', trafficLightPosition: { x: 12, y: 10 } }
-        : { frame: false };
     const win = new BrowserWindow({
         width, height, x, y,
-        ...chrome,
+        frame: false,
         show: false,
         backgroundColor: '#1a1210',
         webPreferences: {
@@ -342,8 +336,6 @@ app.whenReady().then(() => {
         try { db.prepare("ALTER TABLE games ADD COLUMN FreeToPlay INTEGER DEFAULT 0").run(); } catch(e) {} // 1 = Steam free-to-play (played-free-games)
         try { db.prepare("ALTER TABLE games ADD COLUMN Hidden INTEGER DEFAULT 0").run(); } catch(e) {}      // 1 = user-hidden from all library views
         try { db.prepare("ALTER TABLE games ADD COLUMN SaveDirOverride TEXT").run(); } catch(e) {}          // GOG save-game manager: user-picked save folder ("Locate saves…")
-        try { db.prepare("ALTER TABLE games ADD COLUMN MacNative INTEGER DEFAULT 0").run(); } catch(e) {}    // 1 = has a native macOS build (Steam platforms.mac, or GOG/Epic via library.db)
-        try { db.prepare("ALTER TABLE games ADD COLUMN MacNativeChecked INTEGER DEFAULT 0").run(); } catch(e) {} // 1 = already checked (Steam lookup is a live API call, never re-ask once answered)
         try { db.prepare(`CREATE TABLE IF NOT EXISTS save_backups (
             id INTEGER PRIMARY KEY AUTOINCREMENT, game_id INTEGER, path TEXT, created INTEGER, bytes INTEGER, source TEXT
         )`).run(); } catch(e) {}                                                                            // log of GOG save-zip backups (incl. pre-restore snapshots)
@@ -380,7 +372,7 @@ app.whenReady().then(() => {
     createWindow();
 });
 
-app.on('window-all-closed', () => { if (process.platform !== 'darwin') app.quit(); });
+app.on('window-all-closed', () => app.quit());
 
 // In the unified suite Installer is THIS binary invoked with a leading 'installer' arg,
 // there is no separate Installer.AppImage to locate, so this always resolves.
@@ -1061,9 +1053,8 @@ ipcMain.handle('set-game-display', (_, index) => {
 
 // ── Omarchy ──────────────────────────────────────────────────────────────────
 // A desktop-level integration, not a platform: host.id is still 'linux'. Both modules are
-// null on macOS and self-gating on Linux, so every handler here answers "not detected" on a
-// host that is not Omarchy rather than throwing. ⚠️ Optional chaining is not decoration,
-// desktop.displayPicker being null crashed this file once on macOS for want of exactly that.
+// self-gating, so every handler here answers "not detected" on a desktop that is not Omarchy
+// rather than throwing.
 const omarchy = host.desktop?.omarchy || null;
 
 ipcMain.handle('omarchy-status', () => {
@@ -1669,7 +1660,6 @@ ipcMain.handle('check-emulatte', () => !!findEmuLattePath());
 const getSteamLibraryPaths = () => host.steamLibraryPaths();
 function guessLauncherLabel(cmd) {
     if (!cmd) return 'Custom';
-    if (/^steambottle:\/\//i.test(cmd))           return 'Steam via CrossOver';
     if (/steam:\/\/rungameid/i.test(cmd))         return 'Steam';
     if (/installer:\/\/launch\/gog/i.test(cmd))      return 'GOG via Installer';
     if (/installer:\/\/launch\/epic/i.test(cmd))     return 'Epic via Installer';
@@ -1682,7 +1672,6 @@ function guessLauncherLabel(cmd) {
 
 // Which store a single launch command belongs to (null = manual/custom/emulator/etc.).
 function launcherStore(cmd) {
-    if (/^steambottle:\/\//i.test(cmd))          return 'steam';
     if (/steam:\/\/rungameid/i.test(cmd))        return 'steam';
     if (/installer:\/\/launch\/gog\//i.test(cmd))  return 'gog';
     if (/installer:\/\/launch\/epic\//i.test(cmd)) return 'epic';
@@ -2335,79 +2324,6 @@ function _diskStoreBucket(s) {
     if (s.includes('emulation')) return 'Emulation'; if (s.includes('physical')) return 'Physical'; if (s.includes('apps')) return 'Apps';
     if (s.includes('others')) return 'Others'; return 'Other';
 }
-// Which games have a native macOS build, Steam via its public store API (platforms.mac),
-// GOG/Epic via library.db's platform/platforms (already correctly tagged 'osx' there, see
-// darwin.js and the GOG_CATALOG_OS_ALIAS fix in installer-engine.js). Only meaningful on macOS;
-// gated by host.id so a Linux run of this same shared file never touches it.
-//
-// Steam's endpoint needs a live call per game with no bulk form, so results are cached in
-// MacNativeChecked and only re-asked with force. GOG/Epic reads are free (local library.db),
-// so those always refresh.
-let _macNativeScanRunning = false;
-ipcMain.handle('scan-mac-native', async (evt, opts) => {
-    if (host.id !== 'darwin') return { ok: false, error: 'macOS only.' };
-    if (!db) return { ok: false, error: 'Library not ready.' };
-    if (_macNativeScanRunning) return { ok: false, error: 'already_running' };
-    _macNativeScanRunning = true;
-    const force = !!(opts && opts.force);
-    const send = (scanned, total, label) => { try { evt.sender.send('mac-native-scan-progress', { scanned, total, label }); } catch {} };
-    try {
-        // GOG/Epic, free, local, always refreshed.
-        const gpath = host.findInstallerDb(baseDir);
-        const installerPlatforms = new Map();
-        if (gpath) {
-            try {
-                const gdb = new Database(gpath, { readonly: true, timeout: 5000 });
-                for (const r of gdb.prepare("SELECT id, platform, platforms FROM games").all())
-                    installerPlatforms.set(String(r.id), `${r.platform || ''},${r.platforms || ''}`);
-                gdb.close();
-            } catch {}
-        }
-        const installerRows = db.prepare("SELECT id, InstallerGameId FROM games WHERE InstallerGameId IS NOT NULL AND InstallerGameId != ''").all();
-        let updated = 0;
-        for (const g of installerRows) {
-            // library.db's own `id` column already carries the store_appid form ("gog_123…"),
-            // same as InstallerGameId itself, key on that directly, not the split appId (see
-            // disk-scan's installerPaths for the same lookup done right).
-            const blob = installerPlatforms.get(String(g.InstallerGameId)) || '';
-            const isMac = blob.split(',').map(s => s.trim()).includes('osx');
-            db.prepare("UPDATE games SET MacNative=?, MacNativeChecked=1 WHERE id=?").run(isMac ? 1 : 0, g.id);
-            updated++;
-        }
-
-        // Steam, one live lookup per game, only for what hasn't been asked yet (or `force`).
-        let steamRows = db.prepare(
-            `SELECT id, SteamAppID FROM games WHERE SteamAppID IS NOT NULL AND SteamAppID != '' AND SteamAppID != 'None'` +
-            (force ? '' : ' AND MacNativeChecked=0')
-        ).all();
-        const total = steamRows.length;
-        let scanned = 0;
-        for (const r of steamRows) {
-            scanned++;
-            const appId = String(r.SteamAppID).replace(/\.0+$/, '').trim();
-            send(scanned, total, `Checking Steam #${appId}…`);
-            let isMac = false;
-            try {
-                const res = await fetch(`https://store.steampowered.com/api/appdetails?appids=${appId}&filters=platforms`);
-                const j = await res.json();
-                isMac = !!j?.[appId]?.data?.platforms?.mac;
-            } catch {}
-            db.prepare("UPDATE games SET MacNative=?, MacNativeChecked=1 WHERE id=?").run(isMac ? 1 : 0, r.id);
-            updated++;
-            // Steam's public store API has no documented rate limit but is known to soft-throttle
-            // bursts, a small gap per call is cheap insurance against a scan of hundreds of games
-            // silently degrading into a wall of failed lookups partway through.
-            await new Promise(res => setTimeout(res, 150));
-        }
-        send(total, total, '');
-        return { ok: true, updated, macNative: db.prepare("SELECT COUNT(*) c FROM games WHERE MacNative=1").get().c };
-    } catch (e) {
-        return { ok: false, error: e.message };
-    } finally {
-        _macNativeScanRunning = false;
-    }
-});
-
 ipcMain.handle('disk-get', () => { try { const raw = db.prepare("SELECT value FROM settings WHERE key='disk_usage'").get()?.value; return raw ? JSON.parse(raw) : null; } catch { return null; } });
 ipcMain.handle('disk-scan', async () => {
     if (!db) return null;
@@ -2569,10 +2485,6 @@ function invalidateInstallerInstalledCache() {
 // (custom / emulator / manual, those key off "has a launch command" elsewhere).
 function launcherInstalled(cmd, steamAppId) {
     const c = cmd || '';
-    // Bottled Steam (macOS): the appmanifest lives inside a CrossOver bottle, which
-    // steamLibraryPaths() already reports, so the same install check answers for it.
-    const sb = host.parseSteamBottleCommand(c);
-    if (sb) return isSteamGameInstalled(sb.appId || steamAppId);
     const sm = c.match(/steam:\/\/rungameid\/(\d+)/i);
     if (sm) return isSteamGameInstalled(sm[1] || steamAppId);
     const gm = c.match(/installer:\/\/launch\/(gog|epic)\/([^"\s]+)/i);
@@ -2587,7 +2499,7 @@ function launcherInstalled(cmd, steamAppId) {
 // class this fixes and never overrides the GOG/Epic reconciler.
 function resolveInstallState(game) {
     const cmds = launchCmdsOf(game);
-    if (!cmds.some(c => /steam:\/\/rungameid/i.test(c) || /^steambottle:\/\//i.test(c))) return null;
+    if (!cmds.some(c => /steam:\/\/rungameid/i.test(c))) return null;
     let allTracked = true;
     for (const cmd of cmds) {
         const s = launcherInstalled(cmd, game.SteamAppID);
@@ -2629,72 +2541,13 @@ ipcMain.handle('verify-install-status', (e, gameId) => {
 // plus an appid (a mixed-store row whose Steam launcher is only implied, see expandLaunchers).
 const STEAM_FRONTING_SQL =
     "LaunchCommand LIKE '%steam://rungameid%' OR LaunchCommands LIKE '%steam://rungameid%' " +
-    "OR LaunchCommand LIKE '%steambottle://%' OR LaunchCommands LIKE '%steambottle://%' " +
     "OR (LOWER(Store) LIKE '%steam%' AND SteamAppID IS NOT NULL AND SteamAppID NOT IN ('', 'None'))";
-
-// ⚠️ A Steam game's launch command is not static on macOS. Install it into a CrossOver
-// bottle and it has to launch through that bottle; remove it from the bottle and it has to
-// go back to Mac Steam. host.steamLaunchCommand() already answers which is correct *right
-// now*, so reconciling is just "rewrite any stored Steam command that disagrees with it".
-//
-// This is what makes the feature work for rows that already existed: DOOM 64 was imported
-// from the Steam Web API long before the bottle did, so it carries `open steam://…`. The
-// appmanifest inside the bottle is real, so it would show as Installed and then fail to
-// launch against a Mac Steam that has never heard of it.
-//
-// ⚠️ Deliberately narrow: a row is only touched when a bottle is involved on one side or
-// the other. Rewriting every Steam command to whatever the platform would generate today
-// would clobber hand-edited commands, and would churn every row on Linux for nothing.
-function reconcileSteamBottleCommands() {
-    if (!db) return 0;
-    const isBottleCmd = c => /^steambottle:\/\//i.test(String(c || '').trim());
-    const isSteamCmd  = c => /steam:\/\/rungameid/i.test(String(c || '')) || isBottleCmd(c);
-    let changed = 0;
-    let rows = [];
-    try {
-        rows = db.prepare(
-            "SELECT id, SteamAppID, LaunchCommand, LaunchCommands FROM games " +
-            "WHERE SteamAppID IS NOT NULL AND SteamAppID NOT IN ('', 'None') AND LOWER(Store) LIKE '%steam%'"
-        ).all();
-    } catch (e) { return 0; }
-
-    for (const r of rows) {
-        const appId = String(r.SteamAppID).replace(/\.0+$/, '').trim();
-        if (!/^\d+$/.test(appId)) continue;
-        const want = host.steamLaunchCommand(appId);
-        // Only rows moving into or out of a bottle are our business.
-        if (!isBottleCmd(want) && !isBottleCmd(r.LaunchCommand) && !isBottleCmd(r.LaunchCommands)) continue;
-
-        let cmd = r.LaunchCommand, cmds = r.LaunchCommands, touched = false;
-        if (isSteamCmd(cmd) && cmd !== want) { cmd = want; touched = true; }
-        try {
-            const arr = JSON.parse(r.LaunchCommands || 'null');
-            if (Array.isArray(arr)) {
-                let n = false;
-                for (const l of arr) {
-                    if (l && isSteamCmd(l.cmd) && l.cmd !== want) { l.cmd = want; l.label = guessLauncherLabel(want); n = true; }
-                }
-                if (n) { cmds = JSON.stringify(arr); touched = true; }
-            }
-        } catch {}
-        if (touched) {
-            try {
-                db.prepare("UPDATE games SET LaunchCommand=?, LaunchCommands=? WHERE id=?").run(cmd, cmds, r.id);
-                console.log(`[steam-bottle] ${r.id} → ${cmd}`);
-                changed++;
-            } catch (e) {}
-        }
-    }
-    return changed;
-}
 
 // ── DYNAMIC INSTALL WATCHER ───────────────────────────────────────────────
 // Reconcile Installed for every Steam-fronting row (incl. mixed-store rows whose Steam
 // launcher lives in LaunchCommands, not the primary). Returns how many rows changed.
 function reconcileSteamInstalls() {
     if (!db) return 0;
-    // Commands first: install state is meaningless if the row would launch the wrong Steam.
-    reconcileSteamBottleCommands();
     let changed = 0;
     const games = db.prepare(
         "SELECT id, Store, SteamAppID, InstallerGameId, LaunchCommand, LaunchCommands, Installed FROM games " +
@@ -2755,10 +2608,6 @@ function launcherSchemeInstalled(cmd) {
     // steam:// can appear bare or wrapped ("steam steam://rungameid/123 -silent"), so match it
     // anywhere in the command rather than anchoring. isSteamGameInstalled() reads the
     // appmanifest, which is the same truth reconcileSteamInstalls() uses.
-    // A bottled Steam game answers from the same appmanifest, just one that lives
-    // inside a CrossOver bottle (steamLibraryPaths already returns those dirs).
-    const sb = host.parseSteamBottleCommand(c);
-    if (sb) { try { const v = isSteamGameInstalled(sb.appId); return v === null ? null : !!v; } catch { return null; } }
 
     const sm = c.match(/steam:\/\/rungameid\/(\d+)/i);
     if (sm) { try { const v = isSteamGameInstalled(sm[1]); return v === null ? null : !!v; } catch { return null; } }
@@ -3231,8 +3080,7 @@ ipcMain.handle('scan-updates', async (evt) => {
         let steamRows = [];
         try { steamRows = db.prepare(
             "SELECT id, Game, SteamAppID FROM games " +
-            "WHERE (LaunchCommand LIKE '%steam://rungameid%' OR LaunchCommands LIKE '%steam://rungameid%' " +
-            "   OR LaunchCommand LIKE '%steambottle://%' OR LaunchCommands LIKE '%steambottle://%') AND Installed=1"
+            "WHERE (LaunchCommand LIKE '%steam://rungameid%' OR LaunchCommands LIKE '%steam://rungameid%') AND Installed=1"
         ).all(); } catch {}
         for (const r of steamRows) {
             const appId = r.SteamAppID ? String(r.SteamAppID).replace(/\.0+$/, '').trim() : '';
@@ -4044,20 +3892,6 @@ ipcMain.on('launch-game', (event, cmd, launchArgs, executable) => {
         }
     }
 
-    // Steam game living inside a CrossOver bottle (macOS). Resolved here rather than
-    // stored as a literal wine invocation, so a CrossOver move or reinstall does not
-    // invalidate every command in the database.
-    const sBottle = host.parseSteamBottleCommand(cmd);
-    if (sBottle) {
-        const r = host.steamBottleLaunch(sBottle.bottle, sBottle.appId);
-        if (r && r.error) { console.error('[launch-game] bottled Steam:', r.error); reportLaunchFailure({ reason: { code: 'CROSSOVER_STEAM', message: r.error } }); }
-        else if (r) {
-            spawn(r.cmd, r.args, { env: { ...process.env, ...r.env }, detached: true, stdio: 'ignore' }).unref();
-            console.log('[launch-game] launched via', r.method);
-        }
-        return;
-    }
-
     // itch.io, hand the scheme to the desktop's opener (shell.openExternal rejects custom schemes)
     if (cmd.startsWith('itch://')) {
         host.desktop.openUrlScheme(cmd);
@@ -4648,8 +4482,7 @@ ipcMain.handle('sync-steam', async (event, steamId, apiKey) => {
             // entry that merely borrows a SteamAppID for artwork scraping.
             const steamRows = db.prepare(
                 "SELECT id, Store, LaunchCommand, LaunchCommands, SteamAppID, InstallerGameId FROM games " +
-                "WHERE LaunchCommand LIKE '%steam://rungameid%' OR LaunchCommands LIKE '%steam://rungameid%' " +
-                "   OR LaunchCommand LIKE '%steambottle://%' OR LaunchCommands LIKE '%steambottle://%'"
+                "WHERE LaunchCommand LIKE '%steam://rungameid%' OR LaunchCommands LIKE '%steam://rungameid%'"
             ).all();
             db.transaction(() => {
                 for (const row of steamRows) {

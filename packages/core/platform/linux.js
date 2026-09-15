@@ -90,9 +90,6 @@ const binDirName = 'linux';
 // Where the suite keeps user data. The AppImage is portable by design: the library sits
 // beside the file the user placed, so moving the AppImage moves the data with it. Falls
 // back to the packaged executable's directory, then to whatever the caller uses in dev.
-//
-// There is no equivalent on macOS, an .app in /Applications cannot keep user data inside
-// itself, so a darwin backend returns an absolute Library path and ignores devDir.
 function portableBaseDir({ isPackaged = false, execPath = '', devDir = '' } = {}) {
     if (process.env.APPIMAGE) return path.dirname(process.env.APPIMAGE);
     if (isPackaged && execPath) return path.dirname(execPath);
@@ -145,8 +142,7 @@ function dirSizeHumanCommand(target) {
     return { cmd: `du -sh "${target}" 2>/dev/null`, parse: out => String(out).split('\t')[0].trim() };
 }
 
-// legendary keeps its credentials and per-game metadata here. Not the same place on every
-// host: macOS puts it under ~/Library/Application Support.
+// legendary keeps its credentials and per-game metadata here.
 function legendaryConfigDir() { return path.join(HOME, '.config', 'legendary'); }
 
 // ── Desktop integration ──────────────────────────────────────────────────────
@@ -193,8 +189,7 @@ function launcherFileName(id) { return `${id}.desktop`; }
 // ⚠️ Every argument is quoted individually, and a literal % is doubled.
 //
 // The exec was already quoted here and the arguments were not, so an argument holding a space
-// split into two the moment anything read the line back. The macOS backend, the same function
-// for the same `entry` shape, has always quoted each one. Linux was the odd one out.
+// split into two the moment anything read the line back.
 //
 // The % rule is the freedesktop spec's, not ours: in an Exec line % introduces a field code,
 // so a path containing one has to write it as %% or the launcher eats it.
@@ -330,14 +325,6 @@ function steamLibraryPaths() {
 // How a Steam game is started here. Stored in the library as a launch command, so changing
 // it changes existing rows too, see the LIKE '%steam://rungameid%' queries in the Manager.
 function steamLaunchCommand(appId) { return `steam steam://rungameid/${appId} -silent`; }
-
-// Windows Steam inside a CrossOver bottle is a macOS-only arrangement: here a Windows
-// Steam game would run under Proton through the installer engine, not through a second
-// Steam. These exist so callers can ask on any platform without branching on host.id,
-// the same shape extraStore uses to say "not supported here".
-function steamBottleForApp()       { return null; }
-function parseSteamBottleCommand() { return null; }
-function steamBottleLaunch()       { return { error: 'Bottled Steam games are a macOS-only feature.' }; }
 
 // ── Other stores this host knows about ───────────────────────────────────────
 // Flatpak: games installed outside GOG/Epic/Steam that still announce themselves through a
@@ -1151,7 +1138,6 @@ module.exports = {
     installerDbCandidates, findInstallerDb, installerDbCreatePath,
     which, dirSizeBytesCommand, dirSizeHumanCommand, legendaryConfigDir,
     steamLibraryPaths, steamLaunchCommand, extraStore, desktop,
-    steamBottleForApp, steamBottleLaunch, parseSteamBottleCommand,
     nativeOsKey, gogdlPlatform, legendaryPlatform,
     launchNative, findNativeGameExe, findNativeInstallResult,
     dosbox,
