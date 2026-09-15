@@ -218,7 +218,19 @@
     "lbl_desc": "Description:",
     "chk_fav": "Favorite",
     "chk_want": "Want to Play",
-    "close": "Close"
+    "close": "Close",
+    "batch_scope_all": "All Games",
+    "batch_scope_installed": "Installed Only",
+    "batch_scope_none": "No games in the library yet.",
+    "batch_scope_none_installed": "No installed games.",
+    "batch_scope_missing": "{n} of {total} games are missing something; the rest are skipped.",
+    "batch_scope_missing_one": "{n} of {total} game is missing something.",
+    "batch_scope_missing_installed": "{n} of {total} installed games are missing something; the rest are skipped.",
+    "batch_scope_missing_installed_one": "{n} of {total} installed game is missing something.",
+    "batch_scope_complete": "All {total} games already have their data and art.",
+    "batch_scope_complete_one": "The only game already has its data and art.",
+    "batch_scope_complete_installed": "All {total} installed games already have their data and art.",
+    "batch_scope_complete_installed_one": "The only installed game already has its data and art."
   },
   "language": {
     "title": "Language",

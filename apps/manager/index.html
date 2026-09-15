@@ -2538,6 +2538,11 @@
           <div class="tool-card-title"><svg class="cp-tico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg><span data-i18n="html.card_library">Library</span></div>
           <button id="btn-update-library" class="primary" style="width: 100%; font-size: 12px; padding: 10px; letter-spacing: 1px;"><svg class="cp-bico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg><span data-i18n="html.btn_update_library">Update Library</span></button>
           <div id="update-library-status" style="font-size: 11px; font-weight: bold; color: #ffeb3b; min-height: 14px; line-height: 1.6;"></div>
+          <div class="segmented-control" id="batch-scope-control">
+            <button class="segmented-btn batch-scope-btn active" data-val="all" data-i18n="html.batch_scope_all">All Games</button>
+            <button class="segmented-btn batch-scope-btn" data-val="installed" data-i18n="html.batch_scope_installed">Installed Only</button>
+          </div>
+          <div id="batch-scope-hint" style="font-size:10px; color:var(--text_dim); text-align:center; min-height:13px; line-height:1.4;"></div>
           <button id="btn-batch-fetch" class="primary" style="width: 100%; font-size: 11px;"><svg class="cp-bico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="8 17 12 21 16 17"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.88 18.09A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.29"/></svg><span data-i18n="html.btn_batch_fetch">Batch Scrape Missing Data</span></button>
           <div id="batch-progress-wrap" style="display:none; width:100%; background: var(--bg); border-radius: 4px; height: 6px; overflow:hidden; margin-top: 2px;">
             <div id="batch-progress-fill" style="height:100%; width:0%; background: var(--accent); transition: width 0.2s linear;"></div>

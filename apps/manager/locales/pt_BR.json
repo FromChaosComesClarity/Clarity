@@ -218,7 +218,19 @@
     "lbl_desc": "Descrição:",
     "chk_fav": "Favorito",
     "chk_want": "Quero Jogar",
-    "close": "Fechar"
+    "close": "Fechar",
+    "batch_scope_all": "Todos os Jogos",
+    "batch_scope_installed": "Só Instalados",
+    "batch_scope_none": "Ainda não há jogos na biblioteca.",
+    "batch_scope_none_installed": "Nenhum jogo instalado.",
+    "batch_scope_missing": "{n} de {total} jogos estão sem algo; o resto é pulado.",
+    "batch_scope_missing_one": "{n} de {total} jogo está sem algo.",
+    "batch_scope_missing_installed": "{n} de {total} jogos instalados estão sem algo; o resto é pulado.",
+    "batch_scope_missing_installed_one": "{n} de {total} jogo instalado está sem algo.",
+    "batch_scope_complete": "Os {total} jogos já têm dados e imagens.",
+    "batch_scope_complete_one": "O único jogo já tem dados e imagens.",
+    "batch_scope_complete_installed": "Os {total} jogos instalados já têm dados e imagens.",
+    "batch_scope_complete_installed_one": "O único jogo instalado já tem dados e imagens."
   },
   "language": {
     "title": "Idioma",
