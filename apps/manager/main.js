@@ -1215,7 +1215,9 @@ ipcMain.handle('custom-install-pick', async (_, recipeId) => {
     const res = await dialog.showOpenDialog(parent, {
         title: recipe ? `Select the ${recipe.title} download` : 'Select the download',
         // Some projects ship a setup.exe rather than an archive; it is unpacked, not run.
-        filters: [{ name: 'Downloads', extensions: ['zip', '7z', 'rar', 'exe', 'tar', 'gz', 'xz'] }],
+        // The list is asked of the catalogue rather than written out here, so a recipe that
+        // accepts a new format (a bare .pk3 already did) is selectable without touching this.
+        filters: [{ name: 'Downloads', extensions: customInstallers.archiveExtensions() }],
         properties: ['openFile'],
     });
     if (res.canceled || !res.filePaths.length) return { ok: false, canceled: true };
