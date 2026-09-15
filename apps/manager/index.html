@@ -1083,6 +1083,42 @@
 
     /* ── GAMEPAGE: floating PLAY/INSTALL button ─────────────────────────────── */
     #btn-gamepage-play { position:fixed !important; bottom:28px; right:28px; font-size:18px !important; padding:14px 36px !important; border-radius:50px !important; box-shadow:0 8px 28px rgba(0,0,0,0.7) !important; letter-spacing:2px !important; z-index:50; }
+
+    /* ── Library report ─────────────────────────────────────────────────── */
+    #modal-report .rp-box { width: min(1480px, 95vw); height: 90vh; padding: 0; gap: 0; display: grid; grid-template-columns: 380px 1fr; overflow: hidden; }
+    #modal-report .rp-side { display: flex; flex-direction: column; min-height: 0; border-right: 1px solid var(--border_solid); }
+    #modal-report .rp-head { display: flex; align-items: center; justify-content: space-between; padding: 22px 22px 14px; }
+    #modal-report .rp-head h3 { margin: 0; color: var(--accent); text-transform: uppercase; letter-spacing: 2px; font-size: 15px; }
+    #modal-report .rp-x { background: transparent; border: 1px solid var(--border_solid); color: var(--text_sec); width: 30px; height: 30px; padding: 0; border-radius: 6px; font-size: 16px; line-height: 1; }
+    #modal-report .rp-scroll { flex: 1; min-height: 0; overflow-y: auto; padding: 4px 22px 16px; display: flex; flex-direction: column; gap: 8px; }
+    /* A flex column shrinks its children when the panel is shorter than its content, and the
+       segmented controls clip their overflow, so without this they collapse to a 2px line. */
+    #modal-report .rp-scroll > * { flex-shrink: 0; }
+    #modal-report .rp-lbl { font-size: 10px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--text_dim); margin-top: 10px; display: block; }
+    #modal-report .rp-row { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+    #modal-report .rp-link { background: none; border: 0; padding: 0 0 0 12px; color: var(--accent); font-size: 11px; letter-spacing: 1px; text-transform: uppercase; cursor: pointer; }
+    #modal-report .rp-sections { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+    #modal-report .rp-sec { display: flex; align-items: center; gap: 8px; padding: 6px 9px; line-height: 1.25; border: 1px solid var(--border_solid); border-radius: 6px; font-size: 12px; color: var(--text_main); cursor: pointer; user-select: none; background: rgba(0,0,0,0.15); }
+    #modal-report .rp-sec input { accent-color: var(--accent); margin: 0; }
+    #modal-report .rp-sec.on { border-color: var(--accent); }
+    #modal-report .rp-sec.off { opacity: 0.42; cursor: not-allowed; }
+    #modal-report .rp-styles { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+    #modal-report .rp-style { display: flex; flex-direction: column; gap: 6px; align-items: stretch; padding: 6px; border: 1px solid var(--border_solid); border-radius: 8px; background: transparent; color: var(--text_sec); font-size: 10px; letter-spacing: .5px; cursor: pointer; }
+    #modal-report .rp-style.active { border-color: var(--accent); color: var(--text_main); box-shadow: 0 0 0 1px var(--accent) inset; }
+    #modal-report .rp-swatch { height: 34px; border-radius: 5px; position: relative; overflow: hidden; }
+    #modal-report .rp-swatch i { position: absolute; left: 7px; bottom: 7px; width: 55%; height: 5px; border-radius: 3px; }
+    #modal-report .rp-hint { font-size: 11px; color: var(--text_dim); line-height: 1.5; margin: 4px 0 0; }
+    #modal-report .rp-check { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--text_main); margin-top: 12px; cursor: pointer; }
+    #modal-report .rp-check input { accent-color: var(--accent); margin: 0; }
+    #modal-report .rp-actions { display: grid; gap: 8px; padding: 14px 22px 6px; border-top: 1px solid var(--border_solid); }
+    #modal-report .rp-actions button { width: 100%; font-size: 12px; padding: 11px; letter-spacing: 1px; }
+    #modal-report .rp-status { font-size: 11px; color: var(--text_sec); min-height: 30px; margin: 0; padding: 4px 22px 16px; line-height: 1.45; word-break: break-all; }
+    #modal-report .rp-status.err { color: #ef5350; }
+    #modal-report .rp-preview { position: relative; min-width: 0; min-height: 0; background: repeating-conic-gradient(rgba(255,255,255,0.025) 0 25%, transparent 0 50%) 0 0 / 22px 22px, rgba(0,0,0,0.35); }
+    #modal-report .rp-stage { position: absolute; inset: 0; overflow: hidden; display: grid; place-items: center; }
+    #modal-report .rp-stage iframe { border: 0; background: transparent; transform-origin: 0 0; position: absolute; left: 0; top: 0; }
+    #modal-report .rp-empty { position: absolute; inset: 0; display: grid; place-items: center; color: var(--text_dim); font-size: 13px; padding: 40px; text-align: center; }
+    #modal-report .rp-busy { position: absolute; right: 16px; top: 14px; font-size: 10px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--text_dim); }
   </style>
   <!-- ── Pre-paint state ────────────────────────────────────────────────────────
        ⚠️ Everything here exists to stop the window being shown mid-transformation. The
@@ -2650,6 +2686,12 @@
           <div id="dosbox-status" style="font-size: 11px; text-align: center; min-height: 15px; margin-top: 6px;"></div>
         </div>
 
+        <div class="tool-card tools-section" data-search="report stats statistics share social post export pdf image images poster cards carousel wrapped summary most played achievements">
+          <div class="tool-card-title"><svg class="cp-tico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><rect x="7" y="12" width="3" height="6"/><rect x="12" y="8" width="3" height="10"/><rect x="17" y="5" width="3" height="13"/></svg><span data-i18n="report.ui.card_title">Library Report</span></div>
+          <div style="font-size: 11px; color: var(--text_dim); line-height: 1.5; margin-bottom: 2px;" data-i18n="report.ui.card_hint">Turn your library into a report: most played, genres, achievements, the pile of shame and more. Save it as a web page, a PDF or images ready to post.</div>
+          <button id="btn-open-report" class="primary" style="width: 100%; font-size: 12px; padding: 10px; letter-spacing: 1px;"><svg class="cp-bico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><rect x="7" y="12" width="3" height="6"/><rect x="12" y="8" width="3" height="10"/><rect x="17" y="5" width="3" height="13"/></svg><span data-i18n="report.ui.open">Create a Report</span></button>
+        </div>
+
         <div class="tool-card tools-section" data-search="genre genres category categorise categorize arpg crpg fps rpg racing shooter tag tags classify sort">
           <div class="tool-card-title"><svg class="cp-tico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41 13.42 20.58a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><circle cx="7" cy="7" r="1.4" fill="currentColor"/></svg><span data-i18n="html.card_genres">Game Genres</span></div>
           <div style="font-size: 11px; color: var(--text_dim); line-height: 1.5; margin-bottom: 2px;" data-i18n="html.genres_hint">Sort your library into real genres, ARPG, CRPG, FPS, Metroidvania, Racing, using the tags players voted on, so you can filter by what a game actually <i>is</i>. Anything you set by hand is never overwritten.</div>
@@ -3058,6 +3100,54 @@
     </div>
   </div>
 
+
+  <div id="modal-report" class="modal-overlay">
+    <div class="modal-box rp-box" role="dialog" aria-labelledby="rp-heading">
+      <div class="rp-side">
+        <div class="rp-head"><h3 id="rp-heading" data-i18n="report.ui.modal_title">Library Report</h3><button id="rp-close" class="rp-x" aria-label="Close">&#10005;</button></div>
+        <div class="rp-scroll">
+          <label class="rp-lbl" for="rp-title" data-i18n="report.ui.title_label">Title</label>
+          <input id="rp-title" type="text" maxlength="60">
+          <label class="rp-lbl" for="rp-subtitle" data-i18n="report.ui.subtitle_label">Subtitle</label>
+          <input id="rp-subtitle" type="text" maxlength="60" data-i18n-ph="report.ui.subtitle_placeholder" placeholder="Your name or @handle">
+          <span class="rp-lbl" data-i18n="report.ui.format">Format</span>
+          <div class="segmented-control" id="rp-format">
+            <button class="segmented-btn" data-val="document" data-i18n="report.ui.format_document">Document</button>
+            <button class="segmented-btn" data-val="poster" data-i18n="report.ui.format_poster">Poster</button>
+            <button class="segmented-btn" data-val="cards" data-i18n="report.ui.format_cards">Cards</button>
+          </div>
+          <p id="rp-format-hint" class="rp-hint"></p>
+          <div id="rp-size-wrap">
+            <span class="rp-lbl" data-i18n="report.ui.size">Size</span>
+            <div class="segmented-control" id="rp-size">
+              <button class="segmented-btn" data-val="portrait" data-i18n="report.ui.size_portrait">Portrait 4:5</button>
+              <button class="segmented-btn" data-val="square" data-i18n="report.ui.size_square">Square</button>
+              <button class="segmented-btn" data-val="story" data-i18n="report.ui.size_story">Story 9:16</button>
+              <button class="segmented-btn" data-val="landscape" data-i18n="report.ui.size_landscape">Landscape 16:9</button>
+            </div>
+          </div>
+          <span class="rp-lbl" data-i18n="report.ui.style">Style</span>
+          <div id="rp-styles" class="rp-styles"></div>
+          <div class="rp-row"><span class="rp-lbl" data-i18n="report.ui.sections">What to include</span><span><button id="rp-all" class="rp-link" data-i18n="report.ui.select_all">All</button><button id="rp-none" class="rp-link" data-i18n="report.ui.select_none">None</button></span></div>
+          <div id="rp-sections" class="rp-sections"></div>
+          <span class="rp-lbl" data-i18n="report.ui.recent_window">Recently played covers</span>
+          <div class="segmented-control" id="rp-recent">
+            <button class="segmented-btn" data-val="30">30</button>
+            <button class="segmented-btn" data-val="90">90</button>
+            <button class="segmented-btn" data-val="365">365</button>
+          </div>
+          <label class="rp-check"><input type="checkbox" id="rp-pico8"><span data-i18n="report.ui.include_pico8">Include PICO-8 carts</span></label>
+        </div>
+        <div class="rp-actions" id="rp-actions"></div>
+        <p id="rp-status" class="rp-status" aria-live="polite"></p>
+      </div>
+      <div class="rp-preview">
+        <div id="rp-stage" class="rp-stage"><iframe id="rp-frame" title="Preview"></iframe></div>
+        <div id="rp-empty" class="rp-empty" hidden></div>
+        <span id="rp-busy" class="rp-busy" hidden></span>
+      </div>
+    </div>
+  </div>
 
   <div id="modal-hidden-games" class="modal-overlay">
     <div class="modal-box" style="max-width: 560px; width: 560px; max-height: 82vh;">
