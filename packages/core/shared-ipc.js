@@ -110,8 +110,8 @@ function registerSharedHandlers(ctx) {
     // resolves to null there and the couch face silently falls back to its default, so a
     // user matching their desktop on one face would stop matching it on the other.
     //
-    // ⚠️ Null on macOS, and self-gating on Linux: on a host that is not Omarchy this
-    // answers "unavailable" and every face carries on with its own themes.
+    // Self-gating: on a desktop that is not Omarchy this answers "unavailable" and every face
+    // carries on with its own themes.
     const omarchyTheme = host.desktop?.omarchyTheme || null;
     ipcMain.handle('omarchy-theme', () => omarchyTheme?.describe?.() || { available: false, name: '', theme: null, mode: '' });
 

@@ -14,12 +14,6 @@ assets/bin/linux/yt-dlp
 assets/bin/linux/gogdl
 assets/bin/linux/legendary
 assets/bin/linux/comet
-assets/bin/darwin-arm64/ffmpeg
-assets/bin/darwin-arm64/ffprobe
-assets/bin/darwin-arm64/yt-dlp
-assets/bin/darwin-arm64/gogdl
-assets/bin/darwin-arm64/legendary
-assets/bin/darwin-arm64/comet
 
 # Couch wallpapers (272M), too large for git; become a first-run download pack (Phase 3b)
 apps/couch/assets/wallpapers/

@@ -17,8 +17,7 @@
     "pack": "electron-builder --dir",
     "predist": "node scripts/fetch-binaries.mjs",
     "dist": "electron-builder --linux AppImage",
-    "postdist": "node scripts/deploy-appimage.mjs",
-    "dist:mac": "electron-builder --mac"
+    "postdist": "node scripts/deploy-appimage.mjs"
   },
   "author": "J.R.A.",
   "license": "GPL-3.0-or-later",
@@ -72,38 +71,6 @@
       "!apps/couch/assets/wallpapers/**",
       "!**/GameManagerConfig/**",
       "!**/InstallerConfig/**"
-    ],
-    "mac": {
-      "target": [
-        {
-          "target": "dmg",
-          "arch": [
-            "arm64"
-          ]
-        },
-        {
-          "target": "zip",
-          "arch": [
-            "arm64"
-          ]
-        }
-      ],
-      "category": "public.app-category.games",
-      "icon": "apps/manager/assets/icons/Clarity.icns",
-      "artifactName": "Clarity-${arch}.${ext}",
-      "identity": null,
-      "extraResources": [
-        {
-          "from": "assets/bin/darwin-arm64",
-          "to": "assets/bin/darwin-arm64",
-          "filter": [
-            "**/*"
-          ]
-        }
-      ]
-    },
-    "dmg": {
-      "artifactName": "Clarity.dmg"
-    }
+    ]
   }
 }

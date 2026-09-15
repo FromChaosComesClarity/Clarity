@@ -4,9 +4,9 @@
 
 ### *the game manager for Omarchy*
 
-![version](https://img.shields.io/badge/version-1.14.0-2fe0d6?style=flat-square)
+![version](https://img.shields.io/github/v/release/FromChaosComesClarity/Clarity?label=version&color=2fe0d6&style=flat-square)
 ![status](https://img.shields.io/badge/status-Experimental-ff5fa2?style=flat-square)
-![platform](https://img.shields.io/badge/platform-Linux%20%7C%20macOS-0e1113?style=flat-square)
+![platform](https://img.shields.io/badge/platform-Linux-0e1113?style=flat-square)
 ![license](https://img.shields.io/badge/license-GPL--3.0-2fe0d6?style=flat-square)
 
 </div>
@@ -17,8 +17,9 @@ mods, in one place. One AppImage, three faces, no cloud, no launcher farm.
 **2.0 is what this is becoming.** What you can download today is used daily on the machine it
 is built on, and still rough in places. There is no date on 2.0.
 
-macOS builds are attached to the same release, one version behind, because the Mac cannot be
-packaged from Linux.
+This is the Linux edition. macOS lives in its own repository,
+[Clarity-Mac](https://github.com/FromChaosComesClarity/Clarity-Mac), forked from here at v1.15.3.
+The two diverge on purpose and nothing is merged between them.
 
 ## The three faces
 
@@ -56,12 +57,12 @@ npm install
 npm run dist        # → dist/Clarity.AppImage
 ```
 
-Needs Node 22. `npm run dist:mac` builds the macOS pair, and only runs on a Mac.
+Needs Node 22.
 
 ## Documentation
 
-The manual ships **inside the app**, under Menu → Manual. Deeper notes on the port catalogue,
-per-game fixes and the macOS build live in [`docs/`](docs/) and on the
+The manual ships **inside the app**, under Menu → Manual. Deeper notes on the port catalogue
+and per-game fixes live in [`docs/`](docs/) and on the
 [website](https://fromchaoscomesclarity.github.io/ClarityWebSite/).
 
 ## Support it

@@ -1172,13 +1172,10 @@ async function openInstallerInstall(game) {
     $('gi-cancel').textContent = 'Cancel';
     modal.classList.add('active');
 
-    // Platform choice, only for GOG games that ship BOTH a native build for this host and a
-    // Windows build. The native key varies by host (gogdl calls it 'linux' on Linux, 'osx' on
-    // macOS), hardcoding 'linux' here meant a Mac-native GOG game never got offered its own
-    // native build at all: hasChoice stayed false, so the platform silently fell through to
-    // whatever library.db already had (usually fine) rather than ever being a real choice.
-    const nativeKey   = window.api.platform === 'darwin' ? 'osx' : 'linux';
-    const nativeLabel = window.api.platform === 'darwin' ? 'Mac Native' : 'Linux Native';
+    // Platform choice, only for GOG games that ship BOTH a native Linux build and a Windows
+    // build.
+    const nativeKey   = 'linux';
+    const nativeLabel = 'Linux Native';
     let selectedPlatform;
     let hasChoice = false;
     const platRow = $('gi-platform-row');
@@ -1327,8 +1324,7 @@ async function showLaunchFailure(info) {
     $('pr-step').textContent = ''; $('pr-progress-msg').textContent = '';
     // Only offer to install a Windows runtime when the failure is actually about one missing,
     // this used to show unconditionally, so a completely unrelated failure (a stale library.db
-    // lookup, a bad path) still offered "Install GE-Proton" as if that would fix it. Confusing
-    // on Linux; actively wrong on macOS, where GE-Proton isn't a concept that exists at all.
+    // lookup, a bad path) still offered "Install GE-Proton" as if that would fix it.
     $('pr-install').style.display = isProtonIssue ? '' : 'none';
     $('pr-install').disabled = false;
     $('pr-install').textContent = 'Install GE-Proton';
@@ -1584,7 +1580,7 @@ function isGameInstalled(g) {
     return !!g && !!g.LaunchCommand && (g.Installed == null || g.Installed == 1);
 }
 
-const QUALIFIER_FILTERS = new Set(['installed','favs','want','playable','mac-native','crossover']);
+const QUALIFIER_FILTERS = new Set(['installed','favs','want','playable']);
 
 // ── Genres ───────────────────────────────────────────────────────────────────
 // The vocabulary lives in packages/core/genres.js and arrives via the genre-list IPC,
@@ -1974,10 +1970,6 @@ function getSafePath(rawPath) {
 }
 
 // --- WINDOW CONTROLS ---
-// macOS gets the real traffic lights (see main.js's titleBarStyle:'hidden'); the custom row
-// stays hidden there via body.platform-darwin in CSS rather than removed, so nothing else that
-// queries #btn-min/#btn-max/#btn-close has to know the host differs.
-if (window.api.platform === 'darwin') document.body.classList.add('platform-darwin');
 document.getElementById('btn-min').addEventListener('click', () => window.api.minimizeApp());
 document.getElementById('btn-max').addEventListener('click', () => window.api.maximizeApp());
 document.getElementById('btn-close').addEventListener('click', () => window.api.closeApp());
@@ -2087,71 +2079,6 @@ document.getElementById('btn-close-free-games')?.addEventListener('click', () =>
     document.getElementById('modal-free-games')?.classList.remove('active'));
 document.getElementById('modal-free-games')?.addEventListener('click', (e) => {
     if (e.target.id === 'modal-free-games') e.currentTarget.classList.remove('active');
-});
-
-// ── MAC-NATIVE FILTER (macOS only) ──────────────────────────────────────────
-// Which games have a real macOS build vs. Windows-only. GOG/Epic are tagged from library.db
-// (free, local); Steam needs a live per-game lookup, so it's a user-triggered scan rather than
-// something that runs on every sync, see scan-mac-native in main.js. The filter itself is just
-// another qualifier in activeFilters (see QUALIFIER_FILTERS/applyFilters), reachable from the
-// same "ALL GAMES ▾" dropdown Favourites/Want/Installed already live in, not a bespoke toggle,
-// so it's exactly as easy to find as those.
-function isMacNative(game) { return game && (game.MacNative == 1); }
-if (window.api.platform === 'darwin') {
-    document.getElementById('mac-native-tool-card')?.style.setProperty('display', '');
-} else {
-    // Not meaningful data on any other host, so REMOVE both surfaces rather than hide them.
-    // Hiding is not enough in either case, for the same underlying reason: several code paths
-    // walk the DOM instead of reading CSS. enhanceSelect()'s popup reads sel.options directly,
-    // and the Control Panel used to reset `display` on EVERY .tools-section in three places
-    // (openToolsModal, closeTools, and the search filter), which silently un-did the inline
-    // display:none this card ships with the moment the panel was opened. Those three resets
-    // are gone as of wave 2A. That shipped in 1.8.0:
-    // Linux users saw a "Mac-Native Games" card offering a scan the backend refuses anyway
-    // (scan-mac-native is gated on host.id === 'darwin').
-    document.getElementById('gallery-category-mac-native')?.remove();
-    document.getElementById('mac-native-tool-card')?.remove();
-}
-// ── STEAM-VIA-CROSSOVER FILTER (macOS only) ─────────────────────────────────
-// A Windows Steam game the user installed into a CrossOver bottle. Deliberately derived
-// from the launch command rather than a stored column: the command is already reconciled
-// against what is really on disk (see reconcileSteamBottleCommands in main.js), so there is
-// no second piece of state to keep in sync, and a game that leaves the bottle stops being
-// tagged the moment its command is rewritten back.
-//
-// This is the opposite of Mac-Native, and both can be on screen at once: one says "a real
-// macOS build", this one says "a Windows build, running through CrossOver".
-const CX_BOTTLE_MASK = "data:image/svg+xml;utf8," + encodeURIComponent(
-    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">' +
-    '<path fill="#000" d="M10 2h4v1.2h-1.1v3.1c0 .7.2 1.1.7 1.7l1.9 2.3c.6.7.9 1.5.9 2.4V20a2 2 0 0 1-2 2H9.6a2 2 0 0 1-2-2v-7.3c0-.9.3-1.7.9-2.4l1.9-2.3c.5-.6.7-1 .7-1.7V3.2H10z"/>' +
-    '<path fill="#000" d="M8 14h8v1.4H8z"/></svg>');
-
-function isSteamCrossOver(game) {
-    if (!game) return false;
-    const cmds = [game.LaunchCommand];
-    try { for (const l of JSON.parse(game.LaunchCommands || '[]')) if (l && l.cmd) cmds.push(l.cmd); } catch {}
-    return cmds.some(c => /^steambottle:\/\//i.test(String(c || '').trim()));
-}
-if (window.api.platform !== 'darwin') {
-    // Removed, not hidden, for the same DOM-walking reason as the Mac-Native option above.
-    document.getElementById('gallery-category-crossover')?.remove();
-}
-
-document.getElementById('btn-scan-mac-native')?.addEventListener('click', async () => {
-    const btn = document.getElementById('btn-scan-mac-native');
-    const status = document.getElementById('mac-native-scan-status');
-    btn.disabled = true;
-    window.api.onMacNativeScanProgress?.(p => {
-        if (status && p.total) status.textContent = `${p.label || ''} (${p.scanned}/${p.total})`;
-    });
-    if (status) status.textContent = 'Scanning…';
-    const r = await window.api.scanMacNative({ force: false });
-    btn.disabled = false;
-    if (!r.ok) { if (status) status.textContent = r.error === 'already_running' ? 'Already scanning…' : `Failed: ${r.error}`; return; }
-    if (status) status.textContent = `Done, ${r.macNative} Mac-native games found.`;
-    const res = await window.api.getGames();
-    allGames = (res.games || []).filter(g => g.Game && g.Game !== 'null');
-    applyFilters();
 });
 
 // ── HIDDEN GAMES (per-game hide; managed from the Control Panel) ────────────
@@ -3755,12 +3682,6 @@ window.api.getAppVersion?.().then(v => {
     const cp = document.getElementById('cp-app-version-num');
     if (cp) cp.textContent = `VERSION ${v}`;
 }).catch(() => {});
-// The macOS build is unsigned and doesn't get the same Linux-first testing yet, make that
-// visible in the two places anyone would look for the version, not just the docs.
-if (window.api.platform === 'darwin') {
-    document.getElementById('about-platform-badge')?.style.setProperty('display', '');
-    document.getElementById('cp-platform-badge')?.style.setProperty('display', '');
-}
 
 // Control Panel splash → releases page. There is no in-app updater by design:
 // the user reads the release notes on GitHub and grabs the AppImage themselves.
@@ -4889,8 +4810,6 @@ function applyFilters() {
             if (f === 'playable'   && !game.LaunchCommand) return false;
             if (f === 'favs'       && game.FAV !== 'YES') return false;
             if (f === 'want'       && game.WANT_TO_PLAY !== 'YES') return false;
-            if (f === 'mac-native' && !isMacNative(game)) return false;
-            if (f === 'crossover'  && !isSteamCrossOver(game)) return false;
             if (f === 'installed') {
                 // ⚠️ The manual/emulation special case is gone: it accepted any row with a
                 // launch command, which is exactly how uninstalled emulator and RetroArch
@@ -5236,9 +5155,7 @@ function renderGallery(recent, regular) {
         const imgSrc = game.CoverArt ? getSafePath(game.CoverArt) : '';
         const imgHtml = imgSrc ? `<img src="${imgSrc}" class="gallery-cover" loading="lazy">` : `<div class="gallery-cover" style="display:flex; align-items:center; justify-content:center; color:#555; font-size:12px;">${t('game.no_cover')}</div>`;
         const _badges = (game.Store ? String(game.Store).split(',') : []).map(s => s.trim()).filter(Boolean).map(s => { const l = getStoreLogo(s); return l ? `<div class="gallery-store-badge" style="-webkit-mask-image:url('${l}');"></div>` : ''; }).join('');
-        const _macBadge = isMacNative(game) ? `<div class="gallery-store-badge gallery-mac-badge" style="-webkit-mask-image:url('assets/logos/apple.png');" title="Runs natively on macOS"></div>` : '';
-        const _cxBadge = isSteamCrossOver(game) ? `<div class="gallery-store-badge gallery-cx-badge" style="-webkit-mask-image:url('${CX_BOTTLE_MASK}');" title="Windows Steam game, runs through CrossOver"></div>` : '';
-        const badgeHtml = (_badges || _macBadge || _cxBadge) ? `<div class="gallery-store-badges">${_badges}${_macBadge}${_cxBadge}</div>` : '';
+        const badgeHtml = _badges ? `<div class="gallery-store-badges">${_badges}</div>` : '';
         const f2pHtml = isFreeToPlay(game) ? `<div class="f2p-pill gallery-f2p-pill" data-f2p-pill="1" title="Free-to-play, click to show/hide these">FREE</div>` : '';
         const installCmdG = getInstallCommand(game);
         const isInstalled = isGameInstalled(game);
@@ -7553,7 +7470,7 @@ modalTools.addEventListener('click', e => { if (e.target === modalTools) closeTo
     // because `.cp-pane { display:none }` hides panes rather than the cards outside
     // them, an unlisted card renders on TOP of whichever page is showing, on all of
     // them. Seven cards were in that state (game updates, the display picker, Omarchy,
-    // source ports, DOSBox, genres and Mac-Native), which is why the panel still read
+    // source ports, DOSBox, genres and a since-removed macOS card), which is why the panel still read
     // as one flat list even though the panes were already built.
     const CARD_PANES = [
         ['btn-update-library', 'library'],
@@ -7573,7 +7490,6 @@ modalTools.addEventListener('click', e => { if (e.target === modalTools) closeTo
         ['dosbox-mode-control', 'ports'],
         ['display-card', 'desktop'],
         ['omarchy-card', 'desktop'],
-        ['mac-native-tool-card', 'desktop'],
         ['btn-backup-zip', 'system'],
         ['btn-clean-images', 'danger'],
     ];
