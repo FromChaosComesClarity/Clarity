@@ -41,10 +41,6 @@
     .titlebar-controls { display: flex; height: 100%; -webkit-app-region: no-drag; }
     .win-btn { border: none; border-radius: 0; background: transparent; width: 45px; font-size: 14px; display: flex; align-items: center; justify-content: center; transition: background-color 0.1s; cursor: pointer; color: var(--text_main); }
     .win-btn:hover { background-color: rgba(255,255,255,0.1); color: var(--text_main); transform: none; box-shadow: none; }
-    /* macOS: the window itself draws real traffic lights (titleBarStyle:'hidden' in main.js),
-       hide the custom row and leave room at the left instead of drawing our own. */
-    body.platform-darwin .titlebar-controls { display: none; }
-    body.platform-darwin .titlebar-brand { padding-left: 78px; }
     .win-close:hover { background-color: #d32f2f; color: white; }
 
     #app-container { display: flex; flex-direction: column; flex: 1; width: 100%; height: 100%; overflow: hidden; position: relative; }
@@ -118,9 +114,6 @@
     .gallery-cover-wrap { position: relative; width: 100%; }
     .gallery-store-badges { position: absolute; bottom: 7px; right: 7px; display: flex; flex-direction: row; gap: 4px; pointer-events: none; }
     .gallery-store-badge { width: 22px; height: 22px; background-color: rgba(255,255,255,0.75); -webkit-mask-size: contain; -webkit-mask-repeat: no-repeat; -webkit-mask-position: center; }
-    /* Steam-via-CrossOver: tinted rather than white, so at a glance it reads as a different
-       kind of thing from the store logos it sits next to (see isSteamCrossOver). */
-    .gallery-cx-badge { background-color: rgba(126,203,255,0.95); }
     .install-dot { position: absolute; top: 8px; left: 8px; width: 10px; height: 10px; border-radius: 50%; border: 1.5px solid rgba(0,0,0,0.5); pointer-events: none; z-index: 2; }
     .install-dot.is-installed { background: #66bb6a; }
     .install-dot.not-installed { background: #ff9800; }
@@ -1643,8 +1636,6 @@
               <option value="installed">Installed</option>
               <option value="favs">Favourites</option>
               <option value="want">Want to Play</option>
-              <option value="mac-native" id="gallery-category-mac-native">Mac-Native</option>
-              <option value="crossover" id="gallery-category-crossover">Steam via CrossOver</option>
               <option value="steam">Steam</option>
               <option value="gog">GOG</option>
               <option value="epic">Epic</option>
@@ -2078,7 +2069,6 @@
       <h2 style="margin: 0; color: var(--text_main); font-weight: 900; letter-spacing: 2px;">CLARITY</h2>
       <h3 style="margin: 0; color: var(--accent); font-weight: 900; letter-spacing: 4px;">GAMING SUITE</h3>
       <p id="about-version" style="font-size: 11px; color: var(--text_dim); margin: 6px 0 0; letter-spacing: 2px; font-weight: 700;"></p>
-      <p id="about-platform-badge" style="display:none; font-size: 10px; color: #e58a70; margin: 6px 0 0; letter-spacing: 1.5px; font-weight: 900; text-transform: uppercase;">macOS build, Experimental</p>
 
       <p style="font-size: 13px; color: var(--text_sec); margin: 15px 0 5px 0;" data-i18n="html.about_tagline">One app, many faces, your whole gaming world in one good plwed under one roof.</p>
 
@@ -2467,7 +2457,6 @@
               <!-- Version chip + "what's new" link out to the GitHub releases page (no in-app updater). -->
               <div class="cp-welcome-ver">
                 <span class="cp-ver-chip" id="cp-app-version"><span class="cp-ver-dot"></span><span id="cp-app-version-num">VERSION,</span></span>
-                <span class="cp-ver-chip" id="cp-platform-badge" style="display:none; border-color:#e58a70; color:#e58a70;" title="This macOS build is unsigned and still under active development, see docs/mac-port-handoff.md">macOS · EXPERIMENTAL</span>
                 <button class="cp-ver-btn" id="btn-check-app-updates" data-i18n-title="html.cp_updates_title" title="Opens the releases page in your browser">
                   <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-3.36-7"/><polyline points="21 3 21 9 15 9"/></svg>
                   <span data-i18n="html.cp_check_updates">Check for Updates</span>
@@ -2684,13 +2673,6 @@
             <button class="segmented-btn freegames-vis-btn active" data-val="show">Show</button>
             <button class="segmented-btn freegames-vis-btn" data-val="hide">Hide</button>
           </div>
-        </div>
-
-        <div class="tool-card tools-section" id="mac-native-tool-card" style="display:none;" data-search="mac native macos apple filter games run compatibility badge steam gog epic">
-          <div class="tool-card-title"><svg class="cp-tico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a1 1 0 0 1 1 1v2"/><path d="M12 8c-4 0-7 3-7 8 0 4 2 6 4 6 1 0 1.5-1 3-1s2 1 3 1c2 0 4-2 4-6 0-2.5-1-4.5-2.5-6 1-1 1.5-2.5 1.5-4-2 0-3.5.8-4.5 2-.6-.1-1.3 0-1.5 0z"/></svg>Mac-Native Games</div>
-          <p style="font-size:10px; color:var(--text_dim); margin:0 0 8px; line-height:1.5;">Which games have a real macOS build, not just Windows through a compatibility layer, GOG/Epic checked locally, Steam checked live per game. Marked with a small apple on the cover, and filterable from the category dropdown above the gallery ("Mac-Native").</p>
-          <button id="btn-scan-mac-native" style="width:100%; font-size:12px; padding:10px; letter-spacing:1px;" class="primary"><span>Scan for Mac Compatibility</span></button>
-          <p id="mac-native-scan-status" style="font-size:10px; color:var(--text_dim); margin:8px 0 0; line-height:1.5;"></p>
         </div>
 
         <div class="tool-card tools-section" data-search="hidden games hide show unhide manage removed library">
