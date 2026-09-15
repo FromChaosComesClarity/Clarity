@@ -7478,7 +7478,7 @@ modalTools.addEventListener('click', e => { if (e.target === modalTools) closeTo
         ['btn-install-dir-change', 'library'],
         ['btn-tools-add-game', 'library'],
         ['btn-scan-updates', 'library'],
-        ['btn-open-report', 'library'],
+        ['btn-open-report', 'report'],
         ['btn-scan-genres', 'library'],
         ['btn-theme-switch', 'appearance'],
         ['history-segmented-control', 'behavior'],
