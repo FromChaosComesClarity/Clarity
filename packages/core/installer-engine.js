@@ -176,8 +176,6 @@ function resolvePathCaseInsensitive(filePath) {
 }
 
 // ── External tool helpers ─────────────────────────────────────────────────────
-// Host-specific: a macOS .app launched from Finder inherits a minimal PATH with no
-// Homebrew in it, so "is this installed" is not the same question on every platform.
 const which = (bin) => host.which(bin);
 
 // Tool paths resolved once, avoids re-running a PATH lookup on every launch/IPC call
@@ -673,12 +671,7 @@ function findShippedWrappers(resolvedExe, installPath) {
 function gogPlayTaskList(game) {
     if (!game || game.store !== 'gog' || !game.install_path || !game.app_id) return [];
     const installPath = expandTilde(game.install_path);
-    // On macOS install_path IS the .app bundle (see platform/darwin.js), and GOG nests the
-    // .info file inside it rather than at the install root the way Windows/Linux get it.
-    const infoRel = /\.app$/i.test(installPath)
-        ? path.join('Contents', 'Resources', `goggame-${game.app_id}.info`)
-        : `goggame-${game.app_id}.info`;
-    const infoFile = resolvePathCaseInsensitive(path.join(installPath, infoRel));
+    const infoFile = resolvePathCaseInsensitive(path.join(installPath, `goggame-${game.app_id}.info`));
     let info;
     try { info = JSON.parse(fs.readFileSync(infoFile, 'utf8')); } catch { return []; }
 
@@ -1074,10 +1067,7 @@ async function launchGame(gameId, opts = {}) {
         catch (e) { console.error('[launch] Fallout: London fix failed:', e.message); }
     }
 
-    // Awaited so a host whose runtime needs a real async step before it can launch anything
-    // (CrossOver: creating the game's bottle, first time only) isn't forced into blocking the
-    // whole process synchronously to do it. A no-op for Linux, whose buildLaunch is plain sync.
-    const spec = await host.runtime.buildLaunch({
+    const spec = host.runtime.buildLaunch({
         game, gameId, launchExe, isBat, userArgs, allArgs, runtimePath: proton, prefix,
     });
     spawnGame(spec.cmd, spec.args, { cwd: launchCwd, env: baseEnv(spec.env), detached: true, stdio: 'ignore' });
@@ -1980,17 +1970,9 @@ async function syncOwnedLibrary() {
                 const items = Array.isArray(data) ? data : [data];
                 for (const item of items) {
                     if (!item?.id) continue;
-                    // GOG's public catalog API calls a macOS installer's os "mac"; gogdl's own
-                    // --platform flag (and therefore host.nativeOsKey / games.platform / every
-                    // launch-time comparison against it) calls the same host "osx". Two GOG
-                    // APIs, two vocabularies for the same OS, translate before matching, or
-                    // every Mac-native game in the library silently looks Windows-only.
-                    const GOG_CATALOG_OS_ALIAS = { mac: 'osx' };
-                    const oses      = [...new Set((item.downloads?.installers || [])
-                        .map(x => GOG_CATALOG_OS_ALIAS[x.os] || x.os).filter(Boolean))];
+                    const oses      = [...new Set((item.downloads?.installers || []).map(x => x.os).filter(Boolean))];
                     // `platform` is what we would run here; `platforms` is everything GOG
-                    // offers that this host could ever use. Keyed off the backend so a
-                    // library synced on one OS is not mislabelled for the other.
+                    // offers that this machine could ever use.
                     const nativeOs  = host.nativeOsKey;
                     const runsAs    = oses.includes(nativeOs) ? nativeOs : 'windows';
                     const platforms = oses.filter(o => o === nativeOs || o === 'windows').join(',') || runsAs;
