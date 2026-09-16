@@ -7,11 +7,15 @@
 // and nothing else will do. Every entry here was found the hard way, on a real machine,
 // and the point of writing it down is that the next person never has to.
 //
-// A fix is one of two things, and an entry may carry both:
+// A fix is one of three things, and an entry may carry any of them:
 //   • env    , variables the game needs at launch. Applied every time it starts.
 //   • settings, keys in the game's own configuration file. Written once, then left
 //                alone: these are the user's files, and someone who changes a value back
 //                meant to. Only keys we know are wrong get touched, never the whole file.
+//   • wrapperExceptions, DLLs this game ships that must stay shadowed by the runtime's
+//                own. The engine normally hands a game the wrapper it shipped with, which
+//                is right nearly every time; a game listed here is one where that wrapper
+//                cannot survive the runtime, so the exception has to be named.
 //
 // ⚠️ Nothing here fires on a guess. Each entry matches on the executable's own name, so a
 // fix cannot land on a game that merely shares a folder or a title.
@@ -59,6 +63,28 @@ const FIXES = [
         settings: [],
         handledBy: 'shipped-wrapper detection',
     },
+    {
+        id: 'arcanum',
+        title: 'Arcanum: Of Steamworks and Magick Obscura (GOG)',
+        exe: 'arcanum.exe',
+        symptom: 'Closes the instant it is launched. No window, no error.',
+        why:
+            "GOG's build ships DDrawCompat as ddraw.dll, a wrapper that fixes this 2001 game " +
+            "on modern Windows by hooking DirectDraw's own internals. The engine hands a game " +
+            "the wrapper it shipped with, which is the right call for Classic REbirth and for " +
+            "Quake's 3dfx driver, but DDrawCompat cannot survive those hooks under Wine and " +
+            "takes the game down before a window appears. Wine's own ddraw runs Arcanum " +
+            "properly, so this is the one game so far that has to keep it. Measured on this " +
+            "machine, same prefix, same Proton build: with the shipped wrapper the game never " +
+            "produced a window in 26 seconds; with Wine's builtin it ran with a visible " +
+            "window for 22 of those 26. DDrawCompat.ini is left on disk untouched, so the " +
+            "file is still there for anyone who wants it back on Windows.",
+        wrapperExceptions: ['ddraw.dll'],
+        // Named as well as excepted: the exception decides what the engine does not force,
+        // and this says out loud which library the game is meant to run on.
+        env: { WINEDLLOVERRIDES: 'ddraw=b' },
+        settings: [],
+    },
 ];
 
 // Everything the suite knows how to fix, for the Control Panel and the manual.
@@ -66,6 +92,7 @@ function listFixes() {
     return FIXES.map(f => ({
         id: f.id, title: f.title, symptom: f.symptom, why: f.why,
         handledBy: f.handledBy || 'per-game fix',
+        wrapperExceptions: f.wrapperExceptions || [],
     }));
 }
 
@@ -112,4 +139,11 @@ function applySettings(resolvedExe, installPath) {
     return { applied, fix: fix.id };
 }
 
-module.exports = { listFixes, fixFor, envFor, applySettings, FIXES };
+// Shipped wrapper DLLs this game must NOT be handed, lowercased. The engine asks before it
+// decides to override anything, so a game with no entry keeps the normal behaviour.
+function wrapperExceptions(resolvedExe, installPath) {
+    const fix = fixFor(resolvedExe, installPath);
+    return new Set((fix && fix.wrapperExceptions ? fix.wrapperExceptions : []).map(n => n.toLowerCase()));
+}
+
+module.exports = { listFixes, fixFor, envFor, applySettings, wrapperExceptions, FIXES };
