@@ -27,6 +27,8 @@ const os   = require('os');
 const { spawn } = require('child_process');
 const Database = require('better-sqlite3');
 const host = require('./platform/index.js');
+// The per-game fix catalogue ("recipes"). Used at launch, below.
+const gameFixes = require('./game-fixes.js');
 
 // ── Injected context (set by init) ────────────────────────────────────────────
 let configDir, prefixesDir, logDir, binDir, appImageDir, HOME, db, _onProgress, _onLaunchIssue, _onLaunchProgress, _onGameSession;
@@ -826,7 +828,20 @@ async function launchGame(gameId, opts = {}) {
     // before a window ever appears, which reads to the player as "the game closed
     // immediately". Restoring Windows' own resolution order is the whole fix, and it hands
     // the game the driver stack GOG shipped it with (MiniGL → nGlide → D3D → DXVK).
-    const wrappers = usingProton ? findShippedWrappers(resolvedExe, installPath) : [];
+    // A named game may declare that one of its shipped wrappers must stay shadowed. Only
+    // Arcanum does so far: GOG bundles DDrawCompat, which hooks DirectDraw's internals and
+    // cannot survive them under Wine, so handing the game its own copy kills it before a
+    // window appears. See packages/core/game-fixes.js.
+    let excepted = new Set();
+    try { excepted = gameFixes.wrapperExceptions(resolvedExe, installPath); }
+    catch (e) { console.log(`[launch] wrapper exceptions skipped: ${e.message}`); }
+
+    const wrappers = (usingProton ? findShippedWrappers(resolvedExe, installPath) : [])
+        .filter(w => {
+            if (!excepted.has(String(w).toLowerCase())) return true;
+            console.log(`[launch] leaving the ${w} shipped with this game shadowed, it does not survive the runtime`);
+            return false;
+        });
     if (wrappers.length) {
         // Entries are separated by ';', ',' separates load orders for one DLL, so a
         // comma-joined list silently sets only the first and mangles the rest.
