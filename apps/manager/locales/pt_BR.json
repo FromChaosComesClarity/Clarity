@@ -230,7 +230,11 @@
     "batch_scope_complete": "Os {total} jogos já têm dados e imagens.",
     "batch_scope_complete_one": "O único jogo já tem dados e imagens.",
     "batch_scope_complete_installed": "Os {total} jogos instalados já têm dados e imagens.",
-    "batch_scope_complete_installed_one": "O único jogo instalado já tem dados e imagens."
+    "batch_scope_complete_installed_one": "O único jogo instalado já tem dados e imagens.",
+    "steam_add_title": "Falta um jogo que a Steam não lista?",
+    "steam_add_help": "Mods publicados na Steam, como o Enderal, e jogos gratuitos que você nunca abriu não aparecem na API da Steam, então nenhuma importação consegue encontrá-los. Adicione um pelo nome, App ID ou link da loja e ele continua na sua biblioteca a cada sincronização.",
+    "steam_add_ph": "Enderal, 933480 ou um link da loja",
+    "btn_steam_add": "Adicionar Jogo da Steam"
   },
   "language": {
     "title": "Idioma",
@@ -376,5 +380,16 @@
       "achievements_perfect_one": "{n} jogo zerado com 100%",
       "stores_multi_one": "{n} comprado em mais de uma loja"
     }
+  },
+  "steam_add": {
+    "appid": "App ID",
+    "pick": "A Steam encontrou mais de um. Escolha o aplicativo certo.",
+    "asking": "Consultando a Steam...",
+    "failed": "Não foi possível falar com a Steam.",
+    "fetching": "{name} adicionado. Buscando arte e detalhes...",
+    "added": "{name} está na sua biblioteca.",
+    "updated": "{name} já estava aqui, então os dados da Steam foram atualizados.",
+    "install_hint": "Abra o jogo e clique em Instalar para a Steam baixá-lo.",
+    "free_hidden": "É um jogo gratuito e sua biblioteca está ocultando esses agora."
   }
 }

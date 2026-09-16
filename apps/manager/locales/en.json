@@ -230,7 +230,11 @@
     "batch_scope_complete": "All {total} games already have their data and art.",
     "batch_scope_complete_one": "The only game already has its data and art.",
     "batch_scope_complete_installed": "All {total} installed games already have their data and art.",
-    "batch_scope_complete_installed_one": "The only installed game already has its data and art."
+    "batch_scope_complete_installed_one": "The only installed game already has its data and art.",
+    "steam_add_title": "Missing a game Steam does not list?",
+    "steam_add_help": "Mods published on Steam, such as Enderal, and free games you have never launched are absent from Steam's API, so no import can find them. Add one by name, App ID or store link and it stays in your library through every sync.",
+    "steam_add_ph": "Enderal, 933480, or a store link",
+    "btn_steam_add": "Add Steam Game"
   },
   "language": {
     "title": "Language",
@@ -376,5 +380,16 @@
       "achievements_perfect_one": "{n} perfect game",
       "stores_multi_one": "{n} owned on more than one store"
     }
+  },
+  "steam_add": {
+    "appid": "App ID",
+    "pick": "Steam found more than one. Pick the right app.",
+    "asking": "Asking Steam...",
+    "failed": "Steam could not be reached.",
+    "fetching": "Added {name}. Fetching artwork and details...",
+    "added": "{name} is in your library.",
+    "updated": "{name} was already here, so its Steam details were refreshed.",
+    "install_hint": "Open it and press Install to have Steam download it.",
+    "free_hidden": "It is a free game and your library is hiding those right now."
   }
 }
