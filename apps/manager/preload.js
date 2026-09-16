@@ -173,6 +173,9 @@ contextBridge.exposeInMainWorld('api', {
 
                                 // --- I18N ---
                                 getStrings: (lang) => ipcRenderer.invoke('get-strings', lang),
+                                reportSections: (prefs) => ipcRenderer.invoke('report-sections', prefs),
+                                reportPreview: (prefs) => ipcRenderer.invoke('report-preview', prefs),
+                                reportExport: (prefs, format) => ipcRenderer.invoke('report-export', prefs, format),
 
                                 // --- STORE BROWSER ---
                                 openStoreBrowser: (store, colors) => ipcRenderer.invoke('open-store-browser', store, colors),
