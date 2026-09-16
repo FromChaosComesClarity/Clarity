@@ -7168,6 +7168,64 @@ document.getElementById('btn-sync-steam').addEventListener('click', async () => 
 });
 
 
+// ── Add a Steam game Steam's own API will not report ─────────────────────────
+// Mods (Enderal and friends) are type="mod" on the store and never appear in
+// GetOwnedGames, and an uninstalled one has no local appmanifest either, so the
+// library import cannot see it by any route. Name it here instead: a name searches
+// the store, an App ID or a store link goes straight in. main.js remembers the ID so
+// the next sync keeps the row rather than pruning it as "no longer owned".
+(function initSteamAdd() {
+    const input   = document.getElementById('steam-add-input');
+    const btn     = document.getElementById('btn-steam-add');
+    const results = document.getElementById('steam-add-results');
+    const status  = document.getElementById('steam-add-status');
+    if (!input || !btn) return;
+
+    const say = (msg, kind = '') => { status.className = 'steam-add-status' + (kind ? ' ' + kind : ''); status.innerHTML = msg; };
+    const busy = (on, label) => { btn.disabled = on; input.disabled = on; btn.innerText = label || t('html.btn_steam_add'); };
+    const clearPicks = () => { results.innerHTML = ''; results.classList.remove('active'); };
+
+    function showPicks(list) {
+        results.innerHTML = '';
+        list.forEach(res => {
+            const pick = document.createElement('button');
+            pick.className = 'steam-add-pick';
+            pick.innerHTML = `${res.image ? `<img src="${res.image}" alt="">` : ''}<span class="n">${res.name}<small>${t('steam_add.appid')} ${res.id}</small></span>`;
+            pick.addEventListener('click', () => { clearPicks(); submit(res.id); });
+            results.appendChild(pick);
+        });
+        results.classList.add('active');
+        say(t('steam_add.pick'));
+    }
+
+    async function submit(raw) {
+        clearPicks();
+        busy(true, t('status.searching'));
+        say(t('steam_add.asking'));
+        const res = await window.api.steamAddApp(raw);
+
+        if (!res || !res.success) { busy(false); say((res && res.message) || t('steam_add.failed'), 'bad'); return; }
+        if (res.needsPick) { busy(false); showPicks(res.results); return; }
+
+        // The row exists now; fill it with the same scrape every other game gets.
+        say(t('steam_add.fetching').replace('{name}', res.name));
+        busy(true, t('status.fetching_auto'));
+        await window.api.autoFetch(res.id, res.name, res.appid);
+        await loadGames();
+        busy(false);
+        input.value = '';
+
+        const lines = [];
+        lines.push((res.status === 'updated' ? t('steam_add.updated') : t('steam_add.added')).replace('{name}', res.name));
+        if (!res.installed) lines.push(t('steam_add.install_hint'));
+        if (res.free && _hideFreeGames) lines.push(t('steam_add.free_hidden'));
+        say(lines.join('<br>'), 'ok');
+    }
+
+    btn.addEventListener('click', () => { const raw = input.value.trim(); if (raw) submit(raw); });
+    input.addEventListener('keydown', e => { if (e.key === 'Enter') btn.click(); });
+})();
+
 document.getElementById('btn-tools-add-game')?.addEventListener('click', () => {
     closeTools();
     openAddGameDialog();
