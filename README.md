@@ -65,6 +65,10 @@ The manual ships **inside the app**, under Menu → Manual. Deeper notes on the 
 and per-game fixes live in [`docs/`](docs/) and on the
 [website](https://fromchaoscomesclarity.github.io/ClarityWebSite/).
 
+**Recipes** are Clarity's fixes for individual named games: what the fault was, and what it
+took. [`docs/RECIPES.md`](docs/RECIPES.md) says what one is, where they live and how to add
+one; the public list is the Game fixes page on the site.
+
 ## Support it
 
 - **Ko-fi:** <https://ko-fi.com/clarity>

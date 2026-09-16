@@ -4240,6 +4240,12 @@ ipcMain.handle('update-last-played', (event, id) => {
 
 ipcMain.handle('get-strings', (_, lang) => require('./i18n')(lang || 'en'));
 
+// ── LIBRARY REPORT ────────────────────────────────────────────────────────
+// Settings, Library, Library Report: a picked set of stats saved as a web page, a PDF or images.
+require('./report/report-main.js').registerReportIpc({
+    ipcMain, getDb: () => db, baseDir, BrowserWindow, dialog, nativeImage, loadStrings: require('./i18n'),
+});
+
 // ── ITCH.IO SYNC ──────────────────────────────────────────────────────────
 
 async function doItchSync() {
