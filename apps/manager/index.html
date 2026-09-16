@@ -2387,6 +2387,15 @@
           <input type="password" id="steam-id" placeholder="STEAMID64">
           <input type="password" id="steam-api-key" placeholder="STEAM API KEY">
           <button id="btn-sync-steam" class="primary" style="padding: 8px;" data-i18n="html.btn_fetch_steam">Fetch Steam Library</button>
+
+          <div class="steam-add" data-search="steam mod enderal missing game add app id store link manually free demo">
+            <div class="steam-add-title" data-i18n="html.steam_add_title">Missing a game Steam does not list?</div>
+            <p class="steam-add-help" data-i18n="html.steam_add_help">Mods published on Steam, such as Enderal, and free games you have never launched are absent from Steam's API, so no import can find them. Add one by name, App ID or store link and it stays in your library through every sync.</p>
+            <input type="text" id="steam-add-input" placeholder="Enderal, 933480, or a store link" data-i18n-ph="html.steam_add_ph">
+            <button id="btn-steam-add" style="padding: 8px; width: 100%;" data-i18n="html.btn_steam_add">Add Steam Game</button>
+            <div id="steam-add-results" class="steam-add-results"></div>
+            <div id="steam-add-status" class="steam-add-status"></div>
+          </div>
         </div>
 
         <!-- SteamGridDB -->
@@ -3612,7 +3621,23 @@
       align-items: center; justify-content: center; transition: 0.15s;
     }
     #np-close-btn:hover { background: rgba(0,0,0,0.75); color: var(--text_main); }
-  </style>
+  
+/* Add a Steam game the API never returns (mods, unplayed free games) */
+.steam-add { margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--border_solid); }
+.steam-add-title { font-size: 11px; font-weight: bold; color: var(--text_main); margin-bottom: 4px; }
+.steam-add-help { font-size: 11px; color: var(--text_sec); margin: 0 0 8px; line-height: 1.6; }
+.steam-add-results { display: none; flex-direction: column; gap: 4px; margin-top: 8px; max-height: 210px; overflow-y: auto; }
+.steam-add-results.active { display: flex; }
+.steam-add-pick { display: flex; align-items: center; gap: 8px; width: 100%; padding: 5px; text-align: left;
+    background: var(--bg_input, rgba(0,0,0,.2)); border: 1px solid var(--border_solid); color: var(--text_main); cursor: pointer; }
+.steam-add-pick:hover { border-color: #66c0f4; }
+.steam-add-pick img { width: 62px; height: 24px; object-fit: cover; flex-shrink: 0; background: rgba(0,0,0,.35); }
+.steam-add-pick .n { font-size: 11px; line-height: 1.3; overflow: hidden; }
+.steam-add-pick .n small { display: block; color: var(--text_dim); font-size: 10px; }
+.steam-add-status { font-size: 11px; color: var(--text_dim); min-height: 16px; margin-top: 8px; line-height: 1.5; }
+.steam-add-status.ok { color: var(--accent); }
+.steam-add-status.bad { color: #ff6b6b; }
+</style>
 
   <div id="modal-now-playing" class="modal-overlay">
     <div id="np-card">

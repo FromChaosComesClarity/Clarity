@@ -2301,6 +2301,55 @@ function upsertSteamGame(appid, rawName) {
     return 'added';
 }
 
+// ── Steam apps the Web API never returns ───────────────────────────
+// GetOwnedGames only ever lists apps the account owns as store products. Mods published
+// on Steam (Enderal: Forgotten Stories, for one) are type="mod": adding one to your
+// library grants no licence the API reports, so it is absent from every sync, and until
+// it is installed there is no local appmanifest either, so the appmanifest fallback
+// cannot see it. The only way in is to name the app, so anything added by hand is
+// remembered here and fed back into sync-steam's removal detection, which would
+// otherwise prune the row on the very next sync for being absent from Steam's answer.
+function manualSteamAppids() {
+    try {
+        const raw = db.prepare("SELECT value FROM settings WHERE key='steam_manual_appids'").get()?.value;
+        const list = JSON.parse(raw || '[]');
+        return Array.isArray(list) ? list.map(String) : [];
+    } catch { return []; }
+}
+
+function setManualSteamAppids(list) {
+    db.prepare("INSERT OR REPLACE INTO settings (key,value) VALUES ('steam_manual_appids',?)")
+      .run(JSON.stringify([...new Set(list.map(String))]));
+}
+
+function rememberManualSteamAppid(appid) {
+    const list = manualSteamAppids();
+    if (!list.includes(String(appid))) setManualSteamAppids([...list, String(appid)]);
+}
+
+function forgetManualSteamAppid(appid) {
+    const id = String(appid || '').replace(/\.0+$/, '');
+    const list = manualSteamAppids();
+    if (id && list.includes(id)) setManualSteamAppids(list.filter(x => x !== id));
+}
+
+// Digits, a store link, or a steam:// link. Anything else is a name to search for.
+function parseSteamAppId(input) {
+    const s = String(input || '').trim();
+    if (/^\d+$/.test(s)) return s;
+    const m = s.match(/steampowered\.com\/(?:app|apps)\/(\d+)/i)
+           || s.match(/steam:\/\/(?:install|rungameid|run|advertise|store)\/(\d+)/i)
+           || s.match(/[?&]appids?=(\d+)/i);
+    return m ? m[1] : null;
+}
+
+async function steamAppDetails(appid) {
+    const res = await fetch(`https://store.steampowered.com/api/appdetails?appids=${appid}&l=english`);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const entry = (await res.json())?.[String(appid)];
+    return entry && entry.success && entry.data ? entry.data : null;
+}
+
 // ── Disk footprint scan ──────────────────────────────────────────────────────
 function _dirSizeBytes(dir) {
     let total = 0, guard = 0; const stack = [dir];
@@ -3849,7 +3898,14 @@ ipcMain.handle('update-game', (event, id, data) => {
 });
 
 ipcMain.handle('delete-game', (event, id) => {
-    try { db.prepare(`DELETE FROM games WHERE id=?`).run(id); return true; } catch (err) { return false; }
+    try {
+        // A manually added Steam app that the user deletes should stay deleted, so drop it
+        // from the keep-list that shields it from sync-steam's removal detection.
+        const row = db.prepare("SELECT SteamAppID FROM games WHERE id=?").get(id);
+        if (row && row.SteamAppID) forgetManualSteamAppid(row.SteamAppID);
+        db.prepare(`DELETE FROM games WHERE id=?`).run(id);
+        return true;
+    } catch (err) { return false; }
 });
 
 ipcMain.on('launch-game', (event, cmd, launchArgs, executable) => {
@@ -4480,6 +4536,9 @@ ipcMain.handle('sync-steam', async (event, steamId, apiKey) => {
         let removed = 0;
         if (games.length) {
             const presentIds = new Set(games.map(g => String(g.appid)));
+            // Apps added by hand (mods and other titles the API cannot report) count as
+            // present, or every sync would prune what the user just asked for.
+            for (const id of manualSteamAppids()) presentIds.add(id);
             for (const dir of getSteamLibraryPaths()) {
                 let files; try { files = fs.readdirSync(dir); } catch { continue; }
                 for (const f of files) { const m = f.match(/^appmanifest_(\d+)\.acf$/); if (m) presentIds.add(m[1]); }
@@ -4509,6 +4568,53 @@ ipcMain.handle('sync-steam', async (event, steamId, apiKey) => {
     } catch (err) {
         return { success: false, message: `Steam API Error: ${err.message}` };
     }
+});
+
+// Add a Steam app by name, App ID or store link, for the games Steam's API will never
+// hand over. Returns the new row so the caller can run the normal scrape on it.
+ipcMain.handle('steam-add-app', async (event, input) => {
+    const raw = String(input || '').trim();
+    if (!raw) return { success: false, message: 'Enter a name, App ID or Steam store link.' };
+
+    let appid = parseSteamAppId(raw);
+
+    // No ID in the text, so treat it as a name and let the caller pick from the store search.
+    if (!appid) {
+        let results;
+        try {
+            const res = await fetch(`https://store.steampowered.com/api/storesearch/?term=${encodeURIComponent(raw)}&l=english&cc=US`);
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            const data = await res.json();
+            results = (data.items || []).map(i => ({ id: String(i.id), name: String(i.name || '').trim(), image: i.tiny_image || '' }));
+        } catch (err) { return { success: false, message: `Steam search failed: ${err.message}` }; }
+        if (!results.length) return { success: false, message: `Steam has nothing called "${raw}".` };
+        if (results.length > 1) return { success: true, needsPick: true, results };
+        appid = results[0].id;
+    }
+
+    let data;
+    try { data = await steamAppDetails(appid); }
+    catch (err) { return { success: false, message: `Steam lookup failed: ${err.message}` }; }
+    if (!data) return { success: false, message: `Steam has no app ${appid}.` };
+
+    // Soundtracks, DLC and videos share the app namespace and are not playable on their own.
+    const NOT_PLAYABLE = { dlc: 'a DLC', music: 'a soundtrack', video: 'a video', episode: 'an episode', series: 'a series', hardware: 'hardware' };
+    if (NOT_PLAYABLE[data.type]) {
+        return { success: false, message: `${data.name} is ${NOT_PLAYABLE[data.type]}, not a game Steam can install on its own.` };
+    }
+
+    const name = String(data.name || '').trim() || `Steam App ${appid}`;
+    const status = upsertSteamGame(appid, name);
+    if (!status) return { success: false, message: `Could not add ${name}.` };
+    rememberManualSteamAppid(appid);
+    if (data.is_free) { try { db.prepare("UPDATE games SET FreeToPlay=1 WHERE SteamAppID=?").run(String(appid)); } catch {} }
+
+    const row = db.prepare("SELECT id, Game FROM games WHERE SteamAppID=?").get(String(appid));
+    return {
+        success: true, status, appid: String(appid),
+        id: row ? row.id : null, name: row ? row.Game : name,
+        type: data.type, free: !!data.is_free, installed: isSteamGameInstalled(appid),
+    };
 });
 
 ipcMain.handle('sync-gog', async () => {

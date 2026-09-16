@@ -78,6 +78,7 @@ contextBridge.exposeInMainWorld('api', {
                                 autoFetch: (id, name, appId) => ipcRenderer.invoke('auto-fetch', id, name, appId),
                                 autoFetchText: (id, name, appId) => ipcRenderer.invoke('auto-fetch-text', id, name, appId),
                                 searchSteam: (name) => ipcRenderer.invoke('search-steam', name),
+                                steamAddApp: (input) => ipcRenderer.invoke('steam-add-app', input),
                                 launchGame: (cmd, launchArgs, executable) => ipcRenderer.send('launch-game', cmd, launchArgs, executable),
                                 syncGog: () => ipcRenderer.invoke('sync-gog'),
 
