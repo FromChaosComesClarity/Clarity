@@ -218,11 +218,26 @@
     "lbl_desc": "Description:",
     "chk_fav": "Favorite",
     "chk_want": "Want to Play",
-    "close": "Close"
+    "close": "Close",
+    "steam_add_title": "Missing a game Steam does not list?",
+    "steam_add_help": "Mods published on Steam, such as Enderal, and free games you have never launched are absent from Steam's API, so no import can find them. Add one by name, App ID or store link and it stays in your library through every sync.",
+    "steam_add_ph": "Enderal, 933480, or a store link",
+    "btn_steam_add": "Add Steam Game"
   },
   "language": {
     "title": "Language",
     "en": "English",
     "pt_BR": "Português (BR)"
+  },
+  "steam_add": {
+    "appid": "App ID",
+    "pick": "Steam found more than one. Pick the right app.",
+    "asking": "Asking Steam...",
+    "failed": "Steam could not be reached.",
+    "fetching": "Added {name}. Fetching artwork and details...",
+    "added": "{name} is in your library.",
+    "updated": "{name} was already here, so its Steam details were refreshed.",
+    "install_hint": "Open it and press Install to have Steam download it.",
+    "free_hidden": "It is a free game and your library is hiding those right now."
   }
 }
