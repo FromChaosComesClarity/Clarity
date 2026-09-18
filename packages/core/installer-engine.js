@@ -1074,6 +1074,13 @@ async function launchGame(gameId, opts = {}) {
         catch (e) { console.error('[launch] Fallout: London fix failed:', e.message); }
     }
 
+    // Per-game fix (see applyWitcher1EnhancedEditionFix). Same reason and the same place as
+    // above; awaited, because the value has to be in the registry before the game reads it.
+    if (isWitcher1EnhancedEdition(game) && installPath) {
+        try { await applyWitcher1EnhancedEditionFix(installPath, prefix, proton); }
+        catch (e) { console.error('[launch] The Witcher EE fix failed:', e.message); }
+    }
+
     // Awaited so a host whose runtime needs a real async step before it can launch anything
     // (CrossOver: creating the game's bottle, first time only) isn't forced into blocking the
     // whole process synchronously to do it. A no-op for Linux, whose buildLaunch is plain sync.
@@ -1769,6 +1776,90 @@ async function applyFalloutNewCaliforniaFix(installPath, prefix, proton) {
     });
 }
 
+// ── The Witcher: Enhanced Edition (GOG) ──────────────────────────────────────
+// Installs perfectly and then does nothing at all. Pressing Play runs GOG's launcher.exe,
+// which exits with code 0 before it draws a window: a clean exit, so nothing upstream has
+// anything to report and the press looks like it never registered. Starting the game
+// directly is no better, witcher.exe is gone again in about three seconds.
+//
+// Both executables read HKLM\Software\CD Projekt RED\The Witcher → InstallFolder before
+// they do anything else, and neither has a fallback. gogdl downloads the depot and never
+// performs the registry step GOG's installer would, so the value is simply not there.
+// Same class of fault as New California and London, a third way for it to show up.
+//
+// Measured on the real install rather than reasoned about, with everything else held still:
+// with the value absent witcher.exe reaches the C++ runtime's teardown and exits 255
+// (2 runs of 2); with it present the very next thing in the log is the Game Explorer check
+// on TheWitcherGDF.dll, then ddraw and audio init, and the game stays up (2 runs of 2).
+// launcher.exe behaves the same way, exiting 0 without the value and holding a window with
+// it.
+//
+// ⚠️ The Wow6432Node copy is the one that matters. Both executables are PE32, so on a win64
+// prefix they read HKLM\Software through the WoW64 view: with ONLY the plain key the game
+// still died at three seconds, with ONLY the Wow6432Node key it ran. Both are written all
+// the same, because a 32-bit prefix has no Wow6432Node and the plain key is what it reads.
+//
+// ⚠️ Rewritten whenever the stored path is not the install path we are launching from, not
+// merely when the key is missing. A library moved to another disk otherwise leaves a value
+// pointing at a folder that is gone, which fails in exactly the same silent way and would
+// look like the fix had stopped working.
+const TW1_APP_ID = '1207658924';
+
+function isWitcher1EnhancedEdition(game) {
+    return (game?.store || '').toLowerCase() === 'gog' && String(game?.app_id) === TW1_APP_ID;
+}
+
+async function applyWitcher1EnhancedEditionFix(installPath, prefix, proton) {
+    // The game's own executable, not the folder name: the check is about this being the
+    // release the fix describes, and a folder can be called anything.
+    if (!fs.existsSync(resolvePathCaseInsensitive(path.join(installPath, 'System', 'witcher.exe')))) return;
+
+    // Trailing backslash, which is the form this was verified with. The game appends
+    // "TheWitcherGDF.dll" to it and the path it built came out with a single separator,
+    // visible in the Game Explorer line of the launch log.
+    const winPath = host.runtime.toWindowsPath(installPath) + '\\';
+    const escaped = winPath.replace(/\\/g, '\\\\');
+    const valueLine = `"InstallFolder"="${escaped}"`;
+
+    // Reading system.reg directly keeps the common case free: once the value is in the
+    // prefix we never spawn wine for this again. A missing system.reg means the prefix was
+    // never built, so this is reachable on a first launch, and we go ahead and let wine
+    // create it rather than skip, or the player meets the silent exit exactly once.
+    const systemReg = path.join(prefix, 'system.reg');
+    const prefixBuilt = fs.existsSync(systemReg);
+    if (prefixBuilt) {
+        try {
+            if (fs.readFileSync(systemReg, 'utf8').includes(valueLine)) return;
+        } catch { return; }
+    }
+
+    const regContent =
+        'Windows Registry Editor Version 5.00\r\n\r\n' +
+        '[HKEY_LOCAL_MACHINE\\SOFTWARE\\CD Projekt RED\\The Witcher]\r\n' +
+        `"InstallFolder"="${escaped}"\r\n\r\n` +
+        '[HKEY_LOCAL_MACHINE\\SOFTWARE\\WOW6432Node\\CD Projekt RED\\The Witcher]\r\n' +
+        `"InstallFolder"="${escaped}"\r\n`;
+
+    const regFile = path.join(os.tmpdir(), `tw1_reg_${TW1_APP_ID}.reg`);
+    try { fs.writeFileSync(regFile, regContent, 'utf8'); } catch { return; }
+
+    // The runtime's own wine, same as applyFalloutNewCaliforniaFix. It runs outside umu's
+    // container, which is what lets regedit read a file from the host's /tmp at all.
+    const reg = await host.runtime.regeditCommand({ prefix, runtimePath: proton, regFile });
+
+    await new Promise(resolve => {
+        const finish = () => { try { fs.unlinkSync(regFile); } catch {} resolve(); };
+        const proc = spawn(reg.cmd, reg.args, { env: reg.env, stdio: 'ignore' });
+        // A wedged wine must never hold the game hostage, give up and launch anyway. Merging
+        // into a built prefix takes seconds; building one from scratch is a wineboot, so don't
+        // pull the plug on that half way through.
+        const timer = setTimeout(() => { try { proc.kill('SIGKILL'); } catch {} finish(); },
+                                 prefixBuilt ? 30000 : 180000);
+        proc.on('close', () => { clearTimeout(timer); finish(); });
+        proc.on('error', () => { clearTimeout(timer); finish(); });
+    });
+}
+
 async function gogFetch(url, token) {
     const res = await fetch(url, {
         headers: { 'Authorization': `Bearer ${token}`, 'User-Agent': 'Installer/1.0' },
@@ -2192,6 +2283,7 @@ module.exports = {
     gogListDlcs, gogInstalledDlcs,
     gogExchangeCode, gogStatus, gogLogout, epicAuthCode, epicStatus,
     isFalloutLondon, applyFalloutLondonFix,
+    isWitcher1EnhancedEdition, applyWitcher1EnhancedEditionFix,
     findNativeDosbox, dosboxInstallHint, isGogDosGame, applyGogSupportFiles, engineSetting,
     findShippedWrappers,
     gogPlayTasks, setGogLaunchTarget,

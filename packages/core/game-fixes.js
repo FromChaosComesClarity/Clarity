@@ -59,6 +59,23 @@ const FIXES = [
         settings: [],
         handledBy: 'shipped-wrapper detection',
     },
+    {
+        id: 'witcher1ee',
+        title: 'The Witcher: Enhanced Edition (GOG)',
+        exe: null,                       // handled at launch by app id, not by exe name
+        symptom: 'Pressing Play does nothing at all. No window, no error, no log.',
+        why:
+            "Both GOG's launcher.exe and the game's own witcher.exe read InstallFolder under " +
+            "HKLM\\Software\\CD Projekt RED\\The Witcher before they do anything else, and " +
+            "neither has a fallback. gogdl downloads the depot and never performs the registry " +
+            "step GOG's installer would, so the value is absent and both give up: the launcher " +
+            "exits 0 without drawing a window, which is why nothing anywhere reports a failure. " +
+            "The value is written into the prefix at launch, in the WoW64 view these 32-bit " +
+            "executables actually read, and rewritten if the game is ever moved.",
+        env: {},
+        settings: [],
+        handledBy: 'GOG install-folder registry value',
+    },
 ];
 
 // Everything the suite knows how to fix, for the Control Panel and the manual.
