@@ -63,18 +63,21 @@ const FIXES = [
         id: 'witcher1ee',
         title: 'The Witcher: Enhanced Edition (GOG)',
         exe: null,                       // handled at launch by app id, not by exe name
-        symptom: 'Pressing Play does nothing at all. No window, no error, no log.',
+        symptom: 'Pressing Play does nothing at all. Past that, menus with no text in them.',
         why:
-            "Both GOG's launcher.exe and the game's own witcher.exe read InstallFolder under " +
-            "HKLM\\Software\\CD Projekt RED\\The Witcher before they do anything else, and " +
-            "neither has a fallback. gogdl downloads the depot and never performs the registry " +
-            "step GOG's installer would, so the value is absent and both give up: the launcher " +
-            "exits 0 without drawing a window, which is why nothing anywhere reports a failure. " +
-            "The value is written into the prefix at launch, in the WoW64 view these 32-bit " +
-            "executables actually read, and rewritten if the game is ever moved.",
+            "Two values GOG's installer writes and gogdl never does. Without InstallFolder under "
+            + "HKLM\\Software\\CD Projekt RED\\The Witcher, both the launcher and witcher.exe give up "
+            + "before drawing anything, the launcher exiting 0, which is why nothing reports a "
+            + "failure. Past that the game starts and every string is missing, the main menu being "
+            + "background art and nothing else: TextLanguage under HKCU\\Software\\CD Projekt RED\\"
+            + "Witcher\\Settings chooses which Data/dialog_<id>.tlk the text comes out of, and unset "
+            + "there is no text anywhere. Both are written into the prefix at launch, the language "
+            + "taken from GOG's own .info and checked against the .tlk files on disk. It looks like "
+            + "an ultrawide fault and is not one: 3440x1440, 2560x1440 and 1024x768 all draw the "
+            + "same textless menu, so the player's resolution is left alone.",
         env: {},
         settings: [],
-        handledBy: 'GOG install-folder registry value',
+        handledBy: 'GOG install-folder and language registry values',
     },
 ];
 

@@ -1803,10 +1803,59 @@ async function applyFalloutNewCaliforniaFix(installPath, prefix, proton) {
 // merely when the key is missing. A library moved to another disk otherwise leaves a value
 // pointing at a folder that is gone, which fails in exactly the same silent way and would
 // look like the fix had stopped working.
+//
+// ── and then the menus have no text ─────────────────────────────────────────
+// With the path in place the game starts, and every string it should draw is missing: the
+// main menu is the background art and nothing else, no New Game, no Options, no error.
+//
+// The same omission, one key further on. Every string the game draws comes out of
+// Data/dialog_<id>.tlk, and which id it reads is TextLanguage under
+// HKCU\Software\CD Projekt RED\Witcher\Settings, written by GOG's installer and so never
+// written here. The game has a message for exactly this, "Invalid text language set in
+// registry. Reinstall the game...", which it does not get as far as showing.
+//
+// ⚠️ Not a resolution fault, though it looks exactly like one on an ultrawide. Ruled out by
+// measurement before this was found: 3440x1440, 2560x1440 (correct 16:9, art properly
+// pillarboxed) and 1024x768 all draw the same textless menu. The aspect ratio was never
+// what was wrong, so nothing here touches the player's resolution.
+//
+// ⚠️ Strings, not DWORDs. Every other value the game keeps in that key is a string, and
+// dword:00000003 is not read as three: written that way the game stopped starting at all,
+// and came back the moment the ids were strings again.
+//
+// ⚠️ The language is taken from GOG's own .info rather than assumed, and the chosen id is
+// checked against the .tlk files actually on disk, because naming a language this copy does
+// not carry is precisely what produces a textless menu.
 const TW1_APP_ID = '1207658924';
+
+// The language ids the game uses to pick Data/dialog_<id>.tlk, which is where every string
+// it draws comes from, menus included. GOG's .info names the language in words, so this is
+// the bridge between the two. Corroborated against this release: it ships exactly ten .tlk
+// files and they are exactly these ten ids.
+const TW1_LANGUAGES = {
+    english: 3, polish: 5, german: 10, french: 11, spanish: 12,
+    italian: 13, russian: 14, czech: 15, hungarian: 16, chinese: 21,
+};
 
 function isWitcher1EnhancedEdition(game) {
     return (game?.store || '').toLowerCase() === 'gog' && String(game?.app_id) === TW1_APP_ID;
+}
+
+// Which dialog_<id>.tlk this copy can actually read strings out of. GOG's own .info is asked
+// first; English is the fallback, and whatever is chosen has to be on disk, because naming a
+// language the install does not carry is the one thing that produces the game's own "Invalid
+// text language set in registry" and no text at all.
+function witcher1TextLanguage(installPath) {
+    const has = id => fs.existsSync(resolvePathCaseInsensitive(path.join(installPath, 'Data', `dialog_${id}.tlk`)));
+    let declared = '';
+    try {
+        const info = JSON.parse(fs.readFileSync(
+            resolvePathCaseInsensitive(path.join(installPath, `goggame-${TW1_APP_ID}.info`)), 'utf8'));
+        declared = String(info.language || '').trim().toLowerCase();
+    } catch {}
+    const id = TW1_LANGUAGES[declared];
+    if (id && has(id)) return id;
+    return has(3) ? 3 : null;
 }
 
 async function applyWitcher1EnhancedEditionFix(installPath, prefix, proton) {
@@ -1819,26 +1868,42 @@ async function applyWitcher1EnhancedEditionFix(installPath, prefix, proton) {
     // visible in the Game Explorer line of the launch log.
     const winPath = host.runtime.toWindowsPath(installPath) + '\\';
     const escaped = winPath.replace(/\\/g, '\\\\');
-    const valueLine = `"InstallFolder"="${escaped}"`;
+    const installLine = `"InstallFolder"="${escaped}"`;
 
-    // Reading system.reg directly keeps the common case free: once the value is in the
-    // prefix we never spawn wine for this again. A missing system.reg means the prefix was
-    // never built, so this is reachable on a first launch, and we go ahead and let wine
-    // create it rather than skip, or the player meets the silent exit exactly once.
-    const systemReg = path.join(prefix, 'system.reg');
-    const prefixBuilt = fs.existsSync(systemReg);
-    if (prefixBuilt) {
-        try {
-            if (fs.readFileSync(systemReg, 'utf8').includes(valueLine)) return;
-        } catch { return; }
+    // Reading the registry files directly keeps the common case free: once both values are in
+    // the prefix we never spawn wine for this again. A prefix that was never built has neither
+    // file, and then both are wanted, which is right: it is a first launch.
+    const read = (f) => { try { return fs.readFileSync(path.join(prefix, f), 'utf8'); } catch { return null; } };
+    const systemReg = read('system.reg');
+    const userReg   = read('user.reg');
+    const prefixBuilt = systemReg !== null;
+
+    // Two independent faults, two independent questions. Either one alone is worth a wine run.
+    const needInstall  = !prefixBuilt || !systemReg.includes(installLine);
+    // Any existing value is left alone: a player who has switched language in the D'jinni
+    // editor, or by hand, meant to, and this must not put English back every launch.
+    const needLanguage = !prefixBuilt || !/^"TextLanguage"=/m.test(userReg || '');
+    if (!needInstall && !needLanguage) return;
+
+    const lang = needLanguage ? witcher1TextLanguage(installPath) : null;
+
+    let regContent = 'Windows Registry Editor Version 5.00\r\n\r\n';
+    if (needInstall) {
+        regContent +=
+            '[HKEY_LOCAL_MACHINE\\SOFTWARE\\CD Projekt RED\\The Witcher]\r\n' +
+            `${installLine}\r\n\r\n` +
+            '[HKEY_LOCAL_MACHINE\\SOFTWARE\\WOW6432Node\\CD Projekt RED\\The Witcher]\r\n' +
+            `${installLine}\r\n\r\n`;
     }
-
-    const regContent =
-        'Windows Registry Editor Version 5.00\r\n\r\n' +
-        '[HKEY_LOCAL_MACHINE\\SOFTWARE\\CD Projekt RED\\The Witcher]\r\n' +
-        `"InstallFolder"="${escaped}"\r\n\r\n` +
-        '[HKEY_LOCAL_MACHINE\\SOFTWARE\\WOW6432Node\\CD Projekt RED\\The Witcher]\r\n' +
-        `"InstallFolder"="${escaped}"\r\n`;
+    if (lang) {
+        // ⚠️ Strings, not DWORDs. Every other value the game keeps in this key is a string,
+        // and dword:00000003 is not read as three: the game stopped starting at all with the
+        // ids written that way, and came back the moment they were strings again.
+        regContent +=
+            '[HKEY_CURRENT_USER\\SOFTWARE\\CD Projekt RED\\Witcher\\Settings]\r\n' +
+            `"TextLanguage"="${lang}"\r\n` +
+            `"VoiceLanguage"="${lang}"\r\n`;
+    }
 
     const regFile = path.join(os.tmpdir(), `tw1_reg_${TW1_APP_ID}.reg`);
     try { fs.writeFileSync(regFile, regContent, 'utf8'); } catch { return; }
