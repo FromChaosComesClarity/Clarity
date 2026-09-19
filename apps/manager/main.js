@@ -972,6 +972,7 @@ ipcMain.handle('set-launch-target', (_, installerGameId, relPath, taskIndex) => 
 // already own. See packages/core/custom-installers.js for why this is a catalogue of
 // specific recipes rather than one generic folder importer.
 const customInstallers = require('../../packages/core/custom-installers.js');
+const doomSoundtrack = require('../../packages/core/doom-soundtrack.js');
 
 // ── Which screen games open on (KDE only) ────────────────────────────────────
 // See packages/core/kwin-display.js for why this is a KWin script rather than anything
@@ -1312,22 +1313,49 @@ ipcMain.handle('custom-folder-add', (_, { folder, executable, title } = {}) => {
     return r;
 });
 
-// Asked at the moment of pressing Play, not at install time: which Doom this mod runs on
-// is a per-session decision, the way you would pick a disc off a shelf. Returns null when
-// there is nothing to ask, not a mod, or only one IWAD available, so the launch goes
-// straight through and nothing is put in the way of games that have no choice to make.
-ipcMain.handle('custom-iwad-options', (_, installerGameId) => {
+// Asked at the moment of pressing Play, not at install time: which Doom this mod runs on,
+// and what it sounds like, are per-session decisions, the way you would pick a disc off a
+// shelf. Returns null when there is nothing to ask, not a mod, one Doom and no soundtrack
+// to offer, so the launch goes straight through and nothing is put in the way of games
+// that have no choice to make.
+//
+// The soundtracks on offer depend on which Doom is picked, and that is picked in this same
+// dialog, so coverage is worked out for every IWAD up front and the renderer swaps lists
+// as the choice changes. Cheaper than a round trip per click, and it is only hashing the
+// music lumps of files that are already on disk.
+ipcMain.handle('custom-run-options', (_, installerGameId) => {
     if (!installerGameId || !ensureInstallerEngine()) return null;
     try {
         const row = _installerEngineDb.prepare('SELECT install_path, launch_args FROM games WHERE id=?').get(installerGameId);
         if (!row || !row.install_path || !/-file\b/i.test(row.launch_args || '')) return null;
         const iwads = customInstallers.listIwads(row.install_path);
-        if (iwads.length < 2) return null;
+
+        // The recordings live in the DOOM + DOOM II re-release. No re-release installed,
+        // no soundtrack choice, and nothing is said about it: there is nothing to buy or
+        // download here, so an explanation would only be noise.
+        const source = doomSoundtrack.findSource(_installerRowsForData());
+        const byIwad = {};
+        if (source) {
+            for (const i of iwads) {
+                byIwad[i.file] = doomSoundtrack
+                    .coverageFor(source.file, path.join(row.install_path, i.file))
+                    .map(s => ({
+                        id: s.id, title: s.title, blurb: s.blurb,
+                        covered: s.covered, total: s.total, bytes: s.bytes,
+                        // Already built once means picking it is instant, worth saying.
+                        built: fs.existsSync(doomSoundtrack.audioWadPath(row.install_path, s.id)),
+                    }));
+            }
+        }
+
+        const anySoundtrack = Object.values(byIwad).some(v => v.length);
+        if (iwads.length < 2 && !anySoundtrack) return null;
         return {
             iwads,
             current: customInstallers.currentIwad(row.launch_args),
-            // The full line with the choice applied, ready to hand back to launch-game.
-            argsFor: Object.fromEntries(iwads.map(i => [i.file, customInstallers.withIwad(row.launch_args, i.file)])),
+            soundtracks: byIwad,
+            soundtrackSource: source ? source.title : '',
+            currentSoundtrack: customInstallers.currentSoundtrack(row.launch_args),
         };
     } catch { return null; }
 });
@@ -1394,13 +1422,45 @@ ipcMain.handle('custom-set-engine', (_, installerGameId, exe) => {
     } catch (e) { return { ok: false, error: e.message }; }
 });
 
-// Remember the choice as the new default, so the dialog opens on what you picked last.
-ipcMain.handle('custom-set-iwad', (_, installerGameId, iwad) => {
+// Apply what the launch dialog was told and remember it as the new default, so the dialog
+// opens on what you picked last. Both halves are written in one go because they are one
+// decision to the user, and because writing the IWAD and the soundtrack separately would
+// mean a moment where the line names an IWAD the aliases were not built for.
+//
+// The first time a soundtrack is chosen it is also built here, which is the "one click"
+// part: a third of a gigabyte of ogg copied out of the re-release into a PWAD. It happens
+// once per soundtrack per engine and every later launch just reuses the file.
+ipcMain.handle('custom-set-run-options', async (event, { installerGameId, iwad, soundtrack } = {}) => {
     if (!installerGameId || !ensureInstallerEngine()) return { ok: false, error: 'Installer data not found.' };
     try {
-        const row = _installerEngineDb.prepare('SELECT launch_args FROM games WHERE id=?').get(installerGameId);
+        const row = _installerEngineDb.prepare('SELECT install_path, launch_args FROM games WHERE id=?').get(installerGameId);
         if (!row) return { ok: false, error: 'That game is no longer registered.' };
-        const next = customInstallers.withIwad(row.launch_args, iwad || '');
+
+        let next = customInstallers.withIwad(row.launch_args, iwad || '');
+
+        if (soundtrack) {
+            const source = doomSoundtrack.findSource(_installerRowsForData());
+            if (!source) {
+                return { ok: false, error: 'The DOOM + DOOM II re-release the music comes from is no longer installed.' };
+            }
+            const send = (p) => {
+                try { event.sender.send('soundtrack-build-progress', { installerGameId, ...p }); } catch {}
+            };
+            const built = await doomSoundtrack.ensureBuilt({
+                extrasWad: source.file,
+                engineRoot: row.install_path,
+                id: soundtrack,
+                // No IWAD means the engine will ask at startup, so there is no one IWAD to
+                // derive aliases from. The tracks still play under their own names.
+                iwadFile: iwad ? path.join(row.install_path, iwad) : '',
+                onProgress: send,
+            });
+            if (!built.ok) return built;
+            next = customInstallers.withSoundtrack(next, built.files);
+        } else {
+            next = customInstallers.withSoundtrack(next, []);
+        }
+
         _installerEngineDb.prepare('UPDATE games SET launch_args=? WHERE id=?').run(next || null, installerGameId);
         return { ok: true, launchArgs: next };
     } catch (e) { return { ok: false, error: e.message }; }
