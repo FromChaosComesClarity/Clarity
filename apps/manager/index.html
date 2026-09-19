@@ -2270,11 +2270,10 @@
           <div id="modpick-files-hint" style="font-size:12px; color:var(--text_sec); margin:2px 0 8px;"></div>
           <div id="modpick-list" style="display:flex; flex-direction:column; gap:2px;"></div>
         </div>
-        <div id="modpick-iwad-wrap" style="margin-top:14px;">
-          <div class="mp-head" id="modpick-iwad-head">Which Doom to play it on</div>
-          <div id="modpick-iwad-hint" style="font-size:12px; color:var(--text_sec); margin:2px 0 8px;"></div>
-          <div id="modpick-iwad-list" style="display:flex; flex-direction:column; gap:2px;"></div>
-        </div>
+        <!-- One block per question. The launch dialog asks two (which Doom, and which
+             soundtrack) and the others ask one, so they are built from the options
+             rather than sitting here as fixed markup. -->
+        <div id="modpick-radios"></div>
         <div id="modpick-name-wrap" style="margin-top:14px;">
           <div class="mp-head" id="modpick-name-head">Name in your library</div>
           <input type="text" id="modpick-name" autocomplete="off" spellcheck="false"

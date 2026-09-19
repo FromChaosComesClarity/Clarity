@@ -352,7 +352,8 @@ async function addWindowsGameFromFolder() {
     const chosen = await pickRunOptions({
         title: 'Add a game from a folder',
         okLabel: 'Add to Library',
-        radios: {
+        radios: [{
+            id: 'entry',
             header: 'What starts the game?',
             hint: 'Best guess first. A .bat is sometimes the real entry point. It can carry the command line a mod needs, and sometimes just a utility, so check the name.',
             items: scan.entries.map(e => ({
@@ -360,13 +361,13 @@ async function addWindowsGameFromFolder() {
                 label: e.name + (e.bat ? '   (batch file)' : ''),
                 sub: `${e.dir ? e.dir + ' · ' : ''}${_fmtBytes(e.size)}${e.junk ? ' · probably not the game' : ''}`,
             })),
-        },
+        }],
         nameInput: { label: 'Name in your library', value: scan.suggestedTitle },
     });
-    if (!chosen || !chosen.choice) return;
+    if (!chosen || !chosen.choices.entry) return;
 
     const res = await window.api.customFolderAdd({
-        folder: picked.path, executable: chosen.choice, title: chosen.name || scan.suggestedTitle,
+        folder: picked.path, executable: chosen.choices.entry, title: chosen.name || scan.suggestedTitle,
     });
     if (!res || !res.ok) { showAlert((res && res.error) || 'Could not add that folder.'); return; }
     showAlert(`${res.title} was added to your library.\n\nIt runs ${res.executable} from the folder where it already lives, nothing was copied.`);
@@ -383,21 +384,27 @@ document.getElementById('btn-custom-folder')?.addEventListener('click', () =>
 // out of a mod pack to load, which Doom to run it on, which executable in a folder starts
 // the game. Sections appear only when there is something to ask.
 //   checks, multi-select list   {header, hint, items:[{value,label,sub,checked}]}
-//   radios, single-select list  {header, hint, items:[{value,label,sub}], current}
+//   radios, single-select lists [{id, header, hint, items:[{value,label,sub}], current}]
 //   nameInput, optional free text {label, value}
-// Resolves to {selected:[], choice:'', name:''} or null if cancelled.
-function pickRunOptions({ title, okLabel = 'Install Selected', checks = null, radios = null, nameInput = null }) {
+//   onChange, (choices, groups) => the groups to redraw, or null
+// Resolves to {selected:[], choices:{}, name:''} or null if cancelled.
+//
+// `radios` is a list of groups rather than one because the launch dialog asks which Doom
+// *and* which soundtrack, and those are one decision to the user even though they are two
+// questions. Each group answers under its own id, so callers read chosen.choices.<id>.
+// `onChange` is what lets one group react to another, which keeps the soundtrack list
+// honest when the Doom being played changes under it.
+function pickRunOptions({ title, okLabel = 'Install Selected', checks = null, radios = null, nameInput = null, onChange = null }) {
     return new Promise(resolve => {
         const modal = document.getElementById('modal-modpick');
         const list = document.getElementById('modpick-list');
-        const radioWrap = document.getElementById('modpick-iwad-wrap');
-        const radioList = document.getElementById('modpick-iwad-list');
+        const radioWrap = document.getElementById('modpick-radios');
         const nameWrap = document.getElementById('modpick-name-wrap');
         const nameEl = document.getElementById('modpick-name');
         document.getElementById('modpick-title').textContent = title;
         document.getElementById('btn-modpick-ok').textContent = okLabel;
         list.innerHTML = '';
-        radioList.innerHTML = '';
+        radioWrap.innerHTML = '';
 
         const rowFor = (type, group, o, checked) => {
             const row = document.createElement('label');
@@ -423,16 +430,55 @@ function pickRunOptions({ title, okLabel = 'Install Selected', checks = null, ra
             checks.items.forEach((o, i) => list.appendChild(rowFor('checkbox', '', o, o.checked ?? i === 0)));
         }
 
-        radioWrap.style.display = radios ? '' : 'none';
-        if (radios) {
-            document.getElementById('modpick-iwad-head').textContent = radios.header;
-            document.getElementById('modpick-iwad-hint').textContent = radios.hint || '';
-            radios.items.forEach((o, i) => radioList.appendChild(
-                rowFor('radio', 'modpick-radio', o, radios.current ? o.value === radios.current : i === 0)));
-            // The remembered choice may no longer exist, never leave the list unanswered.
-            if (radios.items.length && !radioList.querySelector('input:checked')) {
-                radioList.querySelector('input').checked = true;
+        const groups = radios || [];
+        radioWrap.style.display = groups.length ? '' : 'none';
+
+        // Rebuilt in place rather than recreated, so re-rendering one group after another
+        // group changed does not move the focus or scroll the dialog.
+        const renderGroup = (g) => {
+            const rows = document.getElementById(`modpick-rows-${g.id}`);
+            const head = document.getElementById(`modpick-head-${g.id}`);
+            const hint = document.getElementById(`modpick-hint-${g.id}`);
+            head.textContent = g.header;
+            hint.textContent = g.hint || '';
+            hint.style.display = g.hint ? '' : 'none';
+            rows.innerHTML = '';
+            g.items.forEach((o, i) => rows.appendChild(
+                rowFor('radio', `modpick-radio-${g.id}`, o, g.current ? o.value === g.current : i === 0)));
+            // The remembered choice may no longer exist, never leave a list unanswered.
+            if (g.items.length && !rows.querySelector('input:checked')) {
+                rows.querySelector('input').checked = true;
             }
+        };
+
+        const readChoices = () => Object.fromEntries(groups.map(g => [
+            g.id,
+            document.querySelector(`#modpick-rows-${g.id} input:checked`)?.value ?? '',
+        ]));
+
+        for (const g of groups) {
+            const wrap = document.createElement('div');
+            wrap.id = `modpick-group-${g.id}`;
+            wrap.style.marginTop = '14px';
+            wrap.innerHTML = `<div class="mp-head" id="modpick-head-${g.id}"></div>` +
+                `<div id="modpick-hint-${g.id}" style="font-size:12px; color:var(--text_sec); margin:2px 0 8px;"></div>` +
+                `<div id="modpick-rows-${g.id}" style="display:flex; flex-direction:column; gap:2px;"></div>`;
+            radioWrap.appendChild(wrap);
+            renderGroup(g);
+        }
+
+        if (onChange) {
+            radioWrap.addEventListener('change', () => {
+                // The caller rewrites the groups it wants changed; we redraw them and keep
+                // every other answer exactly as the user left it.
+                const next = onChange(readChoices(), groups);
+                for (const g of (next || [])) {
+                    const target = groups.find(x => x.id === g.id);
+                    if (!target) continue;
+                    Object.assign(target, g);
+                    renderGroup(target);
+                }
+            });
         }
 
         nameWrap.style.display = nameInput ? '' : 'none';
@@ -449,7 +495,7 @@ function pickRunOptions({ title, okLabel = 'Install Selected', checks = null, ra
         };
         document.getElementById('btn-modpick-ok').onclick = () => done({
             selected: checks ? [...list.querySelectorAll('input:checked')].map(i => i.value) : [],
-            choice: radios ? (radioList.querySelector('input:checked')?.value ?? '') : undefined,
+            choices: readChoices(),
             name: nameInput ? nameEl.value.trim() : '',
         });
         document.getElementById('btn-modpick-cancel').onclick = () => done(null);
@@ -822,30 +868,120 @@ document.getElementById('modal-launcher-pick').addEventListener('click', e => {
         document.getElementById('modal-launcher-pick').classList.remove('active');
 });
 
-// A Doom mod runs on whichever Doom you feel like tonight, so the choice belongs at the
-// moment you press Play rather than baked in at install time. Returns the launch line to
-// use, '' to cancel the launch, or undefined when there is nothing to ask about, which is
-// every game that is not a mod with more than one IWAD beside it, so nothing else is slowed
-// down by a round trip it does not need.
-async function _iwadForLaunch(installerGameId) {
-    let opts = null;
-    try { opts = await window.api.customIwadOptions(installerGameId); } catch (e) {}
-    if (!opts || !opts.iwads || opts.iwads.length < 2) return undefined;
+// The soundtrack build is the one slow thing behind this dialog, and it happens after the
+// dialog has already closed, so it reports into the global toast rather than nowhere.
+// Registered once: this listener outlives any one launch.
+let _soundtrackToastFor = null;
+if (window.api.onSoundtrackBuildProgress) {
+    window.api.onSoundtrackBuildProgress(d => {
+        if (!_soundtrackToastFor || d.installerGameId !== _soundtrackToastFor) return;
+        opToast('Building the soundtrack…', d.pct);
+    });
+}
 
-    const chosen = await pickRunOptions({
-        title: 'Which Doom?',
-        okLabel: 'Play',
-        radios: {
+// What the soundtrack question looks like for one Doom. The first option is always the
+// music the game shipped with, because "off" has to be reachable and has to be the thing
+// that needs no explaining.
+//
+// A Doom with nothing on offer still gets the question, reduced to that one answer and a
+// line saying why. It has to stay on screen: the group is built once and re-rendered as
+// the Doom choice changes, so a question that vanished for TNT could never come back when
+// the user switched to Doom II.
+const ORIGINAL_MUSIC = { value: '', label: 'The original music', sub: 'As the game shipped' };
+
+function _soundtrackGroup(opts, iwadFile) {
+    const available = (opts.soundtracks && opts.soundtracks[iwadFile]) || [];
+    if (!available.length) {
+        return {
+            id: 'soundtrack',
+            header: 'Soundtrack',
+            hint: 'These recordings cover Doom and Doom II, so this one plays its own music.',
+            items: [ORIGINAL_MUSIC],
+            current: '',
+        };
+    }
+    return {
+        id: 'soundtrack',
+        header: 'Soundtrack',
+        hint: `From ${opts.soundtrackSource}, which you own. Built once, then it is just there.`,
+        current: opts.currentSoundtrack,
+        items: [
+            ORIGINAL_MUSIC,
+            ...available.map(s => ({
+                value: s.id,
+                label: s.title,
+                sub: s.built
+                    ? `Ready · ${s.covered} of ${s.total} tracks`
+                    : `${_fmtBytes(s.bytes)} copied the first time · ${s.covered} of ${s.total} tracks`,
+            })),
+        ],
+    };
+}
+
+// A Doom mod runs on whichever Doom you feel like tonight, and now on whichever soundtrack
+// too, so both belong at the moment you press Play rather than baked in at install time.
+// Returns the launch line to use, null to cancel the launch, or undefined when there is
+// nothing to ask about, so nothing is slowed down by a round trip it does not need.
+//
+// The two questions are not independent: which soundtracks are worth offering depends on
+// which Doom is selected, because a recording made for Doom II is not a soundtrack for
+// TNT. So the soundtrack list is re-rendered when the Doom choice changes.
+async function _runOptionsForLaunch(installerGameId) {
+    let opts = null;
+    try { opts = await window.api.customRunOptions(installerGameId); } catch (e) {}
+    if (!opts) return undefined;
+
+    const groups = [];
+    if (opts.iwads.length > 1) {
+        groups.push({
+            id: 'iwad',
             header: 'Which Doom to play it on',
             hint: 'Every Doom you own is linked next to the engine, so this mod can run on any of them.',
             items: opts.iwads.map(i => ({ value: i.file, label: i.label, sub: i.file })),
             current: opts.current,
+        });
+    }
+    // With one Doom there is no question to ask about it, but its identity still decides
+    // what the soundtrack list may contain.
+    const startIwad = opts.current || (opts.iwads[0] && opts.iwads[0].file) || '';
+    // Asked whenever any Doom beside this engine has something to offer, not only the one
+    // selected right now, because the selection can change before Play is pressed.
+    const anySoundtrack = Object.values(opts.soundtracks || {}).some(v => v.length);
+    if (anySoundtrack) groups.push(_soundtrackGroup(opts, startIwad));
+    if (!groups.length) return undefined;
+
+    const chosen = await pickRunOptions({
+        title: groups.length > 1 ? 'How should it run?' : (anySoundtrack ? 'Soundtrack' : 'Which Doom?'),
+        okLabel: 'Play',
+        radios: groups,
+        onChange: (choices) => {
+            if (!anySoundtrack || !choices.iwad) return null;
+            const next = _soundtrackGroup(opts, choices.iwad);
+            // Keep what the user already picked if it survives the change of Doom.
+            next.current = choices.soundtrack && next.items.some(i => i.value === choices.soundtrack)
+                ? choices.soundtrack : '';
+            return [next];
         },
     });
     if (!chosen) return null;                     // cancelled, do not launch
-    // Remembered as the new default so the dialog opens on last night's choice.
-    try { await window.api.customSetIwad(installerGameId, chosen.choice); } catch (e) {}
-    return opts.argsFor[chosen.choice];
+
+    const iwad = chosen.choices.iwad !== undefined ? chosen.choices.iwad : opts.current;
+    const soundtrack = chosen.choices.soundtrack || '';
+
+    // Building only happens the first time a soundtrack is chosen on this engine.
+    const needsBuild = soundtrack && !((opts.soundtracks[iwad] || []).find(s => s.id === soundtrack) || {}).built;
+    if (needsBuild) { _soundtrackToastFor = installerGameId; opToast('Building the soundtrack…', 0); }
+    let res = null;
+    try { res = await window.api.customSetRunOptions({ installerGameId, iwad, soundtrack }); }
+    catch (e) { res = { ok: false, error: e.message }; }
+    finally { _soundtrackToastFor = null; }
+
+    if (needsBuild) opToastDone(res && res.ok ? 'Soundtrack ready' : 'Soundtrack failed');
+    if (!res || !res.ok) {
+        showAlert((res && res.error) || 'The soundtrack could not be prepared.');
+        return null;
+    }
+    return res.launchArgs;
 }
 
 // Blood plays on Raze and on BuildGDX, and they are different experiences, one is a
@@ -860,16 +996,17 @@ async function _engineForLaunch(installerGameId) {
     const chosen = await pickRunOptions({
         title: 'Which engine?',
         okLabel: 'Play',
-        radios: {
+        radios: [{
+            id: 'engine',
             header: 'Run this game on',
             hint: 'Both are installed and both play this game. They render and behave differently, so pick whichever suits tonight.',
             items: opts.engines.map(e => ({ value: e.exe, label: e.title, sub: e.exe })),
             current: opts.current,
-        },
+        }],
     });
     if (!chosen) return null;
-    try { await window.api.customSetEngine(installerGameId, chosen.choice); } catch (e) {}
-    return chosen.choice;
+    try { await window.api.customSetEngine(installerGameId, chosen.choices.engine); } catch (e) {}
+    return chosen.choices.engine;
 }
 
 async function _doLaunch(game, cmd) {
@@ -882,7 +1019,7 @@ async function _doLaunch(game, cmd) {
         if (game?.InstallerGameId) {
             const exe = await _engineForLaunch(game.InstallerGameId);
             if (exe === null) return;              // the dialog was cancelled
-            const args = await _iwadForLaunch(game.InstallerGameId);
+            const args = await _runOptionsForLaunch(game.InstallerGameId);
             if (args === null) return;
             window.api.launchGame('installer://launch/' + game.InstallerGameId, args, exe);
         } else {

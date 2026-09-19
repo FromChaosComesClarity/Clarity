@@ -19,6 +19,7 @@ const fs = require('fs');
 const path = require('path');
 const os = require('os');
 const { spawnSync } = require('child_process');
+const doomSoundtrack = require('./doom-soundtrack.js');
 
 // ── The catalogue ────────────────────────────────────────────────────────────
 // `archive` matches the file the user drops on us, so a mis-dropped download is caught
@@ -1810,6 +1811,45 @@ const currentIwad = (launchArgs) => {
     return i >= 0 && args[i + 1] ? args[i + 1] : '';
 };
 
+// The same idea for the soundtrack, see doom-soundtrack.js for where those files come
+// from. They go on the end, after the mod's own -file entries, because the last thing
+// loaded wins. Brutal Doom turns out not to define any of the stock music lumps (it ships
+// only its own title theme and tracks for its own maps), so in practice there is nothing
+// to fight over, but load order is the rule the engine documents and relying on the
+// absence of a clash would be luck rather than design.
+const isSoundtrackArg = (a) => {
+    const p = String(a).replace(/\\/g, '/').toLowerCase();
+    return p.startsWith(doomSoundtrack.SOUNDTRACK_DIR + '/')
+        || p.includes('/' + doomSoundtrack.SOUNDTRACK_DIR + '/');
+};
+
+// An empty `files` takes the soundtrack back off the line, which is how "the original
+// music" is expressed: nothing loaded, and the IWAD plays itself.
+function withSoundtrack(launchArgs, files) {
+    const args = parseArgs(launchArgs);
+    const out = [];
+    for (let i = 0; i < args.length; i++) {
+        if (args[i].toLowerCase() === '-file' && args[i + 1] && isSoundtrackArg(args[i + 1])) {
+            i++;                                   // drop the flag and the file with it
+            continue;
+        }
+        out.push(args[i]);
+    }
+    for (const f of (files || [])) out.push('-file', f);
+    return formatArgs(out);
+}
+
+const currentSoundtrack = (launchArgs) => {
+    for (const a of parseArgs(launchArgs)) {
+        if (!isSoundtrackArg(a)) continue;
+        const base = path.basename(String(a).replace(/\\/g, '/'), '.wad').toLowerCase();
+        // <id>.wad is the audio, <id>-<iwad>.wad the aliases; either identifies the choice.
+        const hit = doomSoundtrack.SOUNDTRACKS.find(s => base === s.id || base.startsWith(s.id + '-'));
+        if (hit) return hit.id;
+    }
+    return '';
+};
+
 function installMod({ recipeId, archivePath, engineRoot, engineExe, dataRows, selected, iwad }) {
     const recipe = getRecipe(recipeId);
     if (!recipe) return { ok: false, error: `Unknown recipe "${recipeId}".` };
@@ -1909,7 +1949,7 @@ module.exports = {
     findModFolderName, extractModFolder,
     safeTarget, clearTarget,
     writeEngineSearchPaths,
-    parseArgs, formatArgs, withIwad, currentIwad,
+    parseArgs, formatArgs, withIwad, currentIwad, withSoundtrack, currentSoundtrack,
     listRecipes, getRecipe, detectRecipe, selfCheck,
     resolveGameData, resolveDataFolder, folderSatisfies, resolveExtra, linkGameData, installFromArchive,
     findEntry, flattenSingleRoot, findExtractor,
