@@ -146,10 +146,13 @@ function hashMusic(wadFile) {
 //
 //   - It resolves reuse for free. Doom II's D_RUNNI2 hashes to the same song as
 //     D_RUNNIN, so it lands on the same replacement without a table of exceptions.
-//   - It refuses the games the recordings do not cover. TNT and Plutonia file their own
-//     music under Doom II's names, so tnt.wad's D_RUNNIN is a completely different song.
-//     By name it looks like a 74% match and every map would get the wrong music; by
-//     content almost nothing resolves, and the soundtrack is correctly not offered.
+//   - It refuses the games the recordings do not cover. TNT files its own music under
+//     Doom II's names, so tnt.wad's D_RUNNIN is a completely different song. By name it
+//     looks like a 74% match and every map would get the wrong music; by content almost
+//     nothing resolves, and the soundtrack is correctly not offered.
+//   - And it accepts the ones that are covered but do not look it. Plutonia also reuses
+//     Doom II's names, but the songs underneath are mostly Doom 1's, so following the
+//     bytes covers 26 of its 27 while following the names would have mangled it.
 function referenceIndex(extrasWad) {
     const dir = path.dirname(extrasWad);
     const index = new Map();                         // sha1 -> canonical D_ name
@@ -200,10 +203,15 @@ function sourceIn(root) {
 // The re-release in the user's library, if it is installed. Returns the path to its
 // extras.wad, or null, which is not an error: it just means this engine gets no
 // soundtrack options and the dialog says nothing about them.
+//
+// Titles first because that is nearly always the answer and costs nothing, then every
+// other installed row. A library row can be named anything, by the storefront or by the
+// user, and the music being there is a fact about the folder rather than about the name
+// above it. One readdir per installed game is a cheap price for not missing it.
 function findSource(dataRows) {
-    for (const g of (dataRows || [])) {
-        if (!g.installed || !g.install_path) continue;
-        if (!RE_RELEASE_TITLES.some(rx => rx.test(String(g.title || '')))) continue;
+    const rows = (dataRows || []).filter(g => g.installed && g.install_path);
+    const named = rows.filter(g => RE_RELEASE_TITLES.some(rx => rx.test(String(g.title || ''))));
+    for (const g of [...named, ...rows.filter(g => !named.includes(g))]) {
         const hit = sourceIn(g.install_path);
         if (hit) return { file: hit, title: g.title };
     }
