@@ -3336,16 +3336,22 @@ ipcMain.handle('install-to-menu', () => {
         const installed = [];
         if (suitePath) {
             try { fs.chmodSync(suitePath, '755'); } catch {}
+            // ⚠️ suitePath is the raw electron binary in dev (no AppImage in baseDir), and
+            // Electron needs the repo root as an argument in that case or it shows its own
+            // demo screen instead of Clarity -- silently, no error. host.selfSpawnArgs already
+            // solves exactly this for re-spawning a face (see spawnFace above); the launcher
+            // entries just weren't using it. Packaged (AppImage), this is a no-op passthrough.
+            const repoRoot = path.join(__dirname, '..', '..');
             host.desktop.writeLauncher(appsDir, {
                 id: 'clarity', name: 'Clarity',
                 comment: 'Your game library, Manager, Installer and Couch in one.',
-                exec: suitePath, icon: path.join(iconsDir, 'Clarity.svg'),
+                exec: suitePath, args: host.selfSpawnArgs([], repoRoot), icon: path.join(iconsDir, 'Clarity.svg'),
                 categories: ['Game', 'Utility'], wmClass: 'clarity',
             });
             host.desktop.writeLauncher(appsDir, {
                 id: 'clarity-couch', name: 'Couch (Fullscreen)',
                 comment: 'Clarity in fullscreen, gamepad-first mode, made for the living room / TV.',
-                exec: suitePath, args: ['--couch'], icon: path.join(iconsDir, 'Couch.svg'),
+                exec: suitePath, args: host.selfSpawnArgs(['--couch'], repoRoot), icon: path.join(iconsDir, 'Couch.svg'),
                 categories: ['Game'], wmClass: 'couch',
                 keywords: ['couch', 'tv', 'living room', 'gamepad', 'controller', 'fullscreen',
                            'big picture', 'bigpicture', 'clarity'],
@@ -3406,7 +3412,8 @@ ipcMain.handle('add-game-shortcut', (_, gameId, targets) => {
             id: `clarity-game-${game.id}`,
             name: String(game.Game || 'Game'),
             comment: `Launch ${String(game.Game || 'Game')} via Clarity`,
-            exec: suitePath, args: [`--game=${game.id}`], icon: iconPath,
+            // See the install-to-menu handler above for why selfSpawnArgs, not a bare array.
+            exec: suitePath, args: host.selfSpawnArgs([`--game=${game.id}`], path.join(__dirname, '..', '..')), icon: iconPath,
             categories: ['Game'], wmClass: 'clarity',
         };
 
