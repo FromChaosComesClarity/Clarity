@@ -3,6 +3,11 @@ dist/
 *.AppImage
 GameManagerConfig/
 InstallerConfig/
+# ...and the same thing as a symlink: in dev a face can be pointed at a real
+# install's data directory, and the trailing-slash rules above do not match a
+# symlink, only a directory.
+GameManagerConfig
+InstallerConfig
 .DS_Store
 *.log
 

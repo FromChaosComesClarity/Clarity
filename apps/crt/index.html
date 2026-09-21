@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Clarity — CRT</title>
+<link rel="stylesheet" href="crt.css">
+</head>
+<body>
+  <!--
+    The safe box. Everything visible lives inside it, because a CRT crops the
+    edges of the picture and no two sets crop the same amount. This is not
+    padding for looks: it is where the tube stops showing the signal.
+  -->
+  <main id="safe" class="safe">
+
+    <header class="head">
+      <div class="crumb" id="crumb">CLARITY</div>
+      <div class="tally" id="tally"></div>
+    </header>
+    <div class="rule"></div>
+
+    <section class="body">
+      <ul class="menu" id="menu"></ul>
+      <p class="empty" id="empty" hidden></p>
+    </section>
+
+    <div class="rule"></div>
+    <footer class="foot">
+      <span class="hint"><b id="hintOk">A</b> <span id="hintOkLabel">SELECT</span></span>
+      <span class="hint"><b id="hintBack">B</b> BACK</span>
+      <span class="hint spacer" id="status"></span>
+    </footer>
+
+  </main>
+  <script src="renderer.js"></script>
+</body>
+</html>

@@ -1,0 +1,240 @@
+/*
+ * Clarity, CRT face — the look.
+ *
+ * Written for 720x480 interlaced over composite, which is a set of hard
+ * constraints rather than a style:
+ *
+ *   4px minimum on every stroke   a 1px rule is drawn by one field and not the
+ *                                 other, so it strobes at 30Hz
+ *   no fine repeating patterns    same reason, worse
+ *   square corners                a radius at this resolution is four aliased
+ *                                 pixels pretending to be a curve
+ *   no transitions                interlace smears motion; instant selection is
+ *                                 both crisper and more correct for a TV menu
+ *   dark ground, one bright thing the selected row is the only saturated area
+ *                                 on screen, which keeps average beam intensity
+ *                                 (and so phosphor wear) low
+ *   never red on thin text        composite chroma bleeds worst on red
+ *
+ * Every colour is a theme token, so `omarchy theme set` restyles this face
+ * live. The fallbacks are only for a machine with no Omarchy theme installed.
+ */
+
+:root {
+    --bg:        #0d0f13;
+    --panel:     #14171d;
+    --accent:    #f0a868;
+    --text:      #e8eaed;
+    --text-dim:  #8b939e;
+    --edge:      #2b313b;
+
+    /* The safe box. 5% a side is the broadcast title-safe convention and it is
+       the difference between a menu you can read and one whose first character
+       is behind the bezel. */
+    --safe-x: 5%;
+    --safe-y: 5%;
+
+    --stroke: 4px;
+
+    /* ⚠️ Every number below is a scanline count, which is only true because the
+       face forces device-scale-factor 1 (see main.js). Sized against the real
+       budget rather than by eye: 480 lines, minus the 5% safe margin top and
+       bottom (48), minus header and footer with their rules (~84), leaves ~348
+       for the list. At a 52px pitch that is six rows visible, which is the
+       least a 500-game library can be browsed with. Anything taller looked
+       better in isolation and was unusable in practice. */
+    --row-h: 48px;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+    height: 100%;
+    background: var(--bg);
+    color: var(--text);
+    font-family: "Inter", "Segoe UI", system-ui, -apple-system, sans-serif;
+    /* Interlace is unkind to hinted small text; let the renderer pick whole
+       pixels rather than trying to be clever about subpixels that do not
+       survive a composite encoder. */
+    -webkit-font-smoothing: antialiased;
+    overflow: hidden;
+    cursor: none;              /* a TV menu has no pointer */
+    user-select: none;
+}
+
+.safe {
+    height: 100%;
+    padding: var(--safe-y) var(--safe-x);
+    display: flex;
+    flex-direction: column;
+}
+
+/* ── Chrome ──────────────────────────────────────────────────────────────── */
+
+.head, .foot {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    flex: 0 0 auto;
+}
+
+.crumb {
+    font-size: 16px;
+    font-weight: 800;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--accent);
+}
+
+.tally {
+    font-size: 16px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    color: var(--text-dim);
+}
+
+.rule {
+    flex: 0 0 auto;
+    height: var(--stroke);
+    background: var(--edge);
+    margin: 10px 0;
+}
+
+.foot { gap: 22px; }
+
+.hint {
+    font-size: 16px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    white-space: nowrap;
+}
+
+/* The button badge. A filled square rather than an outline: an outlined glyph
+   at this size is mostly stroke, and stroke is what interlace eats. */
+.hint b {
+    display: inline-block;
+    min-width: 26px;
+    padding: 2px 7px;
+    margin-right: 7px;
+    background: var(--accent);
+    color: var(--bg);
+    font-size: 15px;
+    font-weight: 900;
+    text-align: center;
+}
+
+.hint.spacer { margin-left: auto; color: var(--accent); }
+
+/* ── The menu ────────────────────────────────────────────────────────────── */
+
+.body {
+    flex: 1 1 auto;
+    min-height: 0;             /* so the list scrolls instead of pushing the footer off */
+    display: flex;
+}
+
+.menu {
+    list-style: none;
+    width: 100%;
+    overflow-y: auto;
+    scrollbar-width: none;     /* the selection keeps itself in view; a bar is noise */
+}
+.menu::-webkit-scrollbar { display: none; }
+
+.row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    height: var(--row-h);
+    padding: 0 12px;
+    margin-bottom: 4px;
+    background: var(--panel);
+    border: var(--stroke) solid var(--edge);
+    color: var(--text);
+}
+
+/* The one bright thing on screen. Filling the row and flipping the text to the
+   background colour is what makes the cursor findable from the sofa, where a
+   tinted border would not be. */
+.row[data-on="1"] {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: var(--bg);
+}
+
+.row .label {
+    flex: 1 1 auto;
+    font-size: 24px;
+    font-weight: 700;
+    line-height: 1.1;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+/* Section headings and toggles use the OSD idiom; game names do not, because
+   a long title in caps is markedly harder to read and they are proper nouns. */
+.row[data-kind="nav"] .label,
+.row[data-kind="toggle"] .label,
+.row[data-kind="action"] .label {
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-size: 22px;
+}
+
+.row .meta {
+    flex: 0 0 auto;
+    font-size: 16px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+}
+.row[data-on="1"] .meta { color: var(--bg); opacity: 0.75; }
+
+/* State pill: INSTALLED / ON / OFF. Text on a filled block, never a thin
+   outline, for the same reason the button badges are filled. */
+.row .pill {
+    flex: 0 0 auto;
+    padding: 3px 9px;
+    background: var(--edge);
+    color: var(--text);
+    font-size: 15px;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+.row[data-on="1"] .pill { background: var(--bg); color: var(--accent); }
+
+/* Cover art earns its place only as a thumbnail: at 480 lines a 2:3 box shot is
+   about 90px wide and box art does not survive chroma subsampling, so it is
+   here to tell two similar rows apart, not to be looked at. */
+.row .thumb {
+    flex: 0 0 auto;
+    width: 36px;
+    height: 36px;
+    object-fit: cover;
+    background: var(--edge);
+}
+
+/* The chevron on a row that goes somewhere. Drawn as a character rather than a
+   border trick so it scales with the row and never lands on a half-pixel. */
+.row .chev {
+    flex: 0 0 auto;
+    font-size: 26px;
+    font-weight: 900;
+    opacity: 0.55;
+}
+.row[data-on="1"] .chev { opacity: 1; }
+
+.empty {
+    margin: auto;
+    font-size: 22px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    text-align: center;
+}
