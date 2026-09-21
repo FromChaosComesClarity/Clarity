@@ -132,6 +132,12 @@ function render() {
         li.dataset.kind = row.kind || 'action';
         li.dataset.on = i === here.index ? '1' : '0';
 
+        if (row.fav) {
+            const fav = document.createElement('span');
+            fav.className = 'fav';
+            li.append(fav);
+        }
+
         if (row.thumb) {
             const img = document.createElement('img');
             img.className = 'thumb';
@@ -214,8 +220,10 @@ function rootScreen() {
 
     rows.push({ kind: 'nav', label: 'Search', run: () => { query = ''; push(searchScreen); } });
     rows.push({ kind: 'nav', label: 'Library', meta: String(filtered().length), run: () => push(libraryScreen) });
+    rows.push({ kind: 'nav', label: 'Collections', run: () => openCollections() });
     rows.push({ kind: 'nav', label: 'Filters', meta: filterSummary(), run: () => push(filtersScreen) });
     rows.push({ kind: 'nav', label: 'Install', meta: storeSummary(), run: () => openStore() });
+    rows.push({ kind: 'nav', label: 'Uninstall', run: () => openUninstall() });
     rows.push({ kind: 'action', label: 'Couch Mode', run: () => window.crt.openFace('couch') });
     rows.push({ kind: 'action', label: 'Desktop Mode', run: () => window.crt.openFace('manager') });
     rows.push({ kind: 'nav', label: 'Settings', run: () => push(settingsScreen) });
@@ -341,6 +349,9 @@ function gameRow(g) {
         game: g,
         label: g.name,
         thumb: g.cover,
+        // A filled block, not a star: at 480 interlaced lines a star's points
+        // are single pixels and the first thing the display loses.
+        fav: !!g.fav,
         meta: g.year || '',
         pill: g.installed ? '' : 'GET',
         run: () => openGame(g),
@@ -348,29 +359,10 @@ function gameRow(g) {
 }
 
 function libraryScreen() {
-    let list = filtered().slice();
-
-    if (prefs.sort === 'name') {
-        list.sort((a, b) => a.name.localeCompare(b.name));
-    } // 'recent' is the order the query already returned
-
-    const rows = list.map(g => ({
-        kind: 'game',
-        game: g,
-        label: g.name,
-        thumb: g.cover,
-        meta: g.year || '',
-        pill: g.installed ? '' : 'GET',
-        run: () => openGame(g),
-    }));
-
-    const title = prefs.store || prefs.onlyInstalled
-        ? `LIBRARY · ${filterSummary()}`
-        : 'LIBRARY';
-
+    const title = prefs.store || prefs.onlyInstalled ? `LIBRARY · ${filterSummary()}` : 'LIBRARY';
     return {
         title,
-        rows,
+        rows: sortedGames(filtered()).map(gameRow),
         okLabel: 'OPEN',
         emptyText: prefs.onlyInstalled || prefs.store ? 'NOTHING MATCHES THESE FILTERS' : 'THE LIBRARY IS EMPTY',
     };
@@ -394,14 +386,16 @@ async function openGame(game) {
     if (!launcherCache.has(game.id) || !detailCache.has(game.id) || !entryCache.has(game.id)) {
         $status.textContent = 'READING…';
         try {
-            const [launchers, details, entry] = await Promise.all([
+            const [launchers, details, entry, inPlaylists] = await Promise.all([
                 window.crt.launchers(game.id),
                 window.crt.game(game.id),
                 window.crt.installerEntry(game.id),
+                window.crt.gamePlaylists(game.id),
             ]);
             launcherCache.set(game.id, launchers || []);
             detailCache.set(game.id, details || null);
             entryCache.set(game.id, entry || null);
+            gamePlaylistCache.set(game.id, inPlaylists || []);
         } catch (e) {
             launcherCache.set(game.id, launcherCache.get(game.id) || []);
             detailCache.set(game.id, null);
@@ -448,6 +442,25 @@ function gameScreen(game) {
     if (details && details.description) {
         rows.push({ kind: 'nav', label: 'About this game', run: () => push(aboutScreen, game) });
     }
+
+    // The two marks the rest of the suite already keeps, written the way it
+    // writes them.
+    rows.push({
+        kind: 'toggle', label: 'Favourite', pill: game.fav ? 'ON' : 'OFF',
+        run: () => toggleFlag(game, 'fav'),
+    });
+    rows.push({
+        kind: 'toggle', label: 'Want to play', pill: game.want ? 'ON' : 'OFF',
+        run: () => toggleFlag(game, 'want'),
+    });
+    rows.push({
+        kind: 'nav', label: 'Playlists',
+        meta: String((gamePlaylistCache.get(game.id) || []).length || ''),
+        run: async () => {
+            if (!playlists.length) { try { playlists = await window.crt.playlists() || []; } catch (e) {} }
+            push(playlistsScreenFor, game);
+        },
+    });
 
     // Scraping, per game. A row that already has art offers a re-scrape — the
     // scraper keeps local art it did not fetch, so this is safe to press.
@@ -504,6 +517,190 @@ function ago(ms) {
     const years = Math.floor(months / 12);
     return years === 1 ? '1 year ago' : `${years} years ago`;
 }
+
+/*
+ * ── Collections ──────────────────────────────────────────────────────────────
+ *
+ * Favourites, want-to-play and playlists, which the library already had and
+ * this face could not see. Favourites and Want to play sit alongside the
+ * playlists rather than above them: they behave identically — a named set of
+ * games — and giving them their own root rows would have said otherwise.
+ *
+ * ⚠️ A smart playlist computes its members from a rule every time it is read,
+ * so it can be browsed but not edited by hand. The game screen says so rather
+ * than offering an add that would be silently ignored.
+ */
+let playlists = [];
+
+async function openCollections() {
+    $status.textContent = 'READING…';
+    try { playlists = await window.crt.playlists() || []; } catch (e) { playlists = []; }
+    $status.textContent = '';
+    push(collectionsScreen);
+}
+
+function collectionsScreen() {
+    const favs = games.filter(g => g.fav);
+    const wants = games.filter(g => g.want);
+    const rows = [
+        {
+            kind: 'nav', label: 'Favourites', meta: String(favs.length),
+            run: () => push(gamesScreen, { title: 'FAVOURITES', list: favs, empty: 'NOTHING MARKED YET' }),
+        },
+        {
+            kind: 'nav', label: 'Want to play', meta: String(wants.length),
+            run: () => push(gamesScreen, { title: 'WANT TO PLAY', list: wants, empty: 'NOTHING MARKED YET' }),
+        },
+    ];
+
+    for (const list of playlists) {
+        rows.push({
+            kind: 'nav',
+            label: list.name,
+            meta: String(list.count),
+            pill: list.smart ? 'SMART' : '',
+            run: () => openPlaylist(list),
+        });
+    }
+
+    return { title: 'COLLECTIONS', rows, okLabel: 'OPEN' };
+}
+
+async function openPlaylist(list) {
+    $status.textContent = 'READING…';
+    let ids = [];
+    try { ids = await window.crt.playlistGames(list.id) || []; } catch (e) {}
+    $status.textContent = '';
+    const members = new Set(ids);
+    push(gamesScreen, {
+        title: list.name.toUpperCase(),
+        list: games.filter(g => members.has(g.id)),
+        empty: 'THIS PLAYLIST IS EMPTY',
+    });
+}
+
+// One list of games, however it was arrived at. Library, a playlist and the two
+// marks all render through this, so they stay identical to use.
+function gamesScreen({ title, list, empty }) {
+    return {
+        title,
+        rows: sortedGames(list).map(gameRow),
+        okLabel: 'OPEN',
+        emptyText: empty || 'NOTHING HERE',
+    };
+}
+
+function sortedGames(list) {
+    const out = list.slice();
+    if (prefs.sort === 'name') out.sort((a, b) => a.name.localeCompare(b.name));
+    return out;
+}
+
+// Which playlists a game is in, fetched with everything else on the way into
+// its screen.
+const gamePlaylistCache = new Map();
+
+function playlistsScreenFor(game) {
+    const mine = new Set(gamePlaylistCache.get(game.id) || []);
+    const rows = playlists.map(list => ({
+        kind: list.smart ? 'info' : 'toggle',
+        label: list.name,
+        pill: list.smart ? 'SMART' : (mine.has(list.id) ? 'IN' : ''),
+        run: list.smart ? undefined : async () => {
+            const r = await window.crt.playlistToggle(list.id, game.id);
+            if (!r || !r.ok) { fail((r && r.error) || 'Could not change that playlist.'); return; }
+            const next = new Set(gamePlaylistCache.get(game.id) || []);
+            if (r.member) next.add(list.id); else next.delete(list.id);
+            gamePlaylistCache.set(game.id, [...next]);
+            try { playlists = await window.crt.playlists() || playlists; } catch (e) {}
+            refresh(playlistsScreenFor, game);
+        },
+    }));
+
+    if (!playlists.length) rows.push({ kind: 'info', label: 'No playlists yet — make one in Desktop Mode' });
+
+    return { title: 'PLAYLISTS', rows, okLabel: 'CHANGE' };
+}
+
+/*
+ * ── Launching ────────────────────────────────────────────────────────────────
+ *
+ * ⚠️ This screen exists because pressing Play looked like pressing nothing.
+ *
+ * A first launch of a Windows game is not instant and is not quick: the runner
+ * downloads a multi-gigabyte Steam runtime, then builds a Wine prefix, and only
+ * then does a window appear. Minutes. The face said "STARTING…" for six seconds
+ * and then went quiet, so the only honest reading was that it had failed.
+ *
+ * The engine knew all of this the whole time — which phase, what percent,
+ * whether the game process came up, and a diagnosis when it did not. Nothing
+ * here is new information; it is information that was being thrown away.
+ */
+let launchRun = null;     // { title, phase, percent, message, state }
+
+function launchScreen() {
+    const run = launchRun || {};
+    const rows = [];
+
+    const pct = Number.isFinite(run.percent) && run.percent > 0 ? `${Math.round(run.percent)}%` : '';
+    const phase = (run.phase || '').replace(/[_-]/g, ' ');
+
+    if (run.state === 'failed') {
+        rows.push({ kind: 'info', label: 'Could not start' });
+        rows.push({ kind: 'info', label: run.message || 'No reason given.' });
+    } else if (run.state === 'running') {
+        rows.push({ kind: 'info', label: 'Running' });
+        rows.push({ kind: 'info', label: 'This menu is behind the game' });
+    } else if (run.state === 'exited') {
+        rows.push({ kind: 'info', label: 'Closed' });
+    } else {
+        rows.push({ kind: 'info', label: [phase || 'Starting', pct].filter(Boolean).join('  ·  ') });
+        if (run.message) rows.push({ kind: 'info', label: run.message });
+        // A first run downloads a runtime; saying so is the difference between
+        // waiting and force-quitting.
+        if (!run.message && !pct) rows.push({ kind: 'info', label: 'First run can take several minutes' });
+    }
+
+    rows.push({ kind: 'action', label: 'Back', run: () => { launchRun = null; pop(); } });
+
+    return { title: run.title ? run.title.toUpperCase() : 'LAUNCHING', rows, okLabel: 'BACK' };
+}
+
+// Redraw only while the launch screen is the one on top, so a game starting in
+// the background never moves the cursor out from under the user.
+function refreshLaunch() {
+    const here = screen();
+    if (here && here.builder === launchScreen) refresh(launchScreen);
+}
+
+window.crt.onLaunchProgress((info) => {
+    if (!launchRun || !info) return;
+    launchRun = {
+        ...launchRun,
+        title: info.title || launchRun.title,
+        phase: info.done ? launchRun.phase : (info.phase || launchRun.phase),
+        percent: Number.isFinite(info.percent) ? info.percent : launchRun.percent,
+        message: info.message || '',
+    };
+    refreshLaunch();
+});
+
+window.crt.onGameSession((info) => {
+    if (!launchRun || !info) return;
+    launchRun = { ...launchRun, state: info.running ? 'running' : 'exited', title: info.title || launchRun.title };
+    refreshLaunch();
+    // A game that has exited leaves nothing to look at; step back to where the
+    // user was rather than stranding them on a dead panel.
+    if (!info.running) {
+        setTimeout(() => {
+            const here = screen();
+            if (here && here.builder === launchScreen && launchRun && launchRun.state === 'exited') {
+                launchRun = null;
+                pop();
+            }
+        }, 4000);
+    }
+});
 
 /*
  * ── Installing ───────────────────────────────────────────────────────────────
@@ -625,6 +822,91 @@ async function startInstall(game) {
 }
 
 /*
+ * ── Uninstalling ─────────────────────────────────────────────────────────────
+ *
+ * The counterpart to Install, and it has to handle two different kinds of game
+ * without pretending they are the same. A GOG or Epic title was downloaded by
+ * the Installer engine, so the engine removes it, here, with confirmation. A
+ * Steam game belongs to Steam: the row hands over to steam://uninstall, which
+ * opens Steam's own dialog — the only thing that can delete the files *and*
+ * correct Steam's manifest. Deleting it behind Steam's back would leave a
+ * library that believes the game is still installed.
+ */
+let installedGames = [];
+
+async function openUninstall() {
+    $status.textContent = 'READING…';
+    try { installedGames = await window.crt.installedGames() || []; } catch (e) { installedGames = []; }
+    $status.textContent = '';
+    push(uninstallScreen);
+}
+
+function uninstallScreen() {
+    const rows = installedGames.map(g => ({
+        kind: 'action',
+        game: g,
+        label: g.name,
+        thumb: g.cover,
+        pill: (g.store || '').toUpperCase(),
+        run: () => push(confirmUninstallScreen, g),
+    }));
+
+    return {
+        title: 'UNINSTALL',
+        rows,
+        okLabel: 'CHOOSE',
+        emptyText: 'NOTHING IS INSTALLED',
+    };
+}
+
+// ⚠️ Confirmed on its own screen rather than removed on one press. Deleting a
+// game is slow to undo — it is a re-download — and a menu driven by one key is
+// exactly where a mis-press lands.
+function confirmUninstallScreen(game) {
+    const viaSteam = !game.installerId && game.steamAppId;
+    const rows = [];
+
+    if (viaSteam) {
+        rows.push({ kind: 'info', label: 'Steam owns this game' });
+        rows.push({
+            kind: 'action', label: 'Open Steam to uninstall',
+            run: async () => {
+                const r = await window.crt.steamUninstall(game.steamAppId);
+                $status.textContent = r && r.ok ? 'STEAM OPENED' : 'COULD NOT OPEN STEAM';
+                setTimeout(() => { $status.textContent = ''; }, 6000);
+                pop();
+            },
+        });
+    } else {
+        rows.push({ kind: 'info', label: 'This deletes the downloaded files' });
+        rows.push({
+            kind: 'action', label: `Uninstall ${game.name}`,
+            run: () => removeGame(game),
+        });
+    }
+
+    rows.push({ kind: 'action', label: 'Keep it', run: () => pop() });
+    return { title: game.name.toUpperCase(), rows, okLabel: 'CONFIRM' };
+}
+
+async function removeGame(game) {
+    $status.textContent = 'REMOVING…';
+    const result = await window.crt.uninstall(game.installerId);
+
+    try { installedGames = await window.crt.installedGames() || []; } catch (e) {}
+    try { games = await window.crt.library(); } catch (e) {}
+    detailCache.clear();
+    launcherCache.clear();
+    entryCache.clear();
+    try { storeStatus = await window.crt.storeStatus(); } catch (e) {}
+
+    $status.textContent = result && result.ok ? 'REMOVED' : ((result && result.error) || 'COULD NOT REMOVE').toUpperCase();
+    setTimeout(() => { $status.textContent = ''; }, 8000);
+    pop();
+    refresh(uninstallScreen);
+}
+
+/*
  * ── Scraping ─────────────────────────────────────────────────────────────────
  *
  * The whole point of this face is that the desktop is optional, and a library
@@ -701,6 +983,24 @@ async function startScrape(scope) {
         : 'SCRAPE FAILED';
     setTimeout(() => { $status.textContent = ''; }, 8000);
     refresh(scrapeScreen);
+}
+
+// ⚠️ Written through, then re-read from the row this face already holds: the
+// library list is what Collections counts from, so leaving it stale would show
+// a game marked on its own page and missing from Favourites.
+async function toggleFlag(game, field) {
+    const next = !game[field];
+    game[field] = next;
+    refresh(gameScreen, game);
+    const r = await window.crt.setFlag(game.id, field, next);
+    if (!r || !r.ok) {
+        game[field] = !next;                       // put it back; nothing was saved
+        fail('Could not save that.');
+        refresh(gameScreen, game);
+        return;
+    }
+    const row = games.find(g => g.id === game.id);
+    if (row) row[field] = next;
 }
 
 // Installing from a game's own screen, rather than finding it again in the
@@ -844,17 +1144,23 @@ function settingsScreen() {
  */
 async function play(game, launcher) {
     if (!game) return;
-    $status.textContent = 'STARTING…';
+    launchRun = { title: game.name, phase: '', percent: 0, message: '', state: 'starting' };
+    push(launchScreen);
+
     try {
         const res = await window.crt.launch(game.id, launcher && launcher.cmd);
-        if (res && res.ok === false) { fail(res.error); return; }
+        if (res && res.ok === false) {
+            launchRun = { ...launchRun, state: 'failed', message: res.error || 'The game could not be started.' };
+            refreshLaunch();
+            return;
+        }
         game.lastPlayed = Date.now();
-        // Cleared on a delay rather than immediately: the game takes a few
-        // seconds to put a window up, and a menu that says nothing in the
-        // meantime looks like it ignored the button.
-        setTimeout(() => { if ($status.textContent === 'STARTING…') $status.textContent = ''; }, 6000);
+        // ⚠️ No timer closing this screen. The engine says when the game is up,
+        // when it exits and when it failed, and a guess on a stopwatch is what
+        // made the old version feel broken.
     } catch (e) {
-        fail('The game could not be started.');
+        launchRun = { ...launchRun, state: 'failed', message: 'The game could not be started.' };
+        refreshLaunch();
     }
 }
 
@@ -868,11 +1174,18 @@ function fail(message) {
 
 // The launch that failed after we handed off, which arrives later than the
 // call's own answer and is usually the more useful of the two.
-window.crt.onLaunchFailed((info) => fail(info && info.message));
+window.crt.onLaunchFailed((info) => {
+    if (launchRun) {
+        launchRun = { ...launchRun, state: 'failed', message: (info && info.message) || 'The game could not be started.' };
+        refreshLaunch();
+        return;
+    }
+    fail(info && info.message);
+});
 
 // Install progress, from the engine itself. Only redrawn while the install
 // screen is on top — a rebuild under a game screen would throw the cursor.
-window.crt.onEngineProgress((info) => {
+window.crt.onInstallProgress((info) => {
     if (!installRun || !info) return;
     installRun = {
         title: info.title || installRun.title,

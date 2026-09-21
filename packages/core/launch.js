@@ -36,6 +36,19 @@ const Database = require('better-sqlite3');
 const host = require('./platform/index.js');
 const installerEngine = require('./installer-engine.js');
 
+// How long a shell-launched game has to stay alive before we stop treating an
+// exit as a failure. Long enough to cover a slow start, short enough that the
+// face is not left saying "starting" over a game that is plainly running.
+const EARLY_EXIT_MS = 8000;
+
+// Console output is mostly noise; the first line that looks like a complaint is
+// what a person actually needs to read.
+function firstUsefulLine(text) {
+    const lines = String(text || '').split('\n').map(l => l.trim()).filter(Boolean);
+    const complaint = lines.find(l => /error|not found|cannot|failed|permission|no such/i.test(l));
+    return (complaint || lines[lines.length - 1] || '').slice(0, 160);
+}
+
 /*
  * deps:
  *   db            the face's open games.db (used for the PICO-8 path setting)
@@ -44,7 +57,12 @@ const installerEngine = require('./installer-engine.js');
  *   onLaunchIssue ({title, code, message}) — a launch that failed after we
  *                 handed off. A Windows game with no Proton dies instantly and
  *                 invisibly; a face that does not show this just sits there.
- *   onProgress    ({...}) — engine launch progress, for a face that shows it
+ *   onProgress        ({...}) — install progress from the engine
+ *   onLaunchProgress  ({phase, percent, message, done}) — what a game is doing
+ *                     between "pressed Play" and "on screen", which on a first
+ *                     run means downloading a multi-gigabyte runtime and
+ *                     building a Wine prefix
+ *   onGameSession     (running, {gameId, title}) — the game appeared, or exited
  *
  * ⚠️ And three optional overrides, which exist for one specific reason: a face
  * that already runs the Installer engine must not end up with a second one.
@@ -63,6 +81,7 @@ function create(deps = {}) {
     const {
         db = null, baseDir = '', binDir = '',
         onLaunchIssue = () => {}, onProgress = () => {},
+        onLaunchProgress = () => {}, onGameSession = () => {},
         ensureEngine: ensureEngineOverride = null,
         engineLaunch: engineLaunchOverride = null,
         pico8Bin: pico8BinOverride = null,
@@ -213,13 +232,19 @@ function create(deps = {}) {
             appImageDir: baseDir,
             homeDir:     os.homedir(),
             db:          _engineDb,
-            onProgress:  () => {},
+            // ⚠️ All four, and it matters which is which. This wired onProgress
+            // to a no-op and sent launch progress down the install channel, so
+            // an install reported nothing at all and a first launch — which
+            // downloads a Steam runtime and builds a prefix, minutes of work —
+            // looked like a button that did nothing.
+            onProgress:       (info) => onProgress(info),
+            onLaunchProgress: (info) => onLaunchProgress(info),
+            onGameSession:    (running, info) => onGameSession(running, info),
             onLaunchIssue: (info) => onLaunchIssue({
                 title: info?.title || '',
                 code: info?.reason?.code || 'UNKNOWN',
                 message: info?.reason?.message || 'The game could not be started.',
             }),
-            onLaunchProgress: (info) => onProgress(info),
         });
         return true;
     }
@@ -310,7 +335,53 @@ function create(deps = {}) {
             return { ok: true };
         }
 
-        spawn(cmd, [], { shell: true, detached: true, stdio: 'ignore' }).unref();
+        /*
+         * ⚠️ Watched, not fired and forgotten.
+         *
+         * A shell launch used to be spawned with stdio ignored, which meant a
+         * command that died immediately — a missing binary, a Steam that is not
+         * running, a bad path — was indistinguishable from a game that started
+         * fine. On a TV there is no terminal to check, so the face has to be
+         * told.
+         *
+         * The process is still detached and still unref'd: the game outlives
+         * this one. The only difference is that we keep its output for a few
+         * seconds and report if it falls over in that window, which is what
+         * "it did not work" nearly always looks like.
+         */
+        try {
+            const child = spawn(cmd, [], { shell: true, detached: true, stdio: ['ignore', 'pipe', 'pipe'] });
+            let err = '';
+            const keep = (chunk) => { if (err.length < 2000) err += String(chunk); };
+            child.stdout?.on('data', keep);
+            child.stderr?.on('data', keep);
+
+            const settled = setTimeout(() => {
+                // Past this point the game owns itself; stop listening so a
+                // long session does not accumulate its own console output.
+                child.stdout?.removeAllListeners('data');
+                child.stderr?.removeAllListeners('data');
+                child.removeAllListeners('exit');
+                onGameSession(true, { title: '' });
+            }, EARLY_EXIT_MS);
+
+            child.once('exit', (code) => {
+                clearTimeout(settled);
+                if (code === 0 || code === null) return;   // a launcher that hands off and returns
+                onLaunchIssue({
+                    title: '',
+                    code: 'EXIT_' + code,
+                    message: firstUsefulLine(err) || `The game exited immediately (code ${code}).`,
+                });
+            });
+            child.once('error', (e) => {
+                clearTimeout(settled);
+                onLaunchIssue({ title: '', code: 'SPAWN_FAILED', message: e.message || 'Could not start that command.' });
+            });
+            child.unref();
+        } catch (e) {
+            return { ok: false, error: e.message || 'Could not start that command.' };
+        }
         return { ok: true };
     }
 

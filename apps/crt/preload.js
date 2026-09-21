@@ -34,9 +34,17 @@ contextBridge.exposeInMainWorld('crt', {
     uninstall: (id) => ipcRenderer.invoke('crt-uninstall', id),
     installCancel: () => ipcRenderer.send('crt-install-cancel'),
     installerEntry: (gameId) => ipcRenderer.invoke('crt-installer-entry', gameId),
-    // One channel for both installs and launches — read `step` to tell them
-    // apart, which is how the engine itself reports.
-    onEngineProgress: (fn) => ipcRenderer.on('crt-engine-progress', (_e, info) => fn(info)),
+    installedGames: () => ipcRenderer.invoke('crt-installed-games'),
+    steamUninstall: (appId) => ipcRenderer.invoke('crt-steam-uninstall', appId),
+    onInstallProgress: (fn) => ipcRenderer.on('crt-install-progress', (_e, info) => fn(info)),
+
+    // Marks and collections — the same FAV / WANT_TO_PLAY / playlists the
+    // desktop face writes.
+    setFlag: (gameId, field, on) => ipcRenderer.invoke('crt-set-flag', gameId, field, on),
+    playlists: () => ipcRenderer.invoke('crt-playlists'),
+    playlistGames: (id) => ipcRenderer.invoke('crt-playlist-games', id),
+    gamePlaylists: (gameId) => ipcRenderer.invoke('crt-game-playlists', gameId),
+    playlistToggle: (playlistId, gameId) => ipcRenderer.invoke('crt-playlist-toggle', playlistId, gameId),
 
     // Settings, straight through the shared handlers every face uses
     getSetting: (key) => ipcRenderer.invoke('get-setting', key),
@@ -52,6 +60,10 @@ contextBridge.exposeInMainWorld('crt', {
     // here, in this process, without leaving the face.
     launchers: (gameId) => ipcRenderer.invoke('crt-launchers', gameId),
     launch: (gameId, cmd) => ipcRenderer.invoke('crt-launch', gameId, cmd),
+    // What a game is doing between Play and a picture — on a first run that is
+    // a runtime download and a prefix build, which is minutes.
+    onLaunchProgress: (fn) => ipcRenderer.on('crt-launch-progress', (_e, info) => fn(info)),
+    onGameSession: (fn) => ipcRenderer.on('crt-game-session', (_e, info) => fn(info)),
     onLaunchFailed: (fn) => ipcRenderer.on('crt-launch-failed', (_e, info) => fn(info)),
     openFace: (face) => ipcRenderer.send('crt-open-face', face),
     quit: () => ipcRenderer.send('crt-quit'),

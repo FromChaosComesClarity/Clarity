@@ -38,6 +38,7 @@ const desktopDescriptor = require('../../packages/core/desktop-descriptor.js');
 const launch = require('../../packages/core/launch.js');
 const scrape = require('../../packages/core/scrape.js');
 const installerOps = require('../../packages/core/installer-ops.js');
+const smartPlaylists = require('../../packages/core/smart-playlists.js');
 
 // The CRT face is the Manager wearing different clothes: same identity, so it
 // reads the same library and the same settings. A face with its own userData
@@ -143,7 +144,8 @@ ipcMain.handle('crt-library', () => {
     if (!db) return [];
     try {
         return db.prepare(`
-            SELECT id, Game, Installed, LastPlayed, GENRE, RELEASED, CoverArt, LaunchCommand, Store
+            SELECT id, Game, Installed, LastPlayed, GENRE, RELEASED, CoverArt, LaunchCommand, Store,
+                   FAV, WANT_TO_PLAY
             FROM games
             WHERE IFNULL(Hidden, '') NOT IN ('1', 'true', 'yes')
             ORDER BY (LastPlayed IS NULL OR LastPlayed = 0), LastPlayed DESC, Game COLLATE NOCASE
@@ -156,6 +158,10 @@ ipcMain.handle('crt-library', () => {
             year: year(r.RELEASED),
             cover: assetPath(r.CoverArt),
             store: String(r.Store || ''),
+            // ⚠️ Stored as the text 'YES'/'NO', not 0/1, and often NULL on rows
+            // no one has ever marked. isTruthy handles all three.
+            fav: isTruthy(r.FAV) || String(r.FAV || '').toUpperCase() === 'YES',
+            want: isTruthy(r.WANT_TO_PLAY) || String(r.WANT_TO_PLAY || '').toUpperCase() === 'YES',
             playable: !!r.LaunchCommand,
         }));
     } catch (e) {
@@ -218,12 +224,14 @@ function ensureLauncher() {
             db,
             baseDir,
             binDir,
-            onLaunchIssue: (info) => send('crt-launch-failed', info),
-            // ⚠️ One engine, one progress channel. The Installer engine reports
-            // installs and launches through the same callback, configured once
-            // at init — so this carries both, and the face reads `step` to know
-            // which it is looking at.
-            onProgress:    (info) => send('crt-engine-progress', info),
+            onLaunchIssue:    (info) => send('crt-launch-failed', info),
+            // Three separate things, on three channels, because the face shows
+            // them in three different places: a progress panel for an install,
+            // a launch panel for the wait between Play and a picture, and a
+            // running/exited state for the session itself.
+            onProgress:       (info) => send('crt-install-progress', info),
+            onLaunchProgress: (info) => send('crt-launch-progress', info),
+            onGameSession:    (running, info) => send('crt-game-session', { running, ...info }),
         });
     }
     return launcher;
@@ -483,6 +491,138 @@ ipcMain.handle('crt-installer-entry', (event, gameId) => {
         return ensureInstaller().owned().find(g => g.id === key) || null;
     } catch (e) {
         return null;
+    }
+});
+
+/*
+ * Everything currently on disk, wherever it came from — the list an Uninstall
+ * screen needs.
+ *
+ * ⚠️ Two kinds of installed game, and only one of them is ours to remove. GOG
+ * and Epic titles were downloaded by the Installer engine and it can delete
+ * them. A Steam game belongs to Steam: the honest action is to open Steam's own
+ * uninstall dialog, not to delete a directory behind its back and leave its
+ * manifest claiming the game is there.
+ */
+ipcMain.handle('crt-installed-games', () => {
+    if (!db) return [];
+    try {
+        const rows = db.prepare(`
+            SELECT id, Game, Store, SteamAppID, InstallerGameId, LaunchCommand, LaunchCommands, CoverArt
+            FROM games
+            WHERE IFNULL(Hidden,'') NOT IN ('1','true','yes')
+              AND IFNULL(Installed,'') IN ('1','true','yes')
+            ORDER BY Game COLLATE NOCASE
+        `).all();
+
+        const ops = ensureInstaller();
+        const owned = ops.owned({ installed: true });
+        const ownedById = new Map(owned.map(g => [g.id, g]));
+
+        return rows.map(r => {
+            const key = String(r.InstallerGameId || '');
+            const entry = key ? ownedById.get(key) : null;
+            const appId = String(r.SteamAppID || '').replace(/\.0+$/, '').trim();
+            const steam = /steam:\/\/rungameid/i.test(String(r.LaunchCommand || '') + String(r.LaunchCommands || ''))
+                || (String(r.Store || '').toLowerCase().includes('steam') && appId && appId !== 'None');
+            return {
+                id: r.id,
+                name: String(r.Game || ''),
+                cover: assetPath(r.CoverArt),
+                // Removable here when the Installer owns it; otherwise Steam's job.
+                installerId: entry ? entry.id : '',
+                store: entry ? entry.store : (steam ? 'steam' : ''),
+                steamAppId: steam ? appId : '',
+            };
+        }).filter(g => g.installerId || g.steamAppId);
+    } catch (e) {
+        return [];
+    }
+});
+
+// Hand a Steam game back to Steam. steam://uninstall opens its own dialog,
+// which is the only thing that can remove the game *and* correct its manifest.
+ipcMain.handle('crt-steam-uninstall', (event, appId) => {
+    const id = String(appId || '').replace(/\.0+$/, '').trim();
+    if (!id) return { ok: false, error: 'No Steam app id for this game.' };
+    return ensureLauncher().run(`steam steam://uninstall/${id}`);
+});
+
+/*
+ * ── Marks and collections ────────────────────────────────────────────────────
+ *
+ * Favourite, want-to-play and playlists already exist in this library; the
+ * desktop face writes them and Couch reads them. This face only needed to be
+ * taught to do the same, and to store them the way they are already stored.
+ *
+ * ⚠️ 'YES' / 'NO', as text. Writing 1 and 0 here would produce rows the other
+ * faces quietly disagree with.
+ */
+ipcMain.handle('crt-set-flag', (event, gameId, field, on) => {
+    if (!db) return { ok: false };
+    const allowed = { fav: 'FAV', want: 'WANT_TO_PLAY' };
+    const column = allowed[field];
+    if (!column) return { ok: false };
+    try {
+        db.prepare(`UPDATE games SET ${column}=? WHERE id=?`).run(on ? 'YES' : 'NO', gameId);
+        return { ok: true };
+    } catch (e) {
+        return { ok: false };
+    }
+});
+
+/*
+ * Playlists, including the smart ones.
+ *
+ * ⚠️ Membership comes from packages/core/smart-playlists.js rather than a
+ * straight read of playlist_games: a smart playlist has no rows there at all —
+ * its members are computed from its rule every time, which is what keeps it
+ * current as the library changes.
+ */
+ipcMain.handle('crt-playlists', () => {
+    if (!db) return [];
+    try {
+        return db.prepare('SELECT id, name, rule FROM playlists ORDER BY name COLLATE NOCASE').all().map(p => ({
+            id: p.id,
+            name: String(p.name || ''),
+            smart: !!p.rule,
+            count: (smartPlaylists.playlistGames(db, p.id) || []).length,
+        }));
+    } catch (e) {
+        return [];
+    }
+});
+
+ipcMain.handle('crt-playlist-games', (event, playlistId) => {
+    if (!db) return [];
+    try { return (smartPlaylists.playlistGames(db, playlistId) || []).map(g => g.id); }
+    catch (e) { return []; }
+});
+
+ipcMain.handle('crt-game-playlists', (event, gameId) => {
+    if (!db) return [];
+    try { return db.prepare('SELECT playlist_id FROM playlist_games WHERE game_id=?').all(gameId).map(r => r.playlist_id); }
+    catch (e) { return []; }
+});
+
+// ⚠️ Manual playlists only. A smart playlist's membership is its rule, so
+// adding a game by hand would be written and then ignored on the next read.
+ipcMain.handle('crt-playlist-toggle', (event, playlistId, gameId) => {
+    if (!db) return { ok: false };
+    try {
+        const playlist = db.prepare('SELECT rule FROM playlists WHERE id=?').get(playlistId);
+        if (playlist?.rule) return { ok: false, error: 'That playlist picks its own games.' };
+        const present = db.prepare('SELECT 1 FROM playlist_games WHERE playlist_id=? AND game_id=?').get(playlistId, gameId);
+        if (present) {
+            db.prepare('DELETE FROM playlist_games WHERE playlist_id=? AND game_id=?').run(playlistId, gameId);
+            return { ok: true, member: false };
+        }
+        const max = db.prepare('SELECT MAX(sort_order) AS m FROM playlist_games WHERE playlist_id=?').get(playlistId);
+        db.prepare('INSERT INTO playlist_games (playlist_id, game_id, sort_order) VALUES (?,?,?)')
+          .run(playlistId, gameId, (max?.m ?? -1) + 1);
+        return { ok: true, member: true };
+    } catch (e) {
+        return { ok: false, error: 'Could not change that playlist.' };
     }
 });
 

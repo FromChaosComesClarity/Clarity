@@ -343,3 +343,14 @@ body[data-art="1"] .row:not([data-on="1"]):not([data-kind="info"]) {
     content: "\2588";
     margin-left: 2px;
 }
+
+/* A favourite, marked in a list. A filled block rather than a star outline:
+   at 480 interlaced lines a star's points are single pixels, which is exactly
+   what one field draws and the other does not. */
+.row .fav {
+    flex: 0 0 auto;
+    width: 14px;
+    height: 14px;
+    background: var(--accent);
+}
+.row[data-on="1"] .fav { background: var(--bg); }
