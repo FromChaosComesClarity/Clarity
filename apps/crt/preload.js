@@ -21,8 +21,13 @@ contextBridge.exposeInMainWorld('crt', {
     theme: () => ipcRenderer.invoke('omarchy-theme'),
     onThemeChanged: (fn) => ipcRenderer.on('omarchy-theme-changed', (_e, description) => fn(description)),
 
-    // Verbs
-    play: (gameId) => ipcRenderer.send('crt-play', gameId),
+    // Starting a game. `launchers` is every way this row can be started —
+    // usually one, sometimes one per store — and `launch` runs the chosen one
+    // here, in this process, without leaving the face.
+    launchers: (gameId) => ipcRenderer.invoke('crt-launchers', gameId),
+    launch: (gameId, cmd) => ipcRenderer.invoke('crt-launch', gameId, cmd),
+    onLaunchFailed: (fn) => ipcRenderer.on('crt-launch-failed', (_e, info) => fn(info)),
+    onLaunchProgress: (fn) => ipcRenderer.on('crt-launch-progress', (_e, info) => fn(info)),
     openFace: (face) => ipcRenderer.send('crt-open-face', face),
     quit: () => ipcRenderer.send('crt-quit'),
 });

@@ -155,6 +155,24 @@ html, body {
     color: var(--text);
 }
 
+/* A row that states something rather than offering it: no panel, no border, no
+   cursor. It has to be visibly a different class of thing, because a row that
+   looks selectable and does nothing is the worst outcome available to a menu
+   with this few controls. */
+.row[data-kind="info"] {
+    background: none;
+    border-color: transparent;
+    color: var(--text-dim);
+    height: 38px;
+    padding-left: 0;
+}
+.row[data-kind="info"] .label {
+    font-size: 17px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+}
+
 /* The one bright thing on screen. Filling the row and flipping the text to the
    background colour is what makes the cursor findable from the sofa, where a
    tinted border would not be. */

@@ -17,8 +17,13 @@
  *
  * Nothing here is a second implementation of something a face already does.
  * The library and settings come from registerSharedHandlers, the palette from
- * the shared omarchy-theme bridge, and starting a game is handed back to the
- * suite rather than reinvented (see 'crt-play' below).
+ * the shared omarchy-theme bridge, and what "Play" means — multi-store rows,
+ * the Installer engine for GOG and Epic, itch's custom scheme — comes from
+ * packages/core/launch.js, which every face shares.
+ *
+ * What this face does *not* do is hand you somewhere else. Starting a game
+ * happens here and leaves the menu exactly where it was; the only ways out are
+ * the ones on the root screen.
  */
 
 const { app, BrowserWindow, ipcMain } = require('electron');
@@ -30,6 +35,7 @@ const { spawn } = require('child_process');
 const host = require('../../packages/core/platform/index.js');
 const { registerSharedHandlers } = require('../../packages/core/shared-ipc.js');
 const desktopDescriptor = require('../../packages/core/desktop-descriptor.js');
+const launch = require('../../packages/core/launch.js');
 
 // The CRT face is the Manager wearing different clothes: same identity, so it
 // reads the same library and the same settings. A face with its own userData
@@ -189,18 +195,75 @@ function assetPath(p) {
 }
 
 /*
- * Starting a game.
+ * Starting a game, from here, without leaving this face.
  *
- * ⚠️ Handed back to the suite as --play=<id> rather than run from here. What
- * "play" actually means is a decision tree the Manager owns: the multi-store
- * picker, which engine, which Doom, whether it is even installed, and the
- * last-played write. Couch has its own copy of the launch plumbing and that is
- * already one copy more than ideal; a third would be correct on the day it was
- * written and wrong by the next release.
+ * ⚠️ The first version handed the game back to the suite as --play=<id>, which
+ * started the Manager. That was wrong in the way that matters: this face is not
+ * a menu that hands off to a desktop, it is the interface. You stay in it.
+ *
+ * What "play" means is still not decided here — packages/core/launch.js owns
+ * that, and Couch is being moved onto the same module, so there is one answer
+ * to the multi-store question and one place that knows GOG and Epic must go
+ * through the Installer engine rather than a shell command.
  */
-ipcMain.on('crt-play', (event, gameId) => {
-    if (!gameId) return;
-    openFace([`--play=${gameId}`]);
+// ⚠️ Built after the database is open, not at module load: `db` is still null
+// here, and a launcher holding a null db silently loses the PICO-8 path.
+let launcher = null;
+function ensureLauncher() {
+    if (!launcher) {
+        launcher = launch.create({
+            db,
+            baseDir,
+            binDir,
+            onLaunchIssue: (info) => send('crt-launch-failed', info),
+            onProgress:    (info) => send('crt-launch-progress', info),
+        });
+    }
+    return launcher;
+}
+
+function send(channel, payload) {
+    if (win && !win.isDestroyed()) {
+        try { win.webContents.send(channel, payload); } catch (e) {}
+    }
+}
+
+// Every way this game can be started, and whether each one is installed right
+// now. One launcher is the common case and the face plays it directly; several
+// is a real multi-store row and the face asks which.
+ipcMain.handle('crt-launchers', (event, gameId) => {
+    if (!db || !gameId) return [];
+    try {
+        // ⚠️ Store, SteamAppID and InstallerGameId are not decoration: without
+        // them expandLaunchers silently returns fewer launchers than the row has.
+        const game = db.prepare(
+            'SELECT id, Store, SteamAppID, InstallerGameId, LaunchCommand, LaunchCommands FROM games WHERE id=?'
+        ).get(gameId);
+        return game ? ensureLauncher().launcherStates(game) : [];
+    } catch (e) {
+        return [];
+    }
+});
+
+ipcMain.handle('crt-launch', (event, gameId, cmd) => {
+    if (!db) return { ok: false, error: 'The library is not open.' };
+    let command = cmd;
+    if (!command) {
+        try {
+            const game = db.prepare(
+                'SELECT id, Store, SteamAppID, InstallerGameId, LaunchCommand, LaunchCommands FROM games WHERE id=?'
+            ).get(gameId);
+            command = game && (ensureLauncher().expandLaunchers(game)[0] || {}).cmd;
+        } catch (e) { /* falls through to the no-command answer below */ }
+    }
+
+    const result = ensureLauncher().run(command);
+    if (result.ok) {
+        // The same write the other faces do, so Continue on the root screen
+        // means what it says after playing something from here.
+        try { db.prepare('UPDATE games SET LastPlayed=? WHERE id=?').run(Date.now(), gameId); } catch (e) {}
+    }
+    return result;
 });
 
 // Leaving for another face. The CRT menu is an entry point, not a prison.

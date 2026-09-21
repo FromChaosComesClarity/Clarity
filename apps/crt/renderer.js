@@ -44,9 +44,17 @@ const stack = [];                       // [{ title, rows, index }]
 
 const screen = () => stack[stack.length - 1];
 
-function push(builder) {
-    const built = builder();
-    stack.push({ title: built.title, rows: built.rows, index: 0, okLabel: built.okLabel });
+// A row the cursor can land on. Information rows are drawn but never selected,
+// so a screen that opens on one starts the cursor below it instead.
+const selectable = (row) => !!row && row.kind !== 'info' && typeof row.run === 'function';
+const firstSelectable = (rows) => Math.max(0, rows.findIndex(selectable));
+
+function push(builder, arg) {
+    const built = builder(arg);
+    stack.push({
+        title: built.title, rows: built.rows, index: firstSelectable(built.rows),
+        okLabel: built.okLabel, emptyText: built.emptyText,
+    });
     render();
 }
 
@@ -58,14 +66,16 @@ function pop() {
 
 // Rebuild the screen under the cursor in place, keeping the cursor where it is.
 // Used by toggles, which change the row they live on.
-function refresh(builder) {
+function refresh(builder, arg) {
     const here = screen();
     const at = here.index;
-    const built = builder();
+    const built = builder(arg);
     here.title = built.title;
     here.rows = built.rows;
     here.okLabel = built.okLabel;
-    here.index = Math.min(at, built.rows.length - 1);
+    here.emptyText = built.emptyText;
+    here.index = Math.max(0, Math.min(at, built.rows.length - 1));
+    if (!selectable(here.rows[here.index])) here.index = firstSelectable(here.rows);
     render();
 }
 
@@ -76,7 +86,11 @@ function render() {
     if (!here) return;
 
     $crumb.textContent = stack.map(s => s.title).join('  ›  ');
-    $tally.textContent = here.rows.length > 1 ? `${here.index + 1} / ${here.rows.length}` : '';
+    // Counted over the rows the cursor can actually reach, so the tally matches
+    // what pressing Down does.
+    const choices = here.rows.filter(selectable).length;
+    const at = here.rows.slice(0, here.index + 1).filter(selectable).length;
+    $tally.textContent = choices > 1 ? `${at} / ${choices}` : '';
     $hintOkLabel.textContent = here.okLabel || 'SELECT';
 
     $menu.replaceChildren();
@@ -146,7 +160,7 @@ function rootScreen() {
     if (last) {
         rows.push({
             kind: 'action', label: 'Continue', meta: last.name,
-            run: () => launch(last),
+            run: () => play(last),
         });
     }
 
@@ -168,19 +182,86 @@ function libraryScreen() {
 
     const rows = list.map(g => ({
         kind: 'game',
+        game: g,
         label: g.name,
         thumb: g.cover,
         meta: g.year || '',
         pill: g.installed ? '' : 'GET',
-        run: () => launch(g),
+        run: () => openGame(g),
     }));
 
     return {
         title: prefs.onlyInstalled ? 'LIBRARY · INSTALLED' : 'LIBRARY',
         rows,
-        okLabel: 'PLAY',
+        okLabel: 'OPEN',
         emptyText: prefs.onlyInstalled ? 'NOTHING INSTALLED YET' : 'THE LIBRARY IS EMPTY',
     };
+}
+
+/*
+ * One game.
+ *
+ * ⚠️ The launchers have to be fetched before this screen can be built, because
+ * whether there are one or four of them is the difference between a "Play" row
+ * and a store picker. Fetching on the way in is what lets the screen builder
+ * stay synchronous like every other one.
+ */
+const launcherCache = new Map();
+
+async function openGame(game) {
+    if (!launcherCache.has(game.id)) {
+        $status.textContent = 'READING…';
+        try { launcherCache.set(game.id, await window.crt.launchers(game.id) || []); }
+        catch (e) { launcherCache.set(game.id, []); }
+        $status.textContent = '';
+    }
+    push(gameScreen, game);
+}
+
+function gameScreen(game) {
+    const launchers = launcherCache.get(game.id) || [];
+    const rows = [];
+
+    if (!launchers.length) {
+        // A real state, not an error: plenty of rows are catalogue entries with
+        // no command attached yet. Saying so is better than a Play button that
+        // does nothing.
+        rows.push({ kind: 'info', label: 'No launch command set' });
+    } else if (launchers.length === 1) {
+        rows.push({ kind: 'action', label: 'Play', run: () => play(game, launchers[0]) });
+    } else {
+        // A genuinely multi-store row — the same game owned on Steam and GOG,
+        // say. Which copy to start is the user's call, so it is asked rather
+        // than guessed, and each says whether it is actually installed.
+        for (const l of launchers) {
+            rows.push({
+                kind: 'action',
+                label: `Play on ${l.label.replace(/ via Installer$/, '')}`,
+                pill: l.installed ? 'INSTALLED' : '',
+                run: () => play(game, l),
+            });
+        }
+    }
+
+    // What is known about the game, stated rather than offered. These rows are
+    // drawn flat and the cursor steps over them.
+    const facts = [game.genre, game.year].filter(Boolean).join(' · ');
+    if (facts) rows.push({ kind: 'info', label: facts });
+    if (game.lastPlayed) rows.push({ kind: 'info', label: `Last played ${ago(game.lastPlayed)}` });
+    if (!game.installed) rows.push({ kind: 'info', label: 'Not installed' });
+
+    return { title: game.name.toUpperCase(), rows, okLabel: 'PLAY' };
+}
+
+function ago(ms) {
+    const days = Math.floor((Date.now() - Number(ms)) / 86400000);
+    if (days <= 0) return 'today';
+    if (days === 1) return 'yesterday';
+    if (days < 30) return `${days} days ago`;
+    const months = Math.floor(days / 30);
+    if (months < 12) return months === 1 ? '1 month ago' : `${months} months ago`;
+    const years = Math.floor(months / 12);
+    return years === 1 ? '1 year ago' : `${years} years ago`;
 }
 
 function settingsScreen() {
@@ -210,34 +291,69 @@ function settingsScreen() {
     return { title: 'SETTINGS', rows, okLabel: 'CHANGE' };
 }
 
-// ⚠️ Not a launcher. An installed game is handed to the suite as --play, an
-// uninstalled one as --game, which opens its page where the Install button is.
-// What "play" means past that point (the multi-store picker, which engine,
-// which Doom, the install-state check, the last-played write) is the Manager's
-// decision tree and this face does not get a second opinion about it.
-function launch(game) {
+/*
+ * Starting a game, without going anywhere.
+ *
+ * The face stays exactly where it is: the game takes the screen, and when it
+ * exits this menu is still here, on the same row. What "play" means — which
+ * engine, which store, whether a shell command or the Installer — belongs to
+ * packages/core/launch.js; this only picks the launcher and reports the answer.
+ */
+async function play(game, launcher) {
     if (!game) return;
-    $status.textContent = game.installed ? 'STARTING…' : 'OPENING…';
-    if (game.installed) window.crt.play(game.id);
-    else window.crt.openFace([`--game=${game.id}`]);
+    $status.textContent = 'STARTING…';
+    try {
+        const res = await window.crt.launch(game.id, launcher && launcher.cmd);
+        if (res && res.ok === false) { fail(res.error); return; }
+        game.lastPlayed = Date.now();
+        // Cleared on a delay rather than immediately: the game takes a few
+        // seconds to put a window up, and a menu that says nothing in the
+        // meantime looks like it ignored the button.
+        setTimeout(() => { if ($status.textContent === 'STARTING…') $status.textContent = ''; }, 6000);
+    } catch (e) {
+        fail('The game could not be started.');
+    }
 }
 
+// ⚠️ A failure has to be visible *here*. On a TV there is no console to check
+// and no notification area to glance at, and the usual cause — a Windows game
+// with no Proton — kills the process instantly and silently.
+function fail(message) {
+    $status.textContent = String(message || 'COULD NOT START').toUpperCase();
+    setTimeout(() => { $status.textContent = ''; }, 8000);
+}
+
+// The launch that failed after we handed off, which arrives later than the
+// call's own answer and is usually the more useful of the two.
+window.crt.onLaunchFailed((info) => fail(info && info.message));
+
 // ── Input ────────────────────────────────────────────────────────────────────
-// Arrow keys, Enter and Escape, which is exactly what the OmaCRT gamepad daemon
-// emits, so the pad needs nothing special here and a keyboard still works.
+// Arrow keys, Enter and Escape — a keyboard, which is what this is driven with.
 
 function move(delta) {
     const here = screen();
-    if (!here || !here.rows.length) return;
-    here.index = (here.index + delta + here.rows.length) % here.rows.length;
+    if (!here || !here.rows.some(selectable)) return;
+    // Step over information rows. Bounded by the row count, so a screen that is
+    // all information simply does not move.
+    let i = here.index;
+    for (let n = 0; n < here.rows.length; n++) {
+        i = (i + delta + here.rows.length) % here.rows.length;
+        if (selectable(here.rows[i])) break;
+    }
+    here.index = i;
     render();
 }
 
 function page(delta) {
     const here = screen();
-    if (!here || !here.rows.length) return;
-    const visible = Math.max(1, Math.floor($menu.clientHeight / 70));
-    here.index = Math.min(here.rows.length - 1, Math.max(0, here.index + delta * visible));
+    if (!here || !here.rows.some(selectable)) return;
+    const row = $menu.children[0];
+    const step = Math.max(1, Math.floor($menu.clientHeight / ((row ? row.offsetHeight : 52) + 4)));
+    let i = Math.min(here.rows.length - 1, Math.max(0, here.index + delta * step));
+    while (i >= 0 && i < here.rows.length && !selectable(here.rows[i])) i += delta > 0 ? 1 : -1;
+    if (i < 0 || i >= here.rows.length) i = delta > 0 ? here.rows.map(selectable).lastIndexOf(true)
+                                                      : firstSelectable(here.rows);
+    here.index = i;
     render();
 }
 
@@ -289,7 +405,10 @@ window.addEventListener('keydown', (e) => {
 
     stack.length = 0;
     const built = rootScreen();
-    stack.push({ title: built.title, rows: built.rows, index: 0, okLabel: built.okLabel });
+    stack.push({
+        title: built.title, rows: built.rows, index: firstSelectable(built.rows),
+        okLabel: built.okLabel, emptyText: built.emptyText,
+    });
     render();
 })();
 
