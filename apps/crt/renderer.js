@@ -58,6 +58,10 @@ function push(builder, arg) {
         title: built.title, rows: built.rows, index: firstSelectable(built.rows),
         okLabel: built.okLabel, emptyText: built.emptyText,
         prose: built.prose, art: built.art, scroll: 0,
+        // ⚠️ Kept so a screen can rebuild itself without the caller naming it
+        // again. Typing used to call refresh(searchScreen) literally, which
+        // meant every other screen that accepted typing rebuilt as the search.
+        builder, arg,
     });
     render();
 }
@@ -80,6 +84,8 @@ function refresh(builder, arg) {
     here.emptyText = built.emptyText;
     here.prose = built.prose;
     here.art = built.art;
+    here.builder = builder;
+    here.arg = arg;
     here.index = Math.max(0, Math.min(at, built.rows.length - 1));
     if (!selectable(here.rows[here.index])) here.index = firstSelectable(here.rows);
     render();
@@ -429,6 +435,18 @@ function gameScreen(game) {
         rows.push({ kind: 'nav', label: 'About this game', run: () => push(aboutScreen, game) });
     }
 
+    // Scraping, per game. A row that already has art offers a re-scrape — the
+    // scraper keeps local art it did not fetch, so this is safe to press.
+    const scraped = !!(details && (details.cover || details.description));
+    rows.push({
+        kind: 'action',
+        label: scraped ? 'Refresh details' : 'Find art and details',
+        run: () => scrapeGame(game),
+    });
+    // ⚠️ The escape hatch for the case a scrape cannot fix: the library matched
+    // the wrong game entirely, and no amount of re-fetching the wrong id helps.
+    rows.push({ kind: 'nav', label: 'Wrong game? Search by name', run: () => { query = game.name; push(matchScreen, game); } });
+
     // What is known about the game, stated rather than offered. These rows are
     // drawn flat and the cursor steps over them.
     const facts = [game.genre, game.year, details && details.developer].filter(Boolean).join(' · ');
@@ -469,12 +487,157 @@ function ago(ms) {
     return years === 1 ? '1 year ago' : `${years} years ago`;
 }
 
+/*
+ * ── Scraping ─────────────────────────────────────────────────────────────────
+ *
+ * The whole point of this face is that the desktop is optional, and a library
+ * of 523 rows with art on ten of them is the clearest case of it: without this
+ * screen, filling them in means leaving the sofa.
+ */
+let scrapeCounts = { total: 0, missing: 0, installed: 0, installedMissing: 0 };
+let scrapeRun = null;                    // { done, total, name } while a batch is going
+
+function scrapeSummary() {
+    if (!scrapeCounts.total) return '';
+    return scrapeCounts.missing ? `${scrapeCounts.missing} MISSING` : 'ALL DONE';
+}
+
+function scrapeScreen() {
+    if (scrapeRun) {
+        // A run in progress owns the screen: one thing happening, one way to
+        // stop it. Anything else here would be a button pressed mid-download.
+        const pct = scrapeRun.total ? Math.round((scrapeRun.done / scrapeRun.total) * 100) : 0;
+        return {
+            title: 'ARTWORK AND DETAILS',
+            rows: [
+                { kind: 'info', label: `${scrapeRun.done} of ${scrapeRun.total}  ·  ${pct}%` },
+                { kind: 'info', label: scrapeRun.name || 'Working…' },
+                { kind: 'action', label: 'Stop', run: () => { window.crt.scrapeStop(); $status.textContent = 'STOPPING…'; } },
+            ],
+            okLabel: 'STOP',
+        };
+    }
+
+    const rows = [
+        {
+            kind: 'action', label: 'Missing only', meta: String(scrapeCounts.missing),
+            run: () => startScrape('missing'),
+        },
+        {
+            kind: 'action', label: 'Installed games', meta: String(scrapeCounts.installed),
+            run: () => startScrape('installed'),
+        },
+        {
+            kind: 'action', label: 'Every game', meta: String(scrapeCounts.total),
+            run: () => startScrape('all'),
+        },
+        { kind: 'info', label: `${scrapeCounts.total - scrapeCounts.missing} of ${scrapeCounts.total} have art` },
+    ];
+
+    return { title: 'ARTWORK AND DETAILS', rows, okLabel: 'START' };
+}
+
+/*
+ * ⚠️ A batch is slow on purpose — four rate-limited services, one game at a
+ * time — so "every game" over this library is tens of minutes. Saying so before
+ * it starts is the difference between patience and a force-quit.
+ */
+async function startScrape(scope) {
+    const total = scope === 'missing' ? scrapeCounts.missing
+                : scope === 'installed' ? scrapeCounts.installed
+                : scrapeCounts.total;
+    if (!total) { $status.textContent = 'NOTHING TO DO'; setTimeout(() => { $status.textContent = ''; }, 4000); return; }
+
+    scrapeRun = { done: 0, total, name: '' };
+    refresh(scrapeScreen);
+
+    const result = await window.crt.scrapeBatch(scope);
+    scrapeRun = null;
+    try { scrapeCounts = await window.crt.scrapeCounts(); } catch (e) {}
+    // The library list carries covers, so it is stale the moment a batch ends.
+    try { games = await window.crt.library(); } catch (e) {}
+    detailCache.clear();
+
+    $status.textContent = result && result.ok
+        ? `${result.scraped} OF ${result.done} SCRAPED${result.stopped ? ' (STOPPED)' : ''}`
+        : 'SCRAPE FAILED';
+    setTimeout(() => { $status.textContent = ''; }, 8000);
+    refresh(scrapeScreen);
+}
+
+// One game, from its own screen.
+async function scrapeGame(game, appId) {
+    $status.textContent = 'FETCHING…';
+    const result = await window.crt.scrapeOne(game.id, appId || '');
+    if (!result || !result.ok) {
+        fail((result && result.message) || 'Nothing found for this game.');
+        return;
+    }
+    // Everything this game shows is now out of date: its row in the list, its
+    // cached detail, and the backdrop currently on screen.
+    detailCache.delete(game.id);
+    try { games = await window.crt.library(); } catch (e) {}
+    const fresh = games.find(g => g.id === game.id);
+    if (fresh) { game.cover = fresh.cover; game.genre = fresh.genre; game.year = fresh.year; }
+    try { detailCache.set(game.id, await window.crt.game(game.id)); } catch (e) {}
+
+    $status.textContent = (result.message || 'DONE').toUpperCase();
+    setTimeout(() => { $status.textContent = ''; }, 6000);
+    refresh(gameScreen, game);
+}
+
+/*
+ * "That is the wrong game."
+ *
+ * Steam's own search is fuzzy, so an importer can attach the wrong appid and
+ * every scrape after that faithfully fetches the wrong game's art. Typing the
+ * real name here and choosing from the results pins the id, then scrapes with
+ * it — the one flow that cannot be fixed by scraping harder.
+ */
+function matchScreen(game) {
+    const rows = [{
+        kind: 'query',
+        label: query || 'Type a name',
+        meta: matchResults.length ? String(matchResults.length) : '',
+        typing: true,
+        run: () => runSteamSearch(game),
+    }];
+
+    for (const hit of matchResults) {
+        rows.push({
+            kind: 'action',
+            label: hit.name,
+            meta: hit.id,
+            run: () => { matchResults = []; scrapeGame(game, hit.id); pop(); },
+        });
+    }
+
+    if (!matchResults.length && query) rows.push({ kind: 'info', label: 'Press Enter to search Steam' });
+
+    return { title: 'FIND THE RIGHT GAME', rows, okLabel: 'SEARCH' };
+}
+
+let matchResults = [];
+let matchPending = false;
+
+async function runSteamSearch(game) {
+    if (matchPending || !query.trim()) return;
+    matchPending = true;
+    $status.textContent = 'SEARCHING…';
+    try { matchResults = await window.crt.steamSearch(query.trim()) || []; }
+    catch (e) { matchResults = []; }
+    matchPending = false;
+    $status.textContent = matchResults.length ? '' : 'NO MATCHES';
+    refresh(matchScreen, game);
+}
+
 // ⚠️ "Show only installed" lives in Filters, not here, and deliberately in one
 // place only. It was in both for a moment and that is worse than either: two
 // rows with the same label and the same state, in different menus, leave you
 // checking which one you actually changed.
 function settingsScreen() {
     const rows = [
+        { kind: 'nav', label: 'Artwork and details', meta: scrapeSummary(), run: () => push(scrapeScreen) },
         {
             kind: 'toggle',
             label: 'Sort library by',
@@ -525,6 +688,15 @@ function fail(message) {
 // The launch that failed after we handed off, which arrives later than the
 // call's own answer and is usually the more useful of the two.
 window.crt.onLaunchFailed((info) => fail(info && info.message));
+
+// Batch scrape progress. Only redrawn while that screen is the one on top —
+// a rebuild underneath a game screen would throw the cursor around.
+window.crt.onScrapeProgress((p) => {
+    if (!scrapeRun || !p) return;
+    scrapeRun = { done: p.done, total: p.total, name: p.name };
+    const here = screen();
+    if (here && here.builder === scrapeScreen) refresh(scrapeScreen);
+});
 
 // ── Input ────────────────────────────────────────────────────────────────────
 // Arrow keys, Enter and Escape — a keyboard, which is what this is driven with.
@@ -598,13 +770,13 @@ window.addEventListener('keydown', (e) => {
     if (here && here.rows[0] && here.rows[0].typing) {
         if (e.key === 'Backspace') {
             query = query.slice(0, -1);
-            refresh(searchScreen);
+            refresh(here.builder, here.arg);
             e.preventDefault();
             return;
         }
         if (e.key.length === 1 && !e.ctrlKey && !e.altKey && !e.metaKey) {
             query += e.key;
-            refresh(searchScreen);
+            refresh(here.builder, here.arg);
             e.preventDefault();
             return;
         }
@@ -649,6 +821,7 @@ window.addEventListener('keydown', (e) => {
     } catch (e) { /* defaults are fine */ }
 
     try { games = await window.crt.library(); } catch (e) { games = []; }
+    try { scrapeCounts = await window.crt.scrapeCounts(); } catch (e) {}
 
     stack.length = 0;
     const built = rootScreen();

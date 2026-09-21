@@ -36,6 +36,7 @@ const host = require('../../packages/core/platform/index.js');
 const { registerSharedHandlers } = require('../../packages/core/shared-ipc.js');
 const desktopDescriptor = require('../../packages/core/desktop-descriptor.js');
 const launch = require('../../packages/core/launch.js');
+const scrape = require('../../packages/core/scrape.js');
 
 // The CRT face is the Manager wearing different clothes: same identity, so it
 // reads the same library and the same settings. A face with its own userData
@@ -304,6 +305,110 @@ ipcMain.handle('crt-launch', (event, gameId, cmd) => {
         try { db.prepare('UPDATE games SET LastPlayed=? WHERE id=?').run(Date.now(), gameId); } catch (e) {}
     }
     return result;
+});
+
+/*
+ * ── Scraping ─────────────────────────────────────────────────────────────────
+ *
+ * Filling in art and details from here, because the point of this face is that
+ * the desktop is optional. packages/core/scrape.js owns what a scrape means —
+ * finding the Steam appid by name, Steam, SteamGridDB, HowLongToBeat, ProtonDB
+ * and IGDB, and never overwriting art the user already has. This decides which
+ * rows to do it to, and says what happened.
+ */
+let scraper = null;
+function ensureScraper() {
+    if (!scraper) scraper = scrape.create({ db, imagesDir: path.join(configDir, 'images') });
+    return scraper;
+}
+
+// Candidate Steam entries for a name — the answer to "the library matched the
+// wrong game". The chosen id is passed straight back into a scrape.
+ipcMain.handle('crt-steam-search', (event, name) => ensureScraper().searchSteam(String(name || '')));
+
+/*
+ * One game. `appId` is optional: given, it forces that Steam entry (the name
+ * search having settled which one); omitted, the scraper finds it by title and
+ * falls back to IGDB, which is the only source for a GOG-only row.
+ */
+ipcMain.handle('crt-scrape-one', async (event, gameId, appId) => {
+    if (!db) return { ok: false, message: 'The library is not open.' };
+    try {
+        const row = db.prepare('SELECT id, Game FROM games WHERE id=?').get(gameId);
+        if (!row) return { ok: false, message: 'No such game.' };
+        return await ensureScraper().autoFetch(gameId, row.Game, appId || '');
+    } catch (e) {
+        return { ok: false, message: 'Scrape failed.' };
+    }
+});
+
+/*
+ * A batch, over the library or part of it.
+ *
+ * ⚠️ Sequential, with a pause between games, deliberately. Steam, SteamGridDB,
+ * HowLongToBeat and IGDB all rate-limit, and 523 games in parallel is the
+ * reliable way to earn a temporary ban rather than a scraped library. Progress
+ * is reported per game and the run can be stopped between them.
+ */
+let scrapeStop = false;
+ipcMain.on('crt-scrape-stop', () => { scrapeStop = true; });
+
+ipcMain.handle('crt-scrape-batch', async (event, scope) => {
+    if (!db) return { ok: false, message: 'The library is not open.' };
+    scrapeStop = false;
+
+    let rows = [];
+    try {
+        const onlyInstalled = scope === 'installed' ? "AND IFNULL(Installed,'') IN ('1','true','yes')" : '';
+        rows = db.prepare(`
+            SELECT id, Game, CoverArt, Description, SteamDesc
+            FROM games
+            WHERE IFNULL(Hidden,'') NOT IN ('1','true','yes') ${onlyInstalled}
+            ORDER BY Game COLLATE NOCASE
+        `).all();
+    } catch (e) {
+        return { ok: false, message: 'Could not read the library.' };
+    }
+
+    const s = ensureScraper();
+    if (scope === 'missing') rows = rows.filter(r => !s.isScraped(r));
+
+    let done = 0, scraped = 0;
+    for (const row of rows) {
+        if (scrapeStop) break;
+        send('crt-scrape-progress', { done, total: rows.length, name: row.Game });
+        try {
+            const result = await s.autoFetch(row.id, row.Game, '');
+            if (result.ok) scraped++;
+        } catch (e) { /* one bad row must not end the run */ }
+        done++;
+        await new Promise(r => setTimeout(r, 400));   // a good citizen of four APIs
+    }
+
+    send('crt-scrape-progress', { done, total: rows.length, name: '', finished: true });
+    return { ok: true, done, scraped, stopped: scrapeStop, total: rows.length };
+});
+
+// How much of the library has anything at all, so the scrape menu can say what
+// there is to do rather than making the user guess.
+ipcMain.handle('crt-scrape-counts', () => {
+    if (!db) return { total: 0, missing: 0, installed: 0, installedMissing: 0 };
+    try {
+        const rows = db.prepare(`
+            SELECT Installed, CoverArt, Description, SteamDesc
+            FROM games WHERE IFNULL(Hidden,'') NOT IN ('1','true','yes')
+        `).all();
+        const s = ensureScraper();
+        const installed = rows.filter(r => isTruthy(r.Installed));
+        return {
+            total: rows.length,
+            missing: rows.filter(r => !s.isScraped(r)).length,
+            installed: installed.length,
+            installedMissing: installed.filter(r => !s.isScraped(r)).length,
+        };
+    } catch (e) {
+        return { total: 0, missing: 0, installed: 0, installedMissing: 0 };
+    }
 });
 
 // Leaving for another face. The CRT menu is an entry point, not a prison.

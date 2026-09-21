@@ -14,6 +14,16 @@ contextBridge.exposeInMainWorld('crt', {
     // Artwork and the blurb for one game, fetched when its screen opens.
     game: (gameId) => ipcRenderer.invoke('crt-game', gameId),
 
+    // Scraping: art and details, fetched from here so the desktop stays
+    // optional. `scrapeOne` without an appId lets the scraper find the game
+    // itself; with one, it is the answer to "no, *this* game".
+    steamSearch: (name) => ipcRenderer.invoke('crt-steam-search', name),
+    scrapeOne: (gameId, appId) => ipcRenderer.invoke('crt-scrape-one', gameId, appId),
+    scrapeBatch: (scope) => ipcRenderer.invoke('crt-scrape-batch', scope),
+    scrapeStop: () => ipcRenderer.send('crt-scrape-stop'),
+    scrapeCounts: () => ipcRenderer.invoke('crt-scrape-counts'),
+    onScrapeProgress: (fn) => ipcRenderer.on('crt-scrape-progress', (_e, p) => fn(p)),
+
     // Settings, straight through the shared handlers every face uses
     getSetting: (key) => ipcRenderer.invoke('get-setting', key),
     setSetting: (key, value) => ipcRenderer.invoke('set-setting', key, value),
