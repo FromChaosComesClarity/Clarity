@@ -469,25 +469,19 @@ function ago(ms) {
     return years === 1 ? '1 year ago' : `${years} years ago`;
 }
 
+// ⚠️ "Show only installed" lives in Filters, not here, and deliberately in one
+// place only. It was in both for a moment and that is worse than either: two
+// rows with the same label and the same state, in different menus, leave you
+// checking which one you actually changed.
 function settingsScreen() {
     const rows = [
-        {
-            kind: 'toggle',
-            label: 'Show only installed',
-            pill: prefs.onlyInstalled ? 'ON' : 'OFF',
-            run: async () => {
-                prefs.onlyInstalled = !prefs.onlyInstalled;
-                await window.crt.setSetting('crt_only_installed', prefs.onlyInstalled ? '1' : '0');
-                refresh(settingsScreen);
-            },
-        },
         {
             kind: 'toggle',
             label: 'Sort library by',
             pill: prefs.sort === 'name' ? 'NAME' : 'RECENT',
             run: async () => {
                 prefs.sort = prefs.sort === 'name' ? 'recent' : 'name';
-                await window.crt.setSetting('crt_sort', prefs.sort);
+                await saveSetting('crt_sort', prefs.sort);
                 refresh(settingsScreen);
             },
         },
