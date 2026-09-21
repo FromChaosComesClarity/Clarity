@@ -35,6 +35,8 @@ contextBridge.exposeInMainWorld('crt', {
     installCancel: () => ipcRenderer.send('crt-install-cancel'),
     installerEntry: (gameId) => ipcRenderer.invoke('crt-installer-entry', gameId),
     installedGames: () => ipcRenderer.invoke('crt-installed-games'),
+    compatGet: (id) => ipcRenderer.invoke('crt-compat-get', id),
+    compatSet: (id, mode) => ipcRenderer.invoke('crt-compat-set', id, mode),
     steamUninstall: (appId) => ipcRenderer.invoke('crt-steam-uninstall', appId),
     onInstallProgress: (fn) => ipcRenderer.on('crt-install-progress', (_e, info) => fn(info)),
 

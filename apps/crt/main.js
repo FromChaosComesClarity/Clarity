@@ -711,6 +711,18 @@ ipcMain.handle('crt-launch-log', (event, gameName) => {
     }
 });
 
+// Graphics compatibility for one installed GOG/Epic game. See installer-ops.js
+// for why this exists at all — on hardware whose Vulkan is incomplete, a
+// Direct3D game dies in under a second unless it is pushed through OpenGL.
+ipcMain.handle('crt-compat-get', (event, installerGameId) => {
+    try { return ensureInstaller().compatMode(installerGameId); } catch (e) { return 'auto'; }
+});
+
+ipcMain.handle('crt-compat-set', (event, installerGameId, mode) => {
+    try { return ensureInstaller().setCompatMode(installerGameId, mode); }
+    catch (e) { return { ok: false, error: 'Could not save that setting.' }; }
+});
+
 // Leaving for another face. The CRT menu is an entry point, not a prison.
 ipcMain.on('crt-open-face', (event, face) => {
     const faceArgs = face === 'couch' ? ['--couch']

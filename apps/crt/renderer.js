@@ -66,9 +66,23 @@ function push(builder, arg) {
     render();
 }
 
+/*
+ * ⚠️ Rebuilt on the way back, not replayed.
+ *
+ * A screen's rows are a snapshot of the library at the moment it was built, and
+ * coming back to one is exactly when that snapshot is most likely to be wrong —
+ * you went away to install, uninstall, scrape or mark something. Returning to a
+ * game's page after installing it and being offered "Install" again is what
+ * this fixes.
+ */
 function pop() {
-    if (stack.length <= 1) return;      // the root is the floor; B there does nothing
+    if (stack.length <= 1) return;      // the root is the floor; Esc there does nothing
     stack.pop();
+    const here = screen();
+    if (here && typeof here.builder === 'function') {
+        refresh(here.builder, here.arg);
+        return;
+    }
     render();
 }
 
@@ -320,10 +334,21 @@ async function saveSetting(key, value) {
  * to one game out of 523 is its name. The row grammar does not change — the
  * query is simply a row that shows what has been typed.
  */
+/*
+ * ⚠️ Matched on letters and digits alone, with the punctuation stripped from
+ * both sides.
+ *
+ * A plain substring match cannot find "B.I.O.T.A." by typing "biota", and this
+ * library is full of titles like it — S.T.A.L.K.E.R., DOOM + DOOM II, "Hack 'n
+ * Splash". Typing the punctuation of a title you are searching *for* is not a
+ * thing anyone does, least of all on a TV.
+ */
+const searchKey = (text) => String(text || '').toLowerCase().replace(/[^a-z0-9]+/g, '');
+
 function searchScreen() {
-    const q = query.trim().toLowerCase();
+    const q = searchKey(query);
     const matches = q
-        ? filtered().filter(g => g.name.toLowerCase().includes(q)).slice(0, 200)
+        ? filtered().filter(g => searchKey(g.name).includes(q)).slice(0, 200)
         : [];
 
     const rows = [{
@@ -381,6 +406,8 @@ const detailCache = new Map();
 // What the Installer knows about this row, when it is a GOG or Epic game. Null
 // for a Steam-only row, which installs through Steam and not through us.
 const entryCache = new Map();
+// 'auto' or 'opengl', for an installed GOG/Epic game.
+const compatCache = new Map();
 
 async function openGame(game) {
     if (!launcherCache.has(game.id) || !detailCache.has(game.id) || !entryCache.has(game.id)) {
@@ -392,6 +419,9 @@ async function openGame(game) {
                 window.crt.installerEntry(game.id),
                 window.crt.gamePlaylists(game.id),
             ]);
+            if (entry && entry.installed) {
+                try { compatCache.set(game.id, await window.crt.compatGet(entry.id)); } catch (e) {}
+            }
             launcherCache.set(game.id, launchers || []);
             detailCache.set(game.id, details || null);
             entryCache.set(game.id, entry || null);
@@ -475,6 +505,13 @@ function gameScreen(game) {
     rows.push({ kind: 'nav', label: 'Wrong game? Search by name', run: () => { query = game.name; push(matchScreen, game); } });
 
     if (entry && entry.installed) {
+        const mode = compatCache.get(game.id) || 'auto';
+        rows.push({
+            kind: 'toggle',
+            label: 'Graphics',
+            pill: mode === 'opengl' ? 'OPENGL' : 'AUTO',
+            run: () => toggleCompat(game, entry),
+        });
         rows.push({ kind: 'action', label: 'Uninstall', pill: entry.store.toUpperCase(), run: () => uninstallFromGame(game, entry) });
     }
 
@@ -734,6 +771,15 @@ function launchScreen() {
         rows.push({ kind: 'info', label: 'This menu is behind the game' });
     } else if (run.state === 'exited') {
         rows.push({ kind: 'info', label: 'Closed' });
+        // ⚠️ A Windows game that exits in seconds has almost certainly failed
+        // to make a Direct3D device rather than been quit by anyone. Saying so
+        // here is the difference between a dead end and a fix that is one press
+        // away.
+        if (run.quick) {
+            rows.push({ kind: 'info', label: 'It closed straight away' });
+            rows.push({ kind: 'info', label: 'Try Graphics: OpenGL on its page' });
+            rows.push({ kind: 'nav', label: 'What happened', run: () => showLaunchLog(run.title) });
+        }
     } else {
         rows.push({ kind: 'info', label: [phase || 'Starting', pct].filter(Boolean).join('  ·  ') });
         if (run.message) rows.push({ kind: 'info', label: run.message });
@@ -789,11 +835,15 @@ window.crt.onLaunchProgress((info) => {
 
 window.crt.onGameSession((info) => {
     if (!launchRun || !info) return;
-    launchRun = { ...launchRun, state: info.running ? 'running' : 'exited', title: info.title || launchRun.title };
+    const quick = !info.running && Date.now() - (launchRun.startedAt || 0) < 25000;
+    launchRun = { ...launchRun, state: info.running ? 'running' : 'exited', quick,
+                  title: info.title || launchRun.title };
     refreshLaunch();
     // A game that has exited leaves nothing to look at; step back to where the
     // user was rather than stranding them on a dead panel.
-    if (!info.running) {
+    // A game that ran and was quit needs no epitaph; one that died on the spot
+    // has something to say, so that screen stays until it is dismissed.
+    if (!info.running && !quick) {
         setTimeout(() => {
             const here = screen();
             if (here && here.builder === launchScreen && launchRun && launchRun.state === 'exited') {
@@ -1046,6 +1096,25 @@ async function toggleFlag(game, field) {
     if (row) row[field] = next;
 }
 
+/*
+ * ⚠️ The setting that makes a whole class of games work on this machine.
+ *
+ * Direct3D normally runs through DXVK, which needs Vulkan. Where Vulkan is
+ * incomplete — this machine's Haswell graphics, for one — the game starts,
+ * fails to create a device and exits in under a second, which looks exactly
+ * like a launch that did nothing at all. OpenGL mode translates Direct3D
+ * through WineD3D instead, and the same game runs.
+ */
+async function toggleCompat(game, entry) {
+    const next = (compatCache.get(game.id) || 'auto') === 'opengl' ? 'auto' : 'opengl';
+    const r = await window.crt.compatSet(entry.id, next);
+    if (!r || !r.ok) { fail((r && r.error) || 'Could not save that setting.'); return; }
+    compatCache.set(game.id, next);
+    $status.textContent = next === 'opengl' ? 'OPENGL MODE ON' : 'AUTO';
+    setTimeout(() => { $status.textContent = ''; }, 5000);
+    refresh(gameScreen, game);
+}
+
 // Installing from a game's own screen, rather than finding it again in the
 // Install list. Progress goes to the footer here: this screen is about the
 // game, and replacing it with a progress panel would lose the place.
@@ -1182,7 +1251,7 @@ function settingsScreen() {
  */
 async function play(game, launcher) {
     if (!game) return;
-    launchRun = { title: game.name, phase: '', percent: 0, message: '', state: 'starting' };
+    launchRun = { title: game.name, phase: '', percent: 0, message: '', state: 'starting', startedAt: Date.now() };
     push(launchScreen);
 
     try {

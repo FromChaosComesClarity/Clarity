@@ -190,11 +190,65 @@ function create({ baseDir = '', ensureEngine = () => false } = {}) {
         try { return { ok: !!engine.cancelActiveInstall() }; } catch (e) { return { ok: false }; }
     }
 
+    /*
+     * ── Compatibility ────────────────────────────────────────────────────────
+     *
+     * ⚠️ Some machines cannot run DXVK at all. This one is a Haswell iGPU whose
+     * Vulkan support Mesa itself calls incomplete, so a Windows game that wants
+     * Direct3D through DXVK starts, fails to make a device, and exits in under
+     * a second — indistinguishable, from the outside, from a launch that did
+     * nothing. Forcing WineD3D translates Direct3D to OpenGL instead, which
+     * that hardware does support, and the same game then runs.
+     *
+     * The engine already reads per-game environment from library.db's
+     * custom_env (KEY=VALUE, one per line). This only has to set one variable
+     * in it without disturbing anything a person put there by hand.
+     */
+    const WINED3D = 'PROTON_USE_WINED3D=1';
+
+    function compatMode(gameId) {
+        const lib = openLibrary();
+        if (!lib) return 'auto';
+        try {
+            const row = lib.prepare('SELECT custom_env FROM games WHERE id=?').get(String(gameId));
+            return String(row?.custom_env || '').includes('PROTON_USE_WINED3D=1') ? 'opengl' : 'auto';
+        } catch (e) {
+            return 'auto';
+        } finally {
+            try { lib.close(); } catch (e) {}
+        }
+    }
+
+    function setCompatMode(gameId, mode) {
+        const p = dbPath();
+        if (!p) return { ok: false, error: 'The Installer library is not available.' };
+        let write = null;
+        try {
+            write = new Database(p, { timeout: 4000 });
+            const row = write.prepare('SELECT custom_env FROM games WHERE id=?').get(String(gameId));
+            if (!row) return { ok: false, error: 'That game is not in the Installer library.' };
+            // Everything except our own line is the user's, and stays.
+            const kept = String(row.custom_env || '')
+                .split('\n')
+                .map(l => l.trim())
+                .filter(Boolean)
+                .filter(l => !/^PROTON_USE_WINED3D=/i.test(l));
+            if (mode === 'opengl') kept.push(WINED3D);
+            write.prepare('UPDATE games SET custom_env=? WHERE id=?').run(kept.join('\n'), String(gameId));
+            return { ok: true, mode };
+        } catch (e) {
+            return { ok: false, error: 'Could not save that setting.' };
+        } finally {
+            try { write && write.close(); } catch (e) {}
+        }
+    }
+
     // games.db stores the link as '<store>_<app_id>'; this is the only place
     // that spelling is built, so a change to it has one home.
     const installerGameIdFor = (store, appId) => `${String(store).toLowerCase()}_${appId}`;
 
-    return { status, owned, counts, refreshOwned, install, uninstall, cancel, freeSpace, installDir, installerGameIdFor };
+    return { status, owned, counts, refreshOwned, install, uninstall, cancel, freeSpace, installDir,
+             compatMode, setCompatMode, installerGameIdFor };
 }
 
 module.exports = { create, DEFAULT_DIR };
