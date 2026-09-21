@@ -7,6 +7,7 @@ const Database = require('better-sqlite3');
 const { registerSharedHandlers } = require('../../packages/core/shared-ipc.js');
 const _smart = require('../../packages/core/smart-playlists.js');
 const host = require('../../packages/core/platform/index.js');
+const launch = require('../../packages/core/launch.js');
 const { spawn, exec, execFile } = require('child_process');
 const https = require('https');
 const mm = require('music-metadata');
@@ -288,49 +289,20 @@ function syncInstalledFromInstaller() {
         // mixed-store row (e.g. Steam+GOG) whose Steam copy is the installed one. Re-assert
         // the Steam OR so those rows aren't wrongly downgraded.
         reconcileSteamInstalls();
-        _installerMap = null; // invalidate map so launch routing picks up changes
+        _installerMap = null; launcher.invalidateInstallerMap();   // both caches, or launch routing keeps the old answer
     } catch {}
 }
 
 ipcMain.handle('sync-installer-installed', () => { syncInstalledFromInstaller(); return true; });
 
 ipcMain.on('launch-game', (event, cmd) => {
-    if (!cmd) return;
-
-    // 1. GOG/Epic via Installer's in-process engine.
-    const installerMatch = cmd.match(/installer:\/\/launch\/(epic|gog)\/([^"\s]+)/i);
-    if (installerMatch) {
-        const gId = getInstallerMap().get(installerMatch[2]);
-        if (gId && ensureInstallerEngine()) {
-            installerEngine.launchGame(gId).catch(e => { console.error('[launch-game] installer launch failed:', e.message); reportLaunchThrow(gId, e); });
-        } else {
-            console.error('[launch-game] no Installer mapping/engine for', installerMatch[2]);
-        }
-        return; // GOG/Epic must go through Installer, never fall through to a shell command
+    // What each kind of launcher means is packages/core/launch.js's job; this
+    // only reports the answer the way this face does.
+    const result = launcher.run(cmd);
+    if (result && result.ok === false && result.error) {
+        console.error('[launch-game]', result.error);
+        reportLaunchFailure({ reason: { code: 'LAUNCH_ERROR', message: result.error } });
     }
-    // installer://launch/<id> (direct Installer id)
-    const gLaunch = cmd.match(/^installer:\/\/(?:launch\/)?(.+)$/);
-    if (gLaunch) {
-        if (ensureInstallerEngine()) installerEngine.launchGame(gLaunch[1]).catch(e => { console.error('[launch-game]', e.message); reportLaunchThrow(gLaunch[1], e); });
-        return;
-    }
-
-    // 2. itch.io, hand the scheme to the desktop's opener (shell.openExternal rejects custom schemes)
-    if (cmd.startsWith('itch://')) {
-        host.desktop.openUrlScheme(cmd);
-        return;
-    }
-
-    // 3. PICO-8 cart launch
-    if (cmd.startsWith('pico8-cart:')) {
-        const cartPath = cmd.slice('pico8-cart:'.length);
-        const bin = _getPico8Bin();
-        if (bin) spawn(bin, ['-run', cartPath], { detached: true, stdio: 'ignore' }).unref();
-        return;
-    }
-
-    const child = spawn(cmd, [], { shell: true, detached: true, stdio: 'ignore' });
-    child.unref();
 });
 
 ipcMain.on('quit-app', () => app.quit());
@@ -338,113 +310,41 @@ const SAVE_DB_ALLOWED_FIELDS = new Set(['FAV', 'WANT_TO_PLAY', 'LaunchCommand', 
 
 // Kept as a local name so the call sites below read unchanged.
 const getSteamLibraryPaths = () => host.steamLibraryPaths();
-function isSteamGameInstalled(appId) {
-    if (!appId || appId === 'None' || appId === '') return false;
-    const id = String(appId).replace(/\.0+$/, '');
-    return getSteamLibraryPaths().some(dir => fs.existsSync(path.join(dir, `appmanifest_${id}.acf`)));
-}
-// ── Multi-store install detection (mirrors the Manager) ──────────────────────
-// A row can front several stores (Store "Steam, GOG") with one launcher per store in
-// LaunchCommands. Install state is the OR across those stores; keying off only the
-// primary LaunchCommand hid an installed Steam copy whenever the primary was GOG/Epic.
-function installerDbPath() {
-    return host.findInstallerDb(baseDir);
-}
-function guessLauncherLabel(cmd) {
-    if (!cmd) return 'Custom';
-    if (/steam:\/\/rungameid/i.test(cmd))     return 'Steam';
-    if (/installer:\/\/launch\/gog/i.test(cmd))  return 'GOG via Installer';
-    if (/installer:\/\/launch\/epic/i.test(cmd)) return 'Epic via Installer';
-    if (cmd.startsWith('itch://'))            return 'itch.io';
-    if (cmd.startsWith('pico8-cart:'))        return 'PICO-8';
-    if (/^flatpak run/i.test(cmd))           return 'Flatpak';
-    if (cmd.startsWith('installer://'))         return 'Installer';
-    return 'Custom';
-}
-function launcherStore(cmd) {
-    if (/steam:\/\/rungameid/i.test(cmd))        return 'steam';
-    if (/installer:\/\/launch\/gog\//i.test(cmd))  return 'gog';
-    if (/installer:\/\/launch\/epic\//i.test(cmd)) return 'epic';
-    return null;
-}
-// The canonical per-store launcher list for a row: [{ label, cmd }], mirrors the Manager.
-// LaunchCommands is the source of truth when populated, but plenty of genuinely multi-store
-// rows never had it written (legacy cross-store merges, or a Manager save that dropped the
-// Installer launcher), so anything the row's own store fields prove exists is filled back in.
-// Needs Store + InstallerGameId on the row; a SELECT without them just skips the synthesis.
-function expandLaunchers(game) {
-    const out = [], seen = new Set();
-    const add = (label, cmd) => {
-        if (!cmd || seen.has(cmd)) return;
-        seen.add(cmd);
-        out.push({ label: label || guessLauncherLabel(cmd), cmd });
-    };
-    try { for (const l of JSON.parse(game.LaunchCommands || '[]')) if (l && l.cmd) add(l.label, l.cmd); } catch {}
-    add(null, game.LaunchCommand);
+/*
+ * ── Multi-store launching ────────────────────────────────────────────────────
+ *
+ * All of this used to live here, and now lives in packages/core/launch.js so
+ * the CRT face answers "what does Play mean" exactly the way Couch does:
+ * which launchers a row has, whether each store's copy is installed, and how
+ * each kind of launcher is actually started.
+ *
+ * ⚠️ Couch keeps owning the Installer engine. installer-engine.js is a
+ * singleton configured by init(), and this face also asks it for store login
+ * status, disk space and install info — so the engine it already set up is
+ * handed to the module rather than letting the module init a second one.
+ */
+const launcher = launch.create({
+    get db() { return db; },            // opened later, in whenReady
+    baseDir,
+    binDir,
+    ensureEngine: ensureInstallerEngine,
+    engineLaunch: (installerGameId) => {
+        installerEngine.launchGame(installerGameId).catch(e => {
+            console.error('[launch-game] installer launch failed:', e.message);
+            reportLaunchThrow(installerGameId, e);
+        });
+    },
+    pico8Bin: () => _getPico8Bin(),
+    onLaunchIssue: (info) => reportLaunchFailure({ title: info.title, reason: { code: info.code, message: info.message } }),
+});
 
-    const stores = (game.Store || '').toLowerCase();
-    const has = s => out.some(l => launcherStore(l.cmd) === s);
+// Local names, so every call site below reads exactly as it did before.
+const expandLaunchers       = (game) => launcher.expandLaunchers(game);
+const launcherInstalled     = (cmd, steamAppId) => launcher.launcherInstalled(cmd, steamAppId);
+const resolveInstallState   = (game) => launcher.resolveInstallState(game);
+const launcherStatesForGame = (game) => launcher.launcherStates(game);
+const isSteamGameInstalled  = (appId) => launcher.isSteamGameInstalled(appId);
 
-    // SteamAppID alone proves nothing, it doubles as the metadata key on GOG/itch rows.
-    const appId = String(game.SteamAppID || '').replace(/\.0+$/, '').trim();
-    if (stores.includes('steam') && appId && appId !== 'None' && !has('steam')) {
-        add('Steam', host.steamLaunchCommand(appId));
-    }
-    const gg = String(game.InstallerGameId || '').match(/^(gog|epic)_(.+)$/i);
-    if (gg) {
-        const store = gg[1].toLowerCase();
-        if (stores.includes(store) && !has(store)) {
-            add(store === 'gog' ? 'GOG via Installer' : 'Epic via Installer', `installer://launch/${store}/${gg[2]}`);
-        }
-    }
-    return out;
-}
-function launchCmdsOf(game) {
-    return expandLaunchers(game).map(l => l.cmd);
-}
-let _installerInstalledCache = { key: '', set: new Set() };
-function installerInstalledSet() {
-    const p = installerDbPath();
-    if (!p) { _installerInstalledCache = { key: '', set: new Set() }; return _installerInstalledCache.set; }
-    let key = p;
-    try { key += ':' + fs.statSync(p).mtimeMs; } catch {}
-    if (key === _installerInstalledCache.key) return _installerInstalledCache.set;
-    const set = new Set();
-    try {
-        const gdb = new Database(p, { readonly: true, timeout: 5000 });
-        for (const r of gdb.prepare("SELECT id FROM games WHERE installed=1").all()) set.add(String(r.id));
-        gdb.close();
-    } catch {}
-    _installerInstalledCache = { key, set };
-    return set;
-}
-function launcherInstalled(cmd, steamAppId) {
-    const c = cmd || '';
-    const sm = c.match(/steam:\/\/rungameid\/(\d+)/i);
-    if (sm) return isSteamGameInstalled(sm[1] || steamAppId);
-    const gm = c.match(/installer:\/\/launch\/(gog|epic)\/([^"\s]+)/i);
-    if (gm) return installerInstalledSet().has(`${gm[1].toLowerCase()}_${gm[2]}`);
-    return null;
-}
-function resolveInstallState(game) {
-    const cmds = launchCmdsOf(game);
-    if (!cmds.some(c => /steam:\/\/rungameid/i.test(c))) return null;
-    let allTracked = true;
-    for (const cmd of cmds) {
-        const s = launcherInstalled(cmd, game.SteamAppID);
-        if (s === true) return 1;
-        if (s === null) allTracked = false;
-    }
-    return allTracked ? 0 : null;
-}
-function launcherStatesForGame(game) {
-    return expandLaunchers(game).map(l => ({
-        label: l.label || guessLauncherLabel(l.cmd),
-        cmd: l.cmd,
-        store: launcherStore(l.cmd || ''),
-        installed: launcherInstalled(l.cmd, game.SteamAppID) === true,
-    }));
-}
 ipcMain.handle('launcher-states', (e, gameId) => {
     if (!db) return [];
     const game = db.prepare("SELECT Store, SteamAppID, InstallerGameId, LaunchCommand, LaunchCommands FROM games WHERE id=?").get(gameId);
@@ -1057,14 +957,14 @@ ipcMain.handle('installer-headless-install', (_, store, appId, platform, install
     if (platform) args.push(platform);
     if (installDir) args.push(installDir);
     _headlessProc = spawnInstallerFace(args, { detached: false, stdio: 'ignore' });
-    _headlessProc.on('close', () => { _headlessProc = null; _installerMap = null; }); // refresh map on completion
+    _headlessProc.on('close', () => { _headlessProc = null; _installerMap = null; launcher.invalidateInstallerMap(); }); // refresh maps on completion
     return { ok: true };
 });
 
 ipcMain.handle('installer-headless-uninstall', (_, store, appId) => {
     if (_headlessProc) return { ok: false, error: 'Operation already in progress.' };
     _headlessProc = spawnInstallerFace(['uninstall-headless', store, appId], { detached: false, stdio: 'ignore' });
-    _headlessProc.on('close', () => { _headlessProc = null; _installerMap = null; });
+    _headlessProc.on('close', () => { _headlessProc = null; _installerMap = null; launcher.invalidateInstallerMap(); });
     return { ok: true };
 });
 

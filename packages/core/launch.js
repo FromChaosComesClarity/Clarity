@@ -45,9 +45,28 @@ const installerEngine = require('./installer-engine.js');
  *                 handed off. A Windows game with no Proton dies instantly and
  *                 invisibly; a face that does not show this just sits there.
  *   onProgress    ({...}) — engine launch progress, for a face that shows it
+ *
+ * ⚠️ And three optional overrides, which exist for one specific reason: a face
+ * that already runs the Installer engine must not end up with a second one.
+ * installer-engine.js is a singleton configured by init(), so a face like Couch
+ * — which also asks it for store login status, disk space and install info —
+ * has to keep owning it, and hands its own accessors in here:
+ *
+ *   ensureEngine  () => bool          prepare the engine, or say it is absent
+ *   engineLaunch  (installerGameId)   start a game through it
+ *   pico8Bin      () => path | null   where PICO-8 lives
+ *
+ * A face with no engine of its own (the CRT face) passes none of them and gets
+ * the implementations below.
  */
 function create(deps = {}) {
-    const { db = null, baseDir = '', binDir = '', onLaunchIssue = () => {}, onProgress = () => {} } = deps;
+    const {
+        db = null, baseDir = '', binDir = '',
+        onLaunchIssue = () => {}, onProgress = () => {},
+        ensureEngine: ensureEngineOverride = null,
+        engineLaunch: engineLaunchOverride = null,
+        pico8Bin: pico8BinOverride = null,
+    } = deps;
 
     // ── Naming and routing a launcher ────────────────────────────────────────
 
@@ -179,7 +198,7 @@ function create(deps = {}) {
     // ── The Installer engine, for GOG and Epic ───────────────────────────────
 
     let _engineDb = null;
-    function ensureEngine() {
+    function ensureEngineInternal() {
         if (_engineDb) return true;
         const gdbPath = host.findInstallerDb(baseDir);
         if (!gdbPath) return false;
@@ -224,7 +243,7 @@ function create(deps = {}) {
     }
     function invalidateInstallerMap() { _map = null; }
 
-    function engineLaunch(gameId) {
+    function engineLaunchInternal(gameId) {
         installerEngine.launchGame(gameId).catch(err => {
             let title = '';
             try { title = _engineDb?.prepare('SELECT title FROM games WHERE id=?').get(gameId)?.title || ''; } catch {}
@@ -236,7 +255,7 @@ function create(deps = {}) {
         });
     }
 
-    function pico8Bin() {
+    function pico8BinInternal() {
         try {
             const row = db && db.prepare("SELECT value FROM settings WHERE key='pico8_path'").get();
             if (row?.value && fs.existsSync(row.value)) return row.value;
@@ -248,6 +267,11 @@ function create(deps = {}) {
         }
         return null;
     }
+
+    // The override wins where a face brought its own; otherwise the local one.
+    const ensureEngine = ensureEngineOverride || ensureEngineInternal;
+    const engineLaunch = engineLaunchOverride || engineLaunchInternal;
+    const pico8Bin     = pico8BinOverride     || pico8BinInternal;
 
     // ── Start it ─────────────────────────────────────────────────────────────
     // Returns { ok } or { ok: false, error } — a face that cannot start a game
