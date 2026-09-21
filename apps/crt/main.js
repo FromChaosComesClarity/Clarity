@@ -141,7 +141,7 @@ ipcMain.handle('crt-library', () => {
     if (!db) return [];
     try {
         return db.prepare(`
-            SELECT id, Game, Installed, LastPlayed, GENRE, RELEASED, CoverArt, LaunchCommand
+            SELECT id, Game, Installed, LastPlayed, GENRE, RELEASED, CoverArt, LaunchCommand, Store
             FROM games
             WHERE IFNULL(Hidden, '') NOT IN ('1', 'true', 'yes')
             ORDER BY (LastPlayed IS NULL OR LastPlayed = 0), LastPlayed DESC, Game COLLATE NOCASE
@@ -153,6 +153,7 @@ ipcMain.handle('crt-library', () => {
             genre: String(r.GENRE || ''),
             year: year(r.RELEASED),
             cover: assetPath(r.CoverArt),
+            store: String(r.Store || ''),
             playable: !!r.LaunchCommand,
         }));
     } catch (e) {
@@ -227,6 +228,45 @@ function send(channel, payload) {
         try { win.webContents.send(channel, payload); } catch (e) {}
     }
 }
+
+/*
+ * Everything the game screen shows that the library list does not carry:
+ * artwork and the blurb. Fetched per game, on the way in, rather than for all
+ * 523 rows up front — each one costs several fs.existsSync calls to resolve,
+ * and a library screen needs none of it.
+ *
+ * ⚠️ Screenshot is a pipe-separated list, not a path. Description and SteamDesc
+ * are both used, because scrapers fill one or the other depending on where the
+ * row came from.
+ */
+ipcMain.handle('crt-game', (event, gameId) => {
+    if (!db || !gameId) return null;
+    try {
+        const r = db.prepare(`
+            SELECT id, Game, Store, GENRE, RELEASED, DEV, PUB, Description, SteamDesc,
+                   CoverArt, HeroArt, Screenshot, Logo
+            FROM games WHERE id=?
+        `).get(gameId);
+        if (!r) return null;
+        const shots = String(r.Screenshot || '').split('|').map(s => assetPath(s)).filter(Boolean);
+        return {
+            id: r.id,
+            name: String(r.Game || ''),
+            store: String(r.Store || ''),
+            genre: String(r.GENRE || ''),
+            year: year(r.RELEASED),
+            developer: String(r.DEV || ''),
+            publisher: String(r.PUB || ''),
+            description: String(r.Description || r.SteamDesc || '').trim(),
+            cover: assetPath(r.CoverArt),
+            hero: assetPath(r.HeroArt),
+            logo: assetPath(r.Logo),
+            shot: shots[0] || '',
+        };
+    } catch (e) {
+        return null;
+    }
+});
 
 // Every way this game can be started, and whether each one is installed right
 // now. One launcher is the common case and the face plays it directly; several

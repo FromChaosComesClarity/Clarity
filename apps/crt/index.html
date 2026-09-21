@@ -5,7 +5,11 @@
 <title>Clarity — CRT</title>
 <link rel="stylesheet" href="crt.css">
 </head>
-<body>
+<body data-art="0">
+  <!-- The backdrop on a game's screen: one darkened picture, behind everything,
+       painted by the renderer and empty the rest of the time. -->
+  <div id="art" class="art"></div>
+
   <!--
     The safe box. Everything visible lives inside it, because a CRT crops the
     edges of the picture and no two sets crop the same amount. This is not
@@ -21,6 +25,7 @@
 
     <section class="body">
       <ul class="menu" id="menu"></ul>
+      <div class="prose" id="prose" hidden></div>
       <p class="empty" id="empty" hidden></p>
     </section>
 

@@ -11,6 +11,8 @@ const { contextBridge, ipcRenderer } = require('electron');
 contextBridge.exposeInMainWorld('crt', {
     // Library
     library: () => ipcRenderer.invoke('crt-library'),
+    // Artwork and the blurb for one game, fetched when its screen opens.
+    game: (gameId) => ipcRenderer.invoke('crt-game', gameId),
 
     // Settings, straight through the shared handlers every face uses
     getSetting: (key) => ipcRenderer.invoke('get-setting', key),

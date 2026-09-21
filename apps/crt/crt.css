@@ -32,7 +32,12 @@
        the difference between a menu you can read and one whose first character
        is behind the bezel. */
     --safe-x: 5%;
-    --safe-y: 5%;
+    /* ⚠️ Asymmetric, and deeper at the top than the 5% broadcast standard,
+       because this set is: at 5% the header row was still behind the bezel on
+       the real tube while everything below it was fine. Broadcast-safe is a
+       floor for an unknown set, not a measurement of yours. */
+    --safe-top: 10%;
+    --safe-bottom: 6%;
 
     --stroke: 4px;
 
@@ -64,7 +69,7 @@ html, body {
 
 .safe {
     height: 100%;
-    padding: var(--safe-y) var(--safe-x);
+    padding: var(--safe-top) var(--safe-x) var(--safe-bottom);
     display: flex;
     flex-direction: column;
 }
@@ -255,4 +260,84 @@ html, body {
     text-transform: uppercase;
     color: var(--text-dim);
     text-align: center;
+}
+
+/* ── The backdrop ────────────────────────────────────────────────────────────
+   One picture, behind everything, on a game's screen.
+
+   ⚠️ The darkening is the design, not a filter someone forgot to turn down. On
+   a CRT every lit pixel is phosphor wear, and this is the one place the face
+   spends light at all; it is also the fastest way to make white text
+   unreadable. So the image sits at low luminance under a scrim, and the rows
+   keep the contrast they were designed with. */
+.art {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    background-size: cover;
+    background-position: center;
+    /* Knocked right down rather than made translucent: a hero image is built to
+       be bright, and at 480 interlaced lines its fine detail is noise behind
+       text. What survives is the colour and the shape, which is all it is here
+       for. */
+    filter: brightness(0.34) saturate(0.8);
+}
+
+/* The scrim. Without it a light patch in the picture lands under a row of text
+   and takes it with it — the failure is local, so it survives any single
+   brightness setting that looks fine on average. */
+.art::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to bottom, rgba(0, 0, 0, 0.45), rgba(0, 0, 0, 0.75));
+}
+
+/* Prose is a wall of small text, which needs more floor than a row of large
+   text does. */
+body[data-prose="1"] .art { filter: brightness(0.20) saturate(0.7); }
+
+/* ⚠️ Not the selected row. This rule exists so an unselected row keeps its
+   panel against a bright backdrop — applied to the cursor as well it overrode
+   the accent fill, and the label, drawn in the background colour, disappeared
+   into it. The row looked empty apart from its pill. */
+body[data-art="1"] .row:not([data-on="1"]):not([data-kind="info"]) {
+    background: color-mix(in srgb, var(--panel) 88%, transparent);
+}
+
+.safe { position: relative; z-index: 1; }
+
+/* ── Prose ───────────────────────────────────────────────────────────────────
+   The one place in this face that is not rows. Set wide and loose: at 480
+   interlaced lines, tight leading closes up and thin stems strobe, so the
+   description gets a heavier weight and more line height than a page on a
+   monitor would want. */
+.prose {
+    width: 100%;
+    overflow-y: auto;
+    scrollbar-width: none;
+    font-size: 19px;
+    font-weight: 600;
+    line-height: 1.55;
+    color: var(--text);
+    white-space: pre-wrap;
+    padding-right: 6px;
+}
+.prose::-webkit-scrollbar { display: none; }
+
+/* ── The search query ────────────────────────────────────────────────────────
+   Not an input element: there is no caret to place and nothing to focus, the
+   whole screen is the field. It is drawn as the accent row so it reads as the
+   thing being typed into, with a block cursor after it. */
+.row[data-kind="query"] {
+    background: var(--panel);
+    border-color: var(--accent);
+}
+.row[data-kind="query"] .label {
+    text-transform: none;
+    color: var(--accent);
+}
+.row[data-kind="query"] .label::after {
+    content: "\2588";
+    margin-left: 2px;
 }
