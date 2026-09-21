@@ -28,6 +28,7 @@ const BUILT = path.resolve('dist', FILE);
 const CANDIDATES = [
     process.env.CLARITY_DEPLOY_DIR,
     path.join(HOME, 'Clarity'),
+    path.join(HOME, 'Games', 'Clarity'),   // where the suite is installed on the Omarchy/CRT machine
 ].filter(Boolean);
 
 function hasConfig(dir) {

@@ -68,7 +68,9 @@
       "apps/manager/**/*",
       "apps/installer/**/*",
       "apps/couch/**/*",
+      "apps/crt/**/*",
       "!apps/couch/assets/wallpapers/**",
+      "!**/GameManagerConfig",
       "!**/GameManagerConfig/**",
       "!**/InstallerConfig/**"
     ]
