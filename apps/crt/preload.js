@@ -24,6 +24,20 @@ contextBridge.exposeInMainWorld('crt', {
     scrapeCounts: () => ipcRenderer.invoke('crt-scrape-counts'),
     onScrapeProgress: (fn) => ipcRenderer.on('crt-scrape-progress', (_e, p) => fn(p)),
 
+    // Installing. GOG and Epic have no client here — the Installer engine does
+    // the work, and `storeStatus` says whether it can (a library on disk, and
+    // an account signed in) before the face offers anything.
+    storeStatus: () => ipcRenderer.invoke('crt-store-status'),
+    storeAvailable: () => ipcRenderer.invoke('crt-store-available'),
+    storeRefresh: () => ipcRenderer.invoke('crt-store-refresh'),
+    install: (id) => ipcRenderer.invoke('crt-install', id),
+    uninstall: (id) => ipcRenderer.invoke('crt-uninstall', id),
+    installCancel: () => ipcRenderer.send('crt-install-cancel'),
+    installerEntry: (gameId) => ipcRenderer.invoke('crt-installer-entry', gameId),
+    // One channel for both installs and launches — read `step` to tell them
+    // apart, which is how the engine itself reports.
+    onEngineProgress: (fn) => ipcRenderer.on('crt-engine-progress', (_e, info) => fn(info)),
+
     // Settings, straight through the shared handlers every face uses
     getSetting: (key) => ipcRenderer.invoke('get-setting', key),
     setSetting: (key, value) => ipcRenderer.invoke('set-setting', key, value),
@@ -39,7 +53,6 @@ contextBridge.exposeInMainWorld('crt', {
     launchers: (gameId) => ipcRenderer.invoke('crt-launchers', gameId),
     launch: (gameId, cmd) => ipcRenderer.invoke('crt-launch', gameId, cmd),
     onLaunchFailed: (fn) => ipcRenderer.on('crt-launch-failed', (_e, info) => fn(info)),
-    onLaunchProgress: (fn) => ipcRenderer.on('crt-launch-progress', (_e, info) => fn(info)),
     openFace: (face) => ipcRenderer.send('crt-open-face', face),
     quit: () => ipcRenderer.send('crt-quit'),
 });

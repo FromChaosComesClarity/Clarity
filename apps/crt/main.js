@@ -37,6 +37,7 @@ const { registerSharedHandlers } = require('../../packages/core/shared-ipc.js');
 const desktopDescriptor = require('../../packages/core/desktop-descriptor.js');
 const launch = require('../../packages/core/launch.js');
 const scrape = require('../../packages/core/scrape.js');
+const installerOps = require('../../packages/core/installer-ops.js');
 
 // The CRT face is the Manager wearing different clothes: same identity, so it
 // reads the same library and the same settings. A face with its own userData
@@ -218,7 +219,11 @@ function ensureLauncher() {
             baseDir,
             binDir,
             onLaunchIssue: (info) => send('crt-launch-failed', info),
-            onProgress:    (info) => send('crt-launch-progress', info),
+            // ⚠️ One engine, one progress channel. The Installer engine reports
+            // installs and launches through the same callback, configured once
+            // at init — so this carries both, and the face reads `step` to know
+            // which it is looking at.
+            onProgress:    (info) => send('crt-engine-progress', info),
         });
     }
     return launcher;
@@ -408,6 +413,76 @@ ipcMain.handle('crt-scrape-counts', () => {
         };
     } catch (e) {
         return { total: 0, missing: 0, installed: 0, installedMissing: 0 };
+    }
+});
+
+/*
+ * ── Installing ───────────────────────────────────────────────────────────────
+ *
+ * GOG and Epic have no client on this machine; the Installer engine is what
+ * downloads and sets them up. packages/core/installer-ops.js is the small
+ * surface over it, and it shares this process's single engine — prepared by the
+ * launcher — rather than configuring a second one.
+ */
+let installer = null;
+function ensureInstaller() {
+    if (!installer) {
+        installer = installerOps.create({
+            baseDir,
+            ensureEngine: () => ensureLauncher().ensureEngine(),
+        });
+    }
+    return installer;
+}
+
+ipcMain.handle('crt-store-status', async () => {
+    const ops = ensureInstaller();
+    const status = await ops.status();
+    return { ...status, counts: status.available ? ops.counts() : { total: 0, installed: 0, available: 0 } };
+});
+
+// Owned but not on disk — the list worth showing on a screen called Install.
+ipcMain.handle('crt-store-available', () => ensureInstaller().owned({ installed: false }));
+
+ipcMain.handle('crt-store-refresh', () => ensureInstaller().refreshOwned());
+
+ipcMain.handle('crt-install', async (event, installerGameId) => {
+    const result = await ensureInstaller().install(installerGameId);
+    // ⚠️ Clarity's own row has to learn about this too, or the library goes on
+    // calling an installed game "GET" until something else reconciles it.
+    if (result.ok && db) {
+        try {
+            db.prepare("UPDATE games SET Installed='1' WHERE InstallerGameId=?").run(String(installerGameId));
+        } catch (e) { /* the install still happened */ }
+        ensureLauncher().invalidateInstallerMap();
+    }
+    return result;
+});
+
+ipcMain.handle('crt-uninstall', async (event, installerGameId) => {
+    const result = await ensureInstaller().uninstall(installerGameId);
+    if (result.ok && db) {
+        try {
+            db.prepare("UPDATE games SET Installed='0' WHERE InstallerGameId=?").run(String(installerGameId));
+        } catch (e) {}
+        ensureLauncher().invalidateInstallerMap();
+    }
+    return result;
+});
+
+ipcMain.on('crt-install-cancel', () => { try { ensureInstaller().cancel(); } catch (e) {} });
+
+// What a game row knows about its Installer counterpart, so the game screen can
+// offer Install or Uninstall rather than guessing from Clarity's own flag.
+ipcMain.handle('crt-installer-entry', (event, gameId) => {
+    if (!db) return null;
+    try {
+        const row = db.prepare('SELECT InstallerGameId FROM games WHERE id=?').get(gameId);
+        const key = String(row?.InstallerGameId || '');
+        if (!key) return null;
+        return ensureInstaller().owned().find(g => g.id === key) || null;
+    } catch (e) {
+        return null;
     }
 });
 

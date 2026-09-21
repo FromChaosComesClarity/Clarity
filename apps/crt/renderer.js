@@ -215,6 +215,7 @@ function rootScreen() {
     rows.push({ kind: 'nav', label: 'Search', run: () => { query = ''; push(searchScreen); } });
     rows.push({ kind: 'nav', label: 'Library', meta: String(filtered().length), run: () => push(libraryScreen) });
     rows.push({ kind: 'nav', label: 'Filters', meta: filterSummary(), run: () => push(filtersScreen) });
+    rows.push({ kind: 'nav', label: 'Install', meta: storeSummary(), run: () => openStore() });
     rows.push({ kind: 'action', label: 'Couch Mode', run: () => window.crt.openFace('couch') });
     rows.push({ kind: 'action', label: 'Desktop Mode', run: () => window.crt.openFace('manager') });
     rows.push({ kind: 'nav', label: 'Settings', run: () => push(settingsScreen) });
@@ -385,17 +386,22 @@ function libraryScreen() {
  */
 const launcherCache = new Map();
 const detailCache = new Map();
+// What the Installer knows about this row, when it is a GOG or Epic game. Null
+// for a Steam-only row, which installs through Steam and not through us.
+const entryCache = new Map();
 
 async function openGame(game) {
-    if (!launcherCache.has(game.id) || !detailCache.has(game.id)) {
+    if (!launcherCache.has(game.id) || !detailCache.has(game.id) || !entryCache.has(game.id)) {
         $status.textContent = 'READING…';
         try {
-            const [launchers, details] = await Promise.all([
+            const [launchers, details, entry] = await Promise.all([
                 window.crt.launchers(game.id),
                 window.crt.game(game.id),
+                window.crt.installerEntry(game.id),
             ]);
             launcherCache.set(game.id, launchers || []);
             detailCache.set(game.id, details || null);
+            entryCache.set(game.id, entry || null);
         } catch (e) {
             launcherCache.set(game.id, launcherCache.get(game.id) || []);
             detailCache.set(game.id, null);
@@ -431,6 +437,14 @@ function gameScreen(game) {
         }
     }
 
+    // ⚠️ Only for a game the Installer owns. A Steam row installs through
+    // Steam — offering an Install button here that cannot install would be a
+    // worse lie than offering nothing.
+    const entry = entryCache.get(game.id);
+    if (entry && !entry.installed) {
+        rows.push({ kind: 'action', label: 'Install', pill: entry.store.toUpperCase(), run: () => installFromGame(game, entry) });
+    }
+
     if (details && details.description) {
         rows.push({ kind: 'nav', label: 'About this game', run: () => push(aboutScreen, game) });
     }
@@ -446,6 +460,10 @@ function gameScreen(game) {
     // ⚠️ The escape hatch for the case a scrape cannot fix: the library matched
     // the wrong game entirely, and no amount of re-fetching the wrong id helps.
     rows.push({ kind: 'nav', label: 'Wrong game? Search by name', run: () => { query = game.name; push(matchScreen, game); } });
+
+    if (entry && entry.installed) {
+        rows.push({ kind: 'action', label: 'Uninstall', pill: entry.store.toUpperCase(), run: () => uninstallFromGame(game, entry) });
+    }
 
     // What is known about the game, stated rather than offered. These rows are
     // drawn flat and the cursor steps over them.
@@ -485,6 +503,125 @@ function ago(ms) {
     if (months < 12) return months === 1 ? '1 month ago' : `${months} months ago`;
     const years = Math.floor(months / 12);
     return years === 1 ? '1 year ago' : `${years} years ago`;
+}
+
+/*
+ * ── Installing ───────────────────────────────────────────────────────────────
+ *
+ * Steam installs itself; GOG and Epic do not, and without this the only way to
+ * put a game on this machine is the desktop. That is the gap this screen
+ * closes.
+ *
+ * ⚠️ Signing in is not offered here. Both stores need an OAuth redirect
+ * completed in a browser, which is hopeless at 720x480 across a room — so when
+ * the account is not connected the screen says exactly that and points at
+ * Desktop Mode for the one-time step, rather than pretending.
+ */
+let storeStatus = { available: false, gog: false, epic: false, counts: { total: 0, installed: 0, available: 0 } };
+let ownedGames = [];
+let installRun = null;                   // { title, percent, message } while one runs
+
+function storeSummary() {
+    if (!storeStatus.available) return '';
+    return storeStatus.counts.available ? String(storeStatus.counts.available) : 'ALL INSTALLED';
+}
+
+async function openStore() {
+    $status.textContent = 'READING…';
+    try { storeStatus = await window.crt.storeStatus(); } catch (e) {}
+    try { ownedGames = storeStatus.available ? await window.crt.storeAvailable() || [] : []; } catch (e) { ownedGames = []; }
+    $status.textContent = '';
+    push(storeScreen);
+}
+
+function storeScreen() {
+    if (installRun) {
+        const pct = Number.isFinite(installRun.percent) ? `${Math.round(installRun.percent)}%` : '';
+        return {
+            title: 'INSTALL',
+            rows: [
+                { kind: 'info', label: installRun.title || 'Installing…' },
+                { kind: 'info', label: [installRun.step, pct].filter(Boolean).join('  ·  ').toUpperCase() },
+                { kind: 'info', label: installRun.message || '' },
+                { kind: 'action', label: 'Cancel', run: () => { window.crt.installCancel(); $status.textContent = 'CANCELLING…'; } },
+            ],
+            okLabel: 'CANCEL',
+        };
+    }
+
+    // No Installer library on this machine at all: nothing has ever been set
+    // up, and that is a desktop job.
+    if (!storeStatus.available) {
+        return {
+            title: 'INSTALL',
+            rows: [
+                { kind: 'info', label: 'No GOG or Epic library yet' },
+                { kind: 'info', label: 'Sign in once from Desktop Mode' },
+                { kind: 'action', label: 'Open Desktop Mode', run: () => window.crt.openFace('manager') },
+            ],
+            okLabel: 'OPEN',
+        };
+    }
+
+    const rows = [];
+    if (!storeStatus.gog && !storeStatus.epic) {
+        rows.push({ kind: 'info', label: 'Not signed in to GOG or Epic' });
+        rows.push({ kind: 'action', label: 'Open Desktop Mode to sign in', run: () => window.crt.openFace('manager') });
+    }
+
+    for (const game of ownedGames) {
+        rows.push({
+            kind: 'action',
+            label: game.title,
+            pill: game.store.toUpperCase(),
+            run: () => startInstall(game),
+        });
+    }
+
+    if (!ownedGames.length && (storeStatus.gog || storeStatus.epic)) {
+        rows.push({ kind: 'info', label: 'Everything you own is installed' });
+    }
+
+    rows.push({
+        kind: 'action', label: 'Refresh owned games',
+        // The only way a purchase made anywhere else ever appears here.
+        run: async () => {
+            $status.textContent = 'REFRESHING…';
+            const r = await window.crt.storeRefresh();
+            $status.textContent = r && r.ok ? '' : 'COULD NOT REFRESH';
+            try { storeStatus = await window.crt.storeStatus(); } catch (e) {}
+            try { ownedGames = await window.crt.storeAvailable() || []; } catch (e) {}
+            refresh(storeScreen);
+        },
+    });
+
+    return {
+        title: 'INSTALL',
+        rows,
+        okLabel: 'INSTALL',
+        emptyText: 'NOTHING TO INSTALL',
+    };
+}
+
+async function startInstall(game) {
+    installRun = { title: game.title, percent: 0, step: 'starting', message: '' };
+    refresh(storeScreen);
+
+    const result = await window.crt.install(game.id);
+    installRun = null;
+
+    try { storeStatus = await window.crt.storeStatus(); } catch (e) {}
+    try { ownedGames = await window.crt.storeAvailable() || []; } catch (e) {}
+    // An install changes what the library says about that row, so the list and
+    // any cached detail for it are stale.
+    try { games = await window.crt.library(); } catch (e) {}
+    detailCache.clear();
+    launcherCache.clear();
+
+    $status.textContent = result && result.ok ? `INSTALLED ${game.title.toUpperCase()}`
+                                              : ((result && result.error) || 'INSTALL FAILED').toUpperCase();
+    setTimeout(() => { $status.textContent = ''; }, 8000);
+    refresh(storeScreen);
 }
 
 /*
@@ -554,6 +691,7 @@ async function startScrape(scope) {
     const result = await window.crt.scrapeBatch(scope);
     scrapeRun = null;
     try { scrapeCounts = await window.crt.scrapeCounts(); } catch (e) {}
+    try { storeStatus = await window.crt.storeStatus(); } catch (e) {}
     // The library list carries covers, so it is stale the moment a batch ends.
     try { games = await window.crt.library(); } catch (e) {}
     detailCache.clear();
@@ -563,6 +701,49 @@ async function startScrape(scope) {
         : 'SCRAPE FAILED';
     setTimeout(() => { $status.textContent = ''; }, 8000);
     refresh(scrapeScreen);
+}
+
+// Installing from a game's own screen, rather than finding it again in the
+// Install list. Progress goes to the footer here: this screen is about the
+// game, and replacing it with a progress panel would lose the place.
+async function installFromGame(game, entry) {
+    $status.textContent = 'INSTALLING…';
+    installRun = { title: game.name, percent: 0, step: 'starting', message: '' };
+    const result = await window.crt.install(entry.id);
+    installRun = null;
+
+    entryCache.delete(game.id);
+    launcherCache.delete(game.id);
+    try { games = await window.crt.library(); } catch (e) {}
+    const fresh = games.find(g => g.id === game.id);
+    if (fresh) game.installed = fresh.installed;
+    try {
+        entryCache.set(game.id, await window.crt.installerEntry(game.id));
+        launcherCache.set(game.id, await window.crt.launchers(game.id) || []);
+    } catch (e) {}
+
+    $status.textContent = result && result.ok ? 'INSTALLED' : ((result && result.error) || 'INSTALL FAILED').toUpperCase();
+    setTimeout(() => { $status.textContent = ''; }, 8000);
+    refresh(gameScreen, game);
+}
+
+async function uninstallFromGame(game, entry) {
+    $status.textContent = 'REMOVING…';
+    const result = await window.crt.uninstall(entry.id);
+
+    entryCache.delete(game.id);
+    launcherCache.delete(game.id);
+    try { games = await window.crt.library(); } catch (e) {}
+    const fresh = games.find(g => g.id === game.id);
+    if (fresh) game.installed = fresh.installed;
+    try {
+        entryCache.set(game.id, await window.crt.installerEntry(game.id));
+        launcherCache.set(game.id, await window.crt.launchers(game.id) || []);
+    } catch (e) {}
+
+    $status.textContent = result && result.ok ? 'REMOVED' : ((result && result.error) || 'COULD NOT REMOVE').toUpperCase();
+    setTimeout(() => { $status.textContent = ''; }, 8000);
+    refresh(gameScreen, game);
 }
 
 // One game, from its own screen.
@@ -688,6 +869,20 @@ function fail(message) {
 // The launch that failed after we handed off, which arrives later than the
 // call's own answer and is usually the more useful of the two.
 window.crt.onLaunchFailed((info) => fail(info && info.message));
+
+// Install progress, from the engine itself. Only redrawn while the install
+// screen is on top — a rebuild under a game screen would throw the cursor.
+window.crt.onEngineProgress((info) => {
+    if (!installRun || !info) return;
+    installRun = {
+        title: info.title || installRun.title,
+        percent: Number.isFinite(info.percent) ? info.percent : installRun.percent,
+        step: info.step || installRun.step,
+        message: info.message || '',
+    };
+    const here = screen();
+    if (here && here.builder === storeScreen) refresh(storeScreen);
+});
 
 // Batch scrape progress. Only redrawn while that screen is the one on top —
 // a rebuild underneath a game screen would throw the cursor around.
