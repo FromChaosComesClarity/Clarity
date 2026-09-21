@@ -563,6 +563,11 @@ function collectionsScreen() {
         });
     }
 
+    rows.push({ kind: 'action', label: 'New playlist', run: () => { query = ''; push(newPlaylistScreen); } });
+    if (playlists.some(p => !p.smart)) {
+        rows.push({ kind: 'nav', label: 'Delete a playlist', run: () => push(deletePlaylistScreen) });
+    }
+
     return { title: 'COLLECTIONS', rows, okLabel: 'OPEN' };
 }
 
@@ -622,6 +627,79 @@ function playlistsScreenFor(game) {
     return { title: 'PLAYLISTS', rows, okLabel: 'CHANGE' };
 }
 
+
+/*
+ * Naming a new playlist.
+ *
+ * The same typing row the search screens use — the screen is the field, there
+ * is no caret to place. ⚠️ Only manual playlists: a smart one is a saved query
+ * and building a query needs more than a list of rows, so that stays a desktop
+ * job and the collections screen labels those SMART.
+ */
+function newPlaylistScreen() {
+    const name = query.trim();
+    return {
+        title: 'NEW PLAYLIST',
+        rows: [
+            { kind: 'query', label: query || 'Type a name', typing: true, run: () => createPlaylist() },
+            name
+                ? { kind: 'action', label: `Create "${name}"`, run: () => createPlaylist() }
+                : { kind: 'info', label: 'Type a name, then press Enter' },
+        ],
+        okLabel: 'CREATE',
+    };
+}
+
+async function createPlaylist() {
+    const name = query.trim();
+    if (!name) return;
+    const r = await window.crt.playlistCreate(name);
+    if (!r || !r.ok) { fail((r && r.error) || 'Could not create that playlist.'); return; }
+    query = '';
+    try { playlists = await window.crt.playlists() || []; } catch (e) {}
+    $status.textContent = 'CREATED';
+    setTimeout(() => { $status.textContent = ''; }, 4000);
+    pop();
+    refresh(collectionsScreen);
+}
+
+// ⚠️ Deleting asks first, on its own screen, for the same reason uninstalling
+// does: one key does everything in this face, and a list you curated is not
+// something to lose to a mis-press.
+function deletePlaylistScreen() {
+    const rows = playlists.filter(p => !p.smart).map(list => ({
+        kind: 'nav',
+        label: list.name,
+        meta: String(list.count),
+        run: () => push(confirmDeletePlaylistScreen, list),
+    }));
+    return { title: 'DELETE A PLAYLIST', rows, okLabel: 'CHOOSE', emptyText: 'NO PLAYLISTS TO DELETE' };
+}
+
+function confirmDeletePlaylistScreen(list) {
+    return {
+        title: list.name.toUpperCase(),
+        rows: [
+            { kind: 'info', label: `${list.count} games are in this playlist` },
+            { kind: 'info', label: 'The games themselves are not touched' },
+            { kind: 'action', label: 'Delete it', run: () => deletePlaylist(list) },
+            { kind: 'action', label: 'Keep it', run: () => pop() },
+        ],
+        okLabel: 'CONFIRM',
+    };
+}
+
+async function deletePlaylist(list) {
+    const r = await window.crt.playlistDelete(list.id);
+    if (!r || !r.ok) { fail((r && r.error) || 'Could not delete that playlist.'); return; }
+    try { playlists = await window.crt.playlists() || []; } catch (e) {}
+    $status.textContent = 'DELETED';
+    setTimeout(() => { $status.textContent = ''; }, 4000);
+    pop();
+    pop();
+    refresh(collectionsScreen);
+}
+
 /*
  * ── Launching ────────────────────────────────────────────────────────────────
  *
@@ -648,6 +726,9 @@ function launchScreen() {
     if (run.state === 'failed') {
         rows.push({ kind: 'info', label: 'Could not start' });
         rows.push({ kind: 'info', label: run.message || 'No reason given.' });
+        // The log is where the real answer is. Offered rather than shown,
+        // because it is a wall of text and the line above is usually enough.
+        rows.push({ kind: 'nav', label: 'What happened', run: () => showLaunchLog(run.title) });
     } else if (run.state === 'running') {
         rows.push({ kind: 'info', label: 'Running' });
         rows.push({ kind: 'info', label: 'This menu is behind the game' });
@@ -666,6 +747,20 @@ function launchScreen() {
     return { title: run.title ? run.title.toUpperCase() : 'LAUNCHING', rows, okLabel: 'BACK' };
 }
 
+// The engine's log, on the prose screen the About blurb uses.
+async function showLaunchLog(title) {
+    $status.textContent = 'READING…';
+    let text = '';
+    try { text = await window.crt.launchLog(title) || ''; } catch (e) {}
+    $status.textContent = '';
+    push(() => ({
+        title: 'WHAT HAPPENED',
+        rows: [],
+        prose: text || 'No log was written for this game.\n\nThat usually means it never started at all — a launch command that is wrong, or a store client that is not running.',
+        okLabel: 'CLOSE',
+    }));
+}
+
 // Redraw only while the launch screen is the one on top, so a game starting in
 // the background never moves the cursor out from under the user.
 function refreshLaunch() {
@@ -675,6 +770,11 @@ function refreshLaunch() {
 
 window.crt.onLaunchProgress((info) => {
     if (!launchRun || !info) return;
+    // ⚠️ Once it has failed, it has failed. The engine emits a final progress
+    // event with an empty message *after* reporting the failure, and blindly
+    // applying it wiped the reason — which is exactly how "Could not start"
+    // came to be followed by "no reason given".
+    if (launchRun.state === 'failed') return;
     launchRun = {
         ...launchRun,
         title: info.title || launchRun.title,
@@ -731,21 +831,37 @@ async function openStore() {
     push(storeScreen);
 }
 
-function storeScreen() {
-    if (installRun) {
-        const pct = Number.isFinite(installRun.percent) ? `${Math.round(installRun.percent)}%` : '';
-        return {
-            title: 'INSTALL',
-            rows: [
-                { kind: 'info', label: installRun.title || 'Installing…' },
-                { kind: 'info', label: [installRun.step, pct].filter(Boolean).join('  ·  ').toUpperCase() },
-                { kind: 'info', label: installRun.message || '' },
-                { kind: 'action', label: 'Cancel', run: () => { window.crt.installCancel(); $status.textContent = 'CANCELLING…'; } },
-            ],
-            okLabel: 'CANCEL',
-        };
+/*
+ * The progress panel, pushed whenever an install starts — from the Install list
+ * or from a game's own page.
+ *
+ * ⚠️ It is a screen rather than a line in the footer because the first version
+ * put it in the footer and the user's verdict was "no feedback whatsoever". A
+ * download of several gigabytes needs somewhere to say so.
+ */
+function installScreen() {
+    const run = installRun || {};
+    const pct = Number.isFinite(run.percent) && run.percent > 0 ? `${Math.round(run.percent)}%` : '';
+    const step = String(run.step || 'starting').replace(/[_-]/g, ' ');
+    const rows = [{ kind: 'info', label: run.title || 'Installing…' }];
+
+    if (run.state === 'failed') {
+        rows.push({ kind: 'info', label: 'Could not install' });
+        rows.push({ kind: 'info', label: run.error || run.message || 'No reason given.' });
+        rows.push({ kind: 'action', label: 'Back', run: () => { installRun = null; pop(); } });
+    } else if (run.state === 'done') {
+        rows.push({ kind: 'info', label: 'Installed' });
+        rows.push({ kind: 'action', label: 'Back', run: () => { installRun = null; pop(); } });
+    } else {
+        rows.push({ kind: 'info', label: [step, pct].filter(Boolean).join('  ·  ').toUpperCase() });
+        if (run.message) rows.push({ kind: 'info', label: run.message });
+        rows.push({ kind: 'action', label: 'Cancel', run: () => { window.crt.installCancel(); $status.textContent = 'CANCELLING…'; } });
     }
 
+    return { title: 'INSTALL', rows, okLabel: run.state ? 'BACK' : 'CANCEL' };
+}
+
+function storeScreen() {
     // No Installer library on this machine at all: nothing has ever been set
     // up, and that is a desktop job.
     if (!storeStatus.available) {
@@ -771,7 +887,7 @@ function storeScreen() {
             kind: 'action',
             label: game.title,
             pill: game.store.toUpperCase(),
-            run: () => startInstall(game),
+            run: () => startInstall({ id: game.id, title: game.title }),
         });
     }
 
@@ -800,110 +916,35 @@ function storeScreen() {
     };
 }
 
-async function startInstall(game) {
-    installRun = { title: game.title, percent: 0, step: 'starting', message: '' };
-    refresh(storeScreen);
+/*
+ * Installing, from anywhere. The panel is pushed first so there is something on
+ * screen before the first byte moves, and the result is reported on it rather
+ * than in a message that scrolls away.
+ */
+async function startInstall({ id, title }) {
+    installRun = { title, percent: 0, step: 'starting', message: '', error: '' };
+    push(installScreen);
 
-    const result = await window.crt.install(game.id);
-    installRun = null;
+    const result = await window.crt.install(id);
+
+    // ⚠️ The engine's own reason beats the caller's. ops.install() can only see
+    // that the library still says "not installed"; the progress stream carries
+    // what actually went wrong.
+    installRun = {
+        ...installRun,
+        state: result && result.ok ? 'done' : 'failed',
+        error: (installRun.error) || (result && result.error) || '',
+    };
 
     try { storeStatus = await window.crt.storeStatus(); } catch (e) {}
     try { ownedGames = await window.crt.storeAvailable() || []; } catch (e) {}
-    // An install changes what the library says about that row, so the list and
-    // any cached detail for it are stale.
-    try { games = await window.crt.library(); } catch (e) {}
-    detailCache.clear();
-    launcherCache.clear();
-
-    $status.textContent = result && result.ok ? `INSTALLED ${game.title.toUpperCase()}`
-                                              : ((result && result.error) || 'INSTALL FAILED').toUpperCase();
-    setTimeout(() => { $status.textContent = ''; }, 8000);
-    refresh(storeScreen);
-}
-
-/*
- * ── Uninstalling ─────────────────────────────────────────────────────────────
- *
- * The counterpart to Install, and it has to handle two different kinds of game
- * without pretending they are the same. A GOG or Epic title was downloaded by
- * the Installer engine, so the engine removes it, here, with confirmation. A
- * Steam game belongs to Steam: the row hands over to steam://uninstall, which
- * opens Steam's own dialog — the only thing that can delete the files *and*
- * correct Steam's manifest. Deleting it behind Steam's back would leave a
- * library that believes the game is still installed.
- */
-let installedGames = [];
-
-async function openUninstall() {
-    $status.textContent = 'READING…';
-    try { installedGames = await window.crt.installedGames() || []; } catch (e) { installedGames = []; }
-    $status.textContent = '';
-    push(uninstallScreen);
-}
-
-function uninstallScreen() {
-    const rows = installedGames.map(g => ({
-        kind: 'action',
-        game: g,
-        label: g.name,
-        thumb: g.cover,
-        pill: (g.store || '').toUpperCase(),
-        run: () => push(confirmUninstallScreen, g),
-    }));
-
-    return {
-        title: 'UNINSTALL',
-        rows,
-        okLabel: 'CHOOSE',
-        emptyText: 'NOTHING IS INSTALLED',
-    };
-}
-
-// ⚠️ Confirmed on its own screen rather than removed on one press. Deleting a
-// game is slow to undo — it is a re-download — and a menu driven by one key is
-// exactly where a mis-press lands.
-function confirmUninstallScreen(game) {
-    const viaSteam = !game.installerId && game.steamAppId;
-    const rows = [];
-
-    if (viaSteam) {
-        rows.push({ kind: 'info', label: 'Steam owns this game' });
-        rows.push({
-            kind: 'action', label: 'Open Steam to uninstall',
-            run: async () => {
-                const r = await window.crt.steamUninstall(game.steamAppId);
-                $status.textContent = r && r.ok ? 'STEAM OPENED' : 'COULD NOT OPEN STEAM';
-                setTimeout(() => { $status.textContent = ''; }, 6000);
-                pop();
-            },
-        });
-    } else {
-        rows.push({ kind: 'info', label: 'This deletes the downloaded files' });
-        rows.push({
-            kind: 'action', label: `Uninstall ${game.name}`,
-            run: () => removeGame(game),
-        });
-    }
-
-    rows.push({ kind: 'action', label: 'Keep it', run: () => pop() });
-    return { title: game.name.toUpperCase(), rows, okLabel: 'CONFIRM' };
-}
-
-async function removeGame(game) {
-    $status.textContent = 'REMOVING…';
-    const result = await window.crt.uninstall(game.installerId);
-
     try { installedGames = await window.crt.installedGames() || []; } catch (e) {}
     try { games = await window.crt.library(); } catch (e) {}
     detailCache.clear();
     launcherCache.clear();
     entryCache.clear();
-    try { storeStatus = await window.crt.storeStatus(); } catch (e) {}
 
-    $status.textContent = result && result.ok ? 'REMOVED' : ((result && result.error) || 'COULD NOT REMOVE').toUpperCase();
-    setTimeout(() => { $status.textContent = ''; }, 8000);
-    pop();
-    refresh(uninstallScreen);
+    refresh(installScreen);
 }
 
 /*
@@ -1007,24 +1048,19 @@ async function toggleFlag(game, field) {
 // Install list. Progress goes to the footer here: this screen is about the
 // game, and replacing it with a progress panel would lose the place.
 async function installFromGame(game, entry) {
-    $status.textContent = 'INSTALLING…';
-    installRun = { title: game.name, percent: 0, step: 'starting', message: '' };
-    const result = await window.crt.install(entry.id);
-    installRun = null;
+    // The same panel the Install list uses. ⚠️ The first version set a footer
+    // message here and left the game screen up, which is why an install from
+    // this page looked like nothing at all was happening.
+    await startInstall({ id: entry.id, title: game.name });
 
     entryCache.delete(game.id);
     launcherCache.delete(game.id);
-    try { games = await window.crt.library(); } catch (e) {}
-    const fresh = games.find(g => g.id === game.id);
-    if (fresh) game.installed = fresh.installed;
     try {
         entryCache.set(game.id, await window.crt.installerEntry(game.id));
         launcherCache.set(game.id, await window.crt.launchers(game.id) || []);
     } catch (e) {}
-
-    $status.textContent = result && result.ok ? 'INSTALLED' : ((result && result.error) || 'INSTALL FAILED').toUpperCase();
-    setTimeout(() => { $status.textContent = ''; }, 8000);
-    refresh(gameScreen, game);
+    const fresh = games.find(g => g.id === game.id);
+    if (fresh) game.installed = fresh.installed;
 }
 
 async function uninstallFromGame(game, entry) {
@@ -1192,9 +1228,14 @@ window.crt.onInstallProgress((info) => {
         percent: Number.isFinite(info.percent) ? info.percent : installRun.percent,
         step: info.step || installRun.step,
         message: info.message || '',
+        // ⚠️ Kept, because this is where the *reason* lives. The engine reports
+        // a failed install as a progress event with step 'error' and then
+        // returns normally, so the caller's own answer knows only that it did
+        // not work — not why.
+        error: info.step === 'error' ? (info.message || installRun.error) : installRun.error,
     };
     const here = screen();
-    if (here && here.builder === storeScreen) refresh(storeScreen);
+    if (here && here.builder === installScreen) refresh(installScreen);
 });
 
 // Batch scrape progress. Only redrawn while that screen is the one on top —

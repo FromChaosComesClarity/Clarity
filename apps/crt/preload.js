@@ -45,6 +45,8 @@ contextBridge.exposeInMainWorld('crt', {
     playlistGames: (id) => ipcRenderer.invoke('crt-playlist-games', id),
     gamePlaylists: (gameId) => ipcRenderer.invoke('crt-game-playlists', gameId),
     playlistToggle: (playlistId, gameId) => ipcRenderer.invoke('crt-playlist-toggle', playlistId, gameId),
+    playlistCreate: (name) => ipcRenderer.invoke('crt-playlist-create', name),
+    playlistDelete: (id) => ipcRenderer.invoke('crt-playlist-delete', id),
 
     // Settings, straight through the shared handlers every face uses
     getSetting: (key) => ipcRenderer.invoke('get-setting', key),
@@ -64,6 +66,9 @@ contextBridge.exposeInMainWorld('crt', {
     // a runtime download and a prefix build, which is minutes.
     onLaunchProgress: (fn) => ipcRenderer.on('crt-launch-progress', (_e, info) => fn(info)),
     onGameSession: (fn) => ipcRenderer.on('crt-game-session', (_e, info) => fn(info)),
+    // The end of the engine's own launch log — the only place the real reason
+    // for a failed start is written down.
+    launchLog: (gameName) => ipcRenderer.invoke('crt-launch-log', gameName),
     onLaunchFailed: (fn) => ipcRenderer.on('crt-launch-failed', (_e, info) => fn(info)),
     openFace: (face) => ipcRenderer.send('crt-open-face', face),
     quit: () => ipcRenderer.send('crt-quit'),

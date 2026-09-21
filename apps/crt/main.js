@@ -76,7 +76,17 @@ const baseAssetPath = app.isPackaged ? process.resourcesPath : __dirname;
 const configDir    = path.join(baseDir, 'GameManagerConfig');
 const dbPath       = path.join(configDir, 'games.db');
 const trailersDir  = path.join(configDir, 'videos');
-const binDir       = path.join(baseAssetPath, 'assets', 'bin', host.binDirName);
+/*
+ * ⚠️ Two places, because they differ between a packaged app and a checkout.
+ * Packaged, the runner binaries sit in resources/assets/bin; in a checkout they
+ * are at the repository root, not beside the face — so a dev run resolved a
+ * path that does not exist and every GOG install failed with "gogdl not found".
+ * Harmless for a release build, and completely confusing for anyone testing.
+ */
+const binDir = [
+    path.join(baseAssetPath, 'assets', 'bin', host.binDirName),
+    path.join(__dirname, '..', '..', 'assets', 'bin', host.binDirName),
+].find(p => fs.existsSync(p)) || path.join(baseAssetPath, 'assets', 'bin', host.binDirName);
 const ytDlpPath    = path.join(binDir, 'yt-dlp');
 const ytDlpConfigPath = path.join(binDir, 'yt-dlp.conf');
 const ffmpegPath   = path.join(binDir, 'ffmpeg');
@@ -593,6 +603,40 @@ ipcMain.handle('crt-playlists', () => {
     }
 });
 
+/*
+ * Making and removing a playlist, from the sofa.
+ *
+ * ⚠️ Manual playlists only — no rule. A smart playlist is a saved query, and
+ * writing one needs a query builder, which is a desktop job. What a TV menu can
+ * do well is "a list I put things in", and that is what this makes.
+ */
+ipcMain.handle('crt-playlist-create', (event, name) => {
+    if (!db) return { ok: false, error: 'The library is not open.' };
+    const title = String(name || '').trim();
+    if (!title) return { ok: false, error: 'A playlist needs a name.' };
+    try {
+        const clash = db.prepare('SELECT id FROM playlists WHERE name=? COLLATE NOCASE').get(title);
+        if (clash) return { ok: false, error: 'There is already a playlist with that name.' };
+        const id = db.prepare('INSERT INTO playlists (name, rule) VALUES (?, NULL)').run(title).lastInsertRowid;
+        return { ok: true, id, name: title };
+    } catch (e) {
+        return { ok: false, error: 'Could not create that playlist.' };
+    }
+});
+
+ipcMain.handle('crt-playlist-delete', (event, playlistId) => {
+    if (!db) return { ok: false };
+    try {
+        // Membership first: a playlist row disappearing while its members
+        // remain is how orphans accumulate in this table.
+        db.prepare('DELETE FROM playlist_games WHERE playlist_id=?').run(playlistId);
+        db.prepare('DELETE FROM playlists WHERE id=?').run(playlistId);
+        return { ok: true };
+    } catch (e) {
+        return { ok: false, error: 'Could not delete that playlist.' };
+    }
+});
+
 ipcMain.handle('crt-playlist-games', (event, playlistId) => {
     if (!db) return [];
     try { return (smartPlaylists.playlistGames(db, playlistId) || []).map(g => g.id); }
@@ -623,6 +667,47 @@ ipcMain.handle('crt-playlist-toggle', (event, playlistId, gameId) => {
         return { ok: true, member: true };
     } catch (e) {
         return { ok: false, error: 'Could not change that playlist.' };
+    }
+});
+
+/*
+ * The tail of a game's launch log.
+ *
+ * ⚠️ Because "Could not start" on its own is useless on a television. The
+ * engine writes every launch to ~/.config/clarity-installer/launch_logs/, and
+ * that file is the only place the actual reason exists — a missing runtime, a
+ * Proton error, a game that exited on its own. Reading the end of it is the
+ * difference between a dead end and something a person can act on.
+ */
+ipcMain.handle('crt-launch-log', (event, gameName) => {
+    try {
+        const ops = ensureInstaller();
+        const dir = path.join(path.dirname(host.findInstallerDb(baseDir) || ''), 'launch_logs');
+        if (!fs.existsSync(dir)) return '';
+
+        // The engine names the file after the title with the awkward characters
+        // replaced, so the safest match is the newest log whose name resembles
+        // this game rather than a guess at the exact spelling.
+        const wanted = String(gameName || '').replace(/[^a-z0-9]+/gi, '_').replace(/_+/g, '_').toLowerCase();
+        const candidates = fs.readdirSync(dir)
+            .filter(f => f.endsWith('.log'))
+            .map(f => ({ f, key: f.replace(/\.log$/, '').replace(/[^a-z0-9]+/gi, '_').replace(/_+/g, '_').toLowerCase() }))
+            .filter(c => c.key === wanted || wanted.startsWith(c.key) || c.key.startsWith(wanted));
+        if (!candidates.length) return '';
+
+        const newest = candidates
+            .map(c => ({ ...c, at: fs.statSync(path.join(dir, c.f)).mtimeMs }))
+            .sort((a, b) => b.at - a.at)[0];
+
+        const text = fs.readFileSync(path.join(dir, newest.f), 'utf8');
+        // Noise the user cannot act on, and which crowds out the line they can.
+        const lines = text.split('\n')
+            .map(l => l.trim())
+            .filter(Boolean)
+            .filter(l => !/^MESA-INTEL: warning/i.test(l) && !/^\s*at [A-Z]/.test(l));
+        return lines.slice(-14).join('\n');
+    } catch (e) {
+        return '';
     }
 });
 
