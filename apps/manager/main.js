@@ -5,6 +5,7 @@ const os = require('os');
 const Database = require('better-sqlite3');
 const { registerSharedHandlers } = require('../../packages/core/shared-ipc.js');
 const host = require('../../packages/core/platform/index.js');
+const scrapeCore = require('../../packages/core/scrape.js');
 const desktopDescriptor = require('../../packages/core/desktop-descriptor.js');
 const fs = require('fs');
 const { exec, execFile, spawn } = require('child_process');
@@ -3563,11 +3564,6 @@ function titleSimilarity(a, b) {
     return inter / (ta.size + tb.size - inter);
 }
 
-function igdbImg(url, size = 'cover_big') {
-    if (!url) return null;
-    return 'https:' + url.replace('t_thumb', `t_${size}`);
-}
-
 // ── GOG Achievements ──────────────────────────────────────────────────────────
 const GOG_CLIENT_ID     = '46899977096215655';
 const GOG_CLIENT_SECRET = '9d85c43b1482497dbbce61f6e4aa173a433796eeae2ca8c5f6129f2dc4de46d9';
@@ -4810,34 +4806,6 @@ ipcMain.handle('search-steam', async (e, gameName) => {
     } catch(e) { return []; }
 });
 
-async function sgdbFetchFirst(gameName, apiKey, appId, assetType) {
-    try {
-        const headers = { "Authorization": `Bearer ${apiKey}`, "User-Agent": "Mozilla/5.0" };
-        let sgdbId = null;
-        if (appId) {
-            const r = await fetch(`https://www.steamgriddb.com/api/v2/games/steam/${appId}`, { headers });
-            const d = await r.json();
-            if (d.success && d.data) sgdbId = d.data.id;
-        }
-        if (!sgdbId) {
-            const res = await fetch(`https://www.steamgriddb.com/api/v2/search/autocomplete/${encodeURIComponent(gameName)}`, { headers });
-            const data = await res.json();
-            if (!data.success || !data.data?.length) return null;
-            sgdbId = data.data[0].id;
-        }
-        const endpoint = assetType === 'hero' ? 'heroes' : assetType === 'logo' ? 'logos' : 'grids';
-        const res2 = await fetch(`https://www.steamgriddb.com/api/v2/${endpoint}/game/${sgdbId}`, { headers });
-        const data2 = await res2.json();
-        if (!data2.success || !data2.data?.length) return null;
-        const url = data2.data[0].url;
-        const ext = assetType === 'logo' ? 'png' : 'jpg';
-        const safeN = gameName.replace(/[\\/:*?"<>|#]/g, '').trim();
-        const fileName = `${safeN} - SGDB ${assetType}.${ext}`;
-        if (await downloadImage(url, path.join(imagesDir, fileName))) return `GameManagerConfig/images/${fileName}`;
-        return null;
-    } catch(e) { return null; }
-}
-
 ipcMain.handle('sgdb-search', async (e, gameName, apiKey, appId, assetType = 'cover') => {
     try {
         const headers = { "Authorization": `Bearer ${apiKey}`, "User-Agent": "Mozilla/5.0" };
@@ -4900,185 +4868,29 @@ async function downloadImage(url, destPath) {
     } catch (err) { return false; }
 }
 
+/*
+ * The scrape, which now lives in packages/core/scrape.js.
+ *
+ * This handler was the complete implementation and the module was lifted from
+ * it, so that the CRT face could scrape without a second copy — the same move,
+ * and the same reasoning, as packages/core/launch.js. Leaving both in place
+ * would mean the two faces drifting apart the first time a source changed.
+ *
+ * ⚠️ The renderer expects { success, message }; the module answers { ok,
+ * message } like everything else in packages/core. Mapped here rather than
+ * changing either side.
+ */
+// ⚠️ Built on demand, not at require time: `db` is opened later, and a scraper
+// holding a null db would silently write nothing.
+let _scraper = null;
+function scraper() {
+    if (!_scraper) _scraper = scrapeCore.create({ db, imagesDir });
+    return _scraper;
+}
+
 ipcMain.handle('auto-fetch', async (event, gameId, gameName, specificAppId) => {
-    try {
-        const safeName = gameName.replace(/[\\/:*?"<>|#]/g, '').trim();
-        let appId = specificAppId;
-
-        // ── 1. STEAM SEARCH (find App ID if missing) ──────────────────────
-        if (!appId) {
-            try {
-                const sr = await fetch(`https://store.steampowered.com/api/storesearch/?term=${encodeURIComponent(gameName)}&l=english&cc=US`);
-                const sd = await sr.json();
-                if (sd.items?.length > 0) {
-                    const match = sd.items.find(item => titleSimilarity(item.name || '', gameName) >= 0.4);
-                    if (match) appId = match.id;
-                }
-            } catch(e) {}
-        }
-
-        // ── 2. STEAM DETAILS ──────────────────────────────────────────────
-        // Read existing local images, preserved if already set; never overwritten
-        const existing = db.prepare("SELECT CoverArt, HeroArt, Logo, Icon, Screenshot FROM games WHERE id=?").get(gameId) || {};
-        const isLocal = (v) => v && String(v).startsWith('GameManagerConfig');
-
-        let steamSuccess = false, appData = null;
-        let desc = "", htmlDesc = "", dev = "", pub = "", released = "", meta = "";
-        let genre = "", coop = "None", players = "", tags = "";
-        let hltbResult = "", protonResult = "", steamTrailerUrl = "";
-        let dbCoverPath  = isLocal(existing.CoverArt)   ? existing.CoverArt   : "";
-        let dbHeroPath   = isLocal(existing.HeroArt)    ? existing.HeroArt    : "";
-        let dbLogoPath   = isLocal(existing.Logo)       ? existing.Logo       : "";
-        let dbScreenPath = isLocal(existing.Screenshot) ? existing.Screenshot : "";
-
-        if (appId) {
-            try {
-                const dr = await fetch(`https://store.steampowered.com/api/appdetails?appids=${appId}`);
-                const dd = await dr.json();
-                if (dd[appId]?.success) {
-                    steamSuccess = true;
-                    appData = dd[appId].data;
-
-                    desc     = appData.short_description || "";
-                    htmlDesc = appData.detailed_description || "";
-                    dev      = appData.developers?.join(', ') || "";
-                    pub      = appData.publishers?.join(', ') || "";
-                    released = appData.release_date?.date?.slice(-4) || "";
-                    meta     = appData.metacritic ? String(appData.metacritic.score) : "";
-                    genre    = appData.genres?.map(g => g.description).join(', ') || "";
-
-                    const cats = appData.categories?.map(c => c.description) || [];
-                    if (cats.includes("Online Co-op") && cats.includes("Shared/Split Screen Co-op")) coop = "Local & Online";
-                    else if (cats.includes("Online Co-op")) coop = "Online";
-                    else if (cats.includes("Shared/Split Screen Co-op")) coop = "Local";
-                    else if (cats.includes("Co-op")) coop = "Online/Local";
-                    players = [cats.includes("Single-player") && "Single-player", cats.includes("Multi-player") && "Multi-player"].filter(Boolean).join(', ');
-                    tags    = cats.slice(0, 5).join(", ");
-
-                    // HLTB
-                    try {
-                        let hr = await searchHltb(gameName);
-                        if (!hr.length) hr = await searchHltb(gameName.replace(/[:\-].*/, '').replace(/[™®©]/g, '').trim());
-                        if (hr.length > 0 && hr[0].comp_main > 0) hltbResult = `${Math.round(hr[0].comp_main / 3600)} Hours`;
-                    } catch(e) {}
-
-                    // ProtonDB
-                    try {
-                        const pr = await fetch(`https://www.protondb.com/api/v1/reports/summaries/${appId}.json`);
-                        if (pr.ok) { const pd = await pr.json(); if (pd.tier) protonResult = pd.tier.toUpperCase(); }
-                    } catch(e) {}
-
-                    // Cover (skip if already have a local file)
-                    if (!dbCoverPath) {
-                        const coverFileName = `${safeName} - Cover.jpg`;
-                        const coverPath = path.join(imagesDir, coverFileName);
-                        let coverOk = await downloadImage(`https://steamcdn-a.akamaihd.net/steam/apps/${appId}/library_600x900.jpg`, coverPath);
-                        if (!coverOk && appData.header_image) coverOk = await downloadImage(appData.header_image, coverPath);
-                        if (coverOk) dbCoverPath = `GameManagerConfig/images/${coverFileName}`;
-                    }
-
-                    // Hero (skip if already have a local file)
-                    if (!dbHeroPath) {
-                        const heroFileName = `${safeName} - Hero.jpg`;
-                        if (await downloadImage(`https://steamcdn-a.akamaihd.net/steam/apps/${appId}/library_hero.jpg`, path.join(imagesDir, heroFileName)))
-                            dbHeroPath = `GameManagerConfig/images/${heroFileName}`;
-                    }
-
-                    // Logo (skip if already have a local file)
-                    if (!dbLogoPath) {
-                        const logoFileName = `${safeName} - Logo.png`;
-                        if (await downloadImage(`https://steamcdn-a.akamaihd.net/steam/apps/${appId}/logo.png`, path.join(imagesDir, logoFileName)))
-                            dbLogoPath = `GameManagerConfig/images/${logoFileName}`;
-                    }
-
-                    // Screenshots (skip if already have local screenshots)
-                    if (!dbScreenPath && appData.screenshots?.length > 0) {
-                        const saved = [];
-                        for (let i = 0; i < Math.min(5, appData.screenshots.length); i++) {
-                            const fn = `${safeName} - Screen ${i+1}.jpg`;
-                            if (await downloadImage(appData.screenshots[i].path_full, path.join(imagesDir, fn)))
-                                saved.push(`GameManagerConfig/images/${fn}`);
-                        }
-                        if (saved.length) dbScreenPath = saved.join('|');
-                    }
-
-                    // Steam trailer
-                    const movie = appData.movies?.[0];
-                    if (movie) steamTrailerUrl = movie.mp4?.max || movie.webm?.max || movie.webm?.['480'] || "";
-                }
-            } catch(e) {}
-        }
-
-        // ── 3. SGDB FALLBACK, Hero Art & Logo ───────────────────────────
-        const sgdbApiKey = db?.prepare("SELECT value FROM settings WHERE key='steamgriddb_api'").get()?.value;
-        if (sgdbApiKey) {
-            if (!dbHeroPath) dbHeroPath = await sgdbFetchFirst(gameName, sgdbApiKey, appId, 'hero') || "";
-            if (!dbLogoPath) dbLogoPath = await sgdbFetchFirst(gameName, sgdbApiKey, appId, 'logo') || "";
-        }
-
-        // ── 4. IGDB ENRICHMENT ────────────────────────────────────────────
-        let similarGames = "", franchise = "", igdbTrailerId = "";
-        const igdb = await igdbSearch(gameName, appId);
-
-        const isAdultContent = igdb?.themes?.some(t => t.id === 42);
-        const igdbTitleSim   = igdb ? titleSimilarity(igdb.name || '', gameName) : 1;
-        const skipIgdbArtwork = isAdultContent || igdbTitleSim < 0.4;
-
-        if (igdb) {
-            // Similar games & franchise (for all games)
-            if (igdb.similar_games?.length) similarGames = igdb.similar_games.map(g => g.name).slice(0, 6).join(', ');
-            franchise = igdb.franchises?.[0]?.name || igdb.collection?.name || "";
-            igdbTrailerId = igdb.videos?.[0]?.video_id || "";
-
-            // Fill gaps, used when Steam failed or game is non-Steam
-            if (!desc   && igdb.summary)               desc    = igdb.summary;
-            if (!dev    && igdb.involved_companies)     dev     = igdb.involved_companies.filter(c => c.developer).map(c => c.company.name).join(', ');
-            if (!pub    && igdb.involved_companies)     pub     = igdb.involved_companies.filter(c => c.publisher).map(c => c.company.name).join(', ');
-            if (!genre  && igdb.genres)                 genre   = [...(igdb.genres?.map(g => g.name) || []), ...(igdb.themes?.map(t => t.name) || [])].slice(0, 3).join(', ');
-            if (!released && igdb.first_release_date)   released = new Date(igdb.first_release_date * 1000).getFullYear().toString();
-            if (!meta   && igdb.aggregated_rating)      meta    = Math.round(igdb.aggregated_rating).toString();
-
-            // Discover Steam App ID for non-Steam games → enables ProtonDB
-            if (!appId) {
-                const steamExt = igdb.external_games?.find(e => e.category === 1);
-                if (steamExt?.uid) {
-                    appId = String(steamExt.uid).replace(/\.0+$/, '');
-                    try {
-                        const pr = await fetch(`https://www.protondb.com/api/v1/reports/summaries/${appId}.json`);
-                        if (pr.ok) { const pd = await pr.json(); if (pd.tier) protonResult = pd.tier.toUpperCase(); }
-                    } catch(e) {}
-                }
-            }
-
-            // Cover from IGDB (fallback), skip if adult content or title mismatch
-            if (!dbCoverPath && igdb.cover?.url && !skipIgdbArtwork) {
-                const fn = `${safeName} - Cover.jpg`;
-                if (await downloadImage(igdbImg(igdb.cover.url, 'cover_big'), path.join(imagesDir, fn)))
-                    dbCoverPath = `GameManagerConfig/images/${fn}`;
-            }
-
-            // Screenshots from IGDB (fallback), skip if adult content or title mismatch
-            if (!dbScreenPath && igdb.screenshots?.length && !skipIgdbArtwork) {
-                const saved = [];
-                for (let i = 0; i < Math.min(5, igdb.screenshots.length); i++) {
-                    const fn = `${safeName} - Screen ${i+1}.jpg`;
-                    if (await downloadImage(igdbImg(igdb.screenshots[i].url, 'screenshot_big'), path.join(imagesDir, fn)))
-                        saved.push(`GameManagerConfig/images/${fn}`);
-                }
-                if (saved.length) dbScreenPath = saved.join('|');
-            }
-        }
-
-        // ── 5. SAVE ───────────────────────────────────────────────────────
-        if (!steamSuccess && !igdb) return { success: false, message: "No data found on Steam or IGDB." };
-
-        const descI18n = await fetchDescI18n(appId, desc);
-        db.prepare(`UPDATE games SET Description=?, SteamDesc=?, Description_i18n=?, DEV=?, PUB=?, RELEASED=?, METACRITIC=?, GENRE=?, CoverArt=?, HeroArt=?, Logo=?, Screenshot=?, SteamAppID=?, Coop=?, NumPlayers=?, Tags=?, HLTB_Main=?, ProtonTier=?, SteamTrailer=?, SimilarGames=?, Franchise=?, IGDBTrailer=? WHERE id=?`)
-        .run(desc, htmlDesc, descI18n, dev, pub, released, meta, genre, dbCoverPath, dbHeroPath, dbLogoPath, dbScreenPath, appId || "", coop, players, tags, hltbResult, protonResult, steamTrailerUrl, similarGames, franchise, igdbTrailerId, gameId);
-
-        const sources = [steamSuccess && 'Steam', igdb && 'IGDB'].filter(Boolean).join(' + ');
-        return { success: true, message: `Data fetched via ${sources}!` };
-    } catch (err) { return { success: false, message: `Scraping error: ${err.message}` }; }
+    const result = await scraper().autoFetch(gameId, gameName, specificAppId || '');
+    return { success: !!result.ok, message: result.message };
 });
 
 // Text-only variant, same as auto-fetch but skips all image downloads
