@@ -744,7 +744,9 @@ function launchScreen() {
 
     rows.push({ kind: 'action', label: 'Back', run: () => { launchRun = null; pop(); } });
 
-    return { title: run.title ? run.title.toUpperCase() : 'LAUNCHING', rows, okLabel: 'BACK' };
+    // ⚠️ Not the game's name: the breadcrumb above already ends with it, and
+    // using it here printed the title twice in a row.
+    return { title: 'LAUNCHING', rows, okLabel: 'BACK' };
 }
 
 // The engine's log, on the prose screen the About blurb uses.
