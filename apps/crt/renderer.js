@@ -105,6 +105,40 @@ function refresh(builder, arg) {
     render();
 }
 
+/*
+ * ⚠️ An answer belongs to the screen that asked for it.
+ *
+ * Every async action below awaits the main process, and this face stays live
+ * while it waits: the key handler still moves the cursor and still takes
+ * Escape, because walking away from a multi-minute install is the whole point
+ * of showing progress. So by the time an answer arrives the user may be
+ * somewhere else, and refresh() writes into whatever screen is on top now.
+ *
+ * Reproduced before this existed: open a game, press Uninstall, press Escape
+ * while it runs. The library screen underneath was overwritten in place by the
+ * game screen, leaving the stack a level short and a breadcrumb naming neither.
+ *
+ * `frame` is the stack entry the action started on. If it is no longer the one
+ * under the cursor, the answer is dropped, which is what a stale answer
+ * deserves.
+ */
+const atFrame = (frame) => screen() === frame;
+function refreshAt(frame, builder, arg) { if (atFrame(frame)) refresh(builder, arg); }
+function pushAt(frame, builder, arg)    { if (atFrame(frame)) push(builder, arg); }
+
+/*
+ * ⚠️ One at a time, per action.
+ *
+ * Enter is debounced nowhere, and these screens sit still for minutes, so
+ * pressing it twice ran the work twice: two installs of one game, handed to
+ * one engine. Couch's own handler refuses a second outright; this face had
+ * nothing. Keyed by name rather than on installRun, because Escape leaves the
+ * install screen without clearing that, and a stale value would block every
+ * install after it.
+ */
+const running = new Set();
+
+
 // ── Render ───────────────────────────────────────────────────────────────────
 
 function render() {
@@ -410,6 +444,7 @@ const entryCache = new Map();
 const compatCache = new Map();
 
 async function openGame(game) {
+    const frame = screen();   // the screen that asked; the answer is only for it
     if (!launcherCache.has(game.id) || !detailCache.has(game.id) || !entryCache.has(game.id)) {
         $status.textContent = 'READING…';
         try {
@@ -432,7 +467,7 @@ async function openGame(game) {
         }
         $status.textContent = '';
     }
-    push(gameScreen, game);
+    pushAt(frame, gameScreen, game);
 }
 
 function gameScreen(game) {
@@ -570,10 +605,11 @@ function ago(ms) {
 let playlists = [];
 
 async function openCollections() {
+    const frame = screen();   // the screen that asked; the answer is only for it
     $status.textContent = 'READING…';
     try { playlists = await window.crt.playlists() || []; } catch (e) { playlists = []; }
     $status.textContent = '';
-    push(collectionsScreen);
+    pushAt(frame, collectionsScreen);
 }
 
 function collectionsScreen() {
@@ -609,12 +645,13 @@ function collectionsScreen() {
 }
 
 async function openPlaylist(list) {
+    const frame = screen();   // the screen that asked; the answer is only for it
     $status.textContent = 'READING…';
     let ids = [];
     try { ids = await window.crt.playlistGames(list.id) || []; } catch (e) {}
     $status.textContent = '';
     const members = new Set(ids);
-    push(gamesScreen, {
+    pushAt(frame, gamesScreen, {
         title: list.name.toUpperCase(),
         list: games.filter(g => members.has(g.id)),
         empty: 'THIS PLAYLIST IS EMPTY',
@@ -688,6 +725,7 @@ function newPlaylistScreen() {
 }
 
 async function createPlaylist() {
+    const frame = screen();   // the screen that asked; the answer is only for it
     const name = query.trim();
     if (!name) return;
     const r = await window.crt.playlistCreate(name);
@@ -696,8 +734,7 @@ async function createPlaylist() {
     try { playlists = await window.crt.playlists() || []; } catch (e) {}
     $status.textContent = 'CREATED';
     setTimeout(() => { $status.textContent = ''; }, 4000);
-    pop();
-    refresh(collectionsScreen);
+    if (atFrame(frame)) { pop(); refresh(collectionsScreen); }
 }
 
 // ⚠️ Deleting asks first, on its own screen, for the same reason uninstalling
@@ -727,14 +764,13 @@ function confirmDeletePlaylistScreen(list) {
 }
 
 async function deletePlaylist(list) {
+    const frame = screen();   // the screen that asked; the answer is only for it
     const r = await window.crt.playlistDelete(list.id);
     if (!r || !r.ok) { fail((r && r.error) || 'Could not delete that playlist.'); return; }
     try { playlists = await window.crt.playlists() || []; } catch (e) {}
     $status.textContent = 'DELETED';
     setTimeout(() => { $status.textContent = ''; }, 4000);
-    pop();
-    pop();
-    refresh(collectionsScreen);
+    if (atFrame(frame)) { pop(); pop(); refresh(collectionsScreen); }
 }
 
 /*
@@ -797,11 +833,12 @@ function launchScreen() {
 
 // The engine's log, on the prose screen the About blurb uses.
 async function showLaunchLog(title) {
+    const frame = screen();   // the screen that asked; the answer is only for it
     $status.textContent = 'READING…';
     let text = '';
     try { text = await window.crt.launchLog(title) || ''; } catch (e) {}
     $status.textContent = '';
-    push(() => ({
+    pushAt(frame, () => ({
         title: 'WHAT HAPPENED',
         rows: [],
         prose: text || 'No log was written for this game.\n\nThat usually means it never started at all: a launch command that is wrong, or a store client that is not running.',
@@ -876,11 +913,12 @@ function storeSummary() {
 }
 
 async function openStore() {
+    const frame = screen();   // the screen that asked; the answer is only for it
     $status.textContent = 'READING…';
     try { storeStatus = await window.crt.storeStatus(); } catch (e) {}
     try { ownedGames = storeStatus.available ? await window.crt.storeAvailable() || [] : []; } catch (e) { ownedGames = []; }
     $status.textContent = '';
-    push(storeScreen);
+    pushAt(frame, storeScreen);
 }
 
 /*
@@ -974,29 +1012,37 @@ function storeScreen() {
  * than in a message that scrolls away.
  */
 async function startInstall({ id, title }) {
-    installRun = { title, percent: 0, step: 'starting', message: '', error: '' };
-    push(installScreen);
+    // One install at a time: this screen sits still for minutes.
+    if (running.has('install')) return;
+    running.add('install');
+    try {
+        installRun = { title, percent: 0, step: 'starting', message: '', error: '' };
+        push(installScreen);
+        const frame = screen();
 
-    const result = await window.crt.install(id);
+        const result = await window.crt.install(id);
 
-    // ⚠️ The engine's own reason beats the caller's. ops.install() can only see
-    // that the library still says "not installed"; the progress stream carries
-    // what actually went wrong.
-    installRun = {
-        ...installRun,
-        state: result && result.ok ? 'done' : 'failed',
-        error: (installRun.error) || (result && result.error) || '',
-    };
+        // ⚠️ The engine's own reason beats the caller's. ops.install() can only see
+        // that the library still says "not installed"; the progress stream carries
+        // what actually went wrong.
+        installRun = {
+            ...installRun,
+            state: result && result.ok ? 'done' : 'failed',
+            error: (installRun.error) || (result && result.error) || '',
+        };
 
-    try { storeStatus = await window.crt.storeStatus(); } catch (e) {}
-    try { ownedGames = await window.crt.storeAvailable() || []; } catch (e) {}
-    try { installedGames = await window.crt.installedGames() || []; } catch (e) {}
-    try { games = await window.crt.library(); } catch (e) {}
-    detailCache.clear();
-    launcherCache.clear();
-    entryCache.clear();
+        try { storeStatus = await window.crt.storeStatus(); } catch (e) {}
+        try { ownedGames = await window.crt.storeAvailable() || []; } catch (e) {}
+        try { installedGames = await window.crt.installedGames() || []; } catch (e) {}
+        try { games = await window.crt.library(); } catch (e) {}
+        detailCache.clear();
+        launcherCache.clear();
+        entryCache.clear();
 
-    refresh(installScreen);
+        refreshAt(frame, installScreen);
+    } finally {
+        running.delete('install');
+    }
 }
 
 /*
@@ -1055,6 +1101,7 @@ function scrapeScreen() {
  * it starts is the difference between patience and a force-quit.
  */
 async function startScrape(scope) {
+    if (scrapeRun) return;          // a batch is already going
     const total = scope === 'missing' ? scrapeCounts.missing
                 : scope === 'installed' ? scrapeCounts.installed
                 : scrapeCounts.total;
@@ -1062,6 +1109,7 @@ async function startScrape(scope) {
 
     scrapeRun = { done: 0, total, name: '' };
     refresh(scrapeScreen);
+    const frame = screen();   // the screen that asked; the answer is only for it
 
     const result = await window.crt.scrapeBatch(scope);
     scrapeRun = null;
@@ -1075,13 +1123,14 @@ async function startScrape(scope) {
         ? `${result.scraped} OF ${result.done} SCRAPED${result.stopped ? ' (STOPPED)' : ''}`
         : 'SCRAPE FAILED';
     setTimeout(() => { $status.textContent = ''; }, 8000);
-    refresh(scrapeScreen);
+    refreshAt(frame, scrapeScreen);
 }
 
 // ⚠️ Written through, then re-read from the row this face already holds: the
 // library list is what Collections counts from, so leaving it stale would show
 // a game marked on its own page and missing from Favourites.
 async function toggleFlag(game, field) {
+    const frame = screen();   // the screen that asked; the answer is only for it
     const next = !game[field];
     game[field] = next;
     refresh(gameScreen, game);
@@ -1089,7 +1138,7 @@ async function toggleFlag(game, field) {
     if (!r || !r.ok) {
         game[field] = !next;                       // put it back; nothing was saved
         fail('Could not save that.');
-        refresh(gameScreen, game);
+        refreshAt(frame, gameScreen, game);
         return;
     }
     const row = games.find(g => g.id === game.id);
@@ -1106,13 +1155,14 @@ async function toggleFlag(game, field) {
  * through WineD3D instead, and the same game runs.
  */
 async function toggleCompat(game, entry) {
+    const frame = screen();   // the screen that asked; the answer is only for it
     const next = (compatCache.get(game.id) || 'auto') === 'opengl' ? 'auto' : 'opengl';
     const r = await window.crt.compatSet(entry.id, next);
     if (!r || !r.ok) { fail((r && r.error) || 'Could not save that setting.'); return; }
     compatCache.set(game.id, next);
     $status.textContent = next === 'opengl' ? 'OPENGL MODE ON' : 'AUTO';
     setTimeout(() => { $status.textContent = ''; }, 5000);
-    refresh(gameScreen, game);
+    refreshAt(frame, gameScreen, game);
 }
 
 // Installing from a game's own screen, rather than finding it again in the
@@ -1135,30 +1185,39 @@ async function installFromGame(game, entry) {
 }
 
 async function uninstallFromGame(game, entry) {
-    $status.textContent = 'REMOVING…';
-    const result = await window.crt.uninstall(entry.id);
-
-    entryCache.delete(game.id);
-    launcherCache.delete(game.id);
-    try { games = await window.crt.library(); } catch (e) {}
-    const fresh = games.find(g => g.id === game.id);
-    if (fresh) game.installed = fresh.installed;
+    // One uninstall at a time; a second would fight the first.
+    if (running.has('uninstall')) return;
+    running.add('uninstall');
     try {
-        entryCache.set(game.id, await window.crt.installerEntry(game.id));
-        launcherCache.set(game.id, await window.crt.launchers(game.id) || []);
-    } catch (e) {}
+        $status.textContent = 'REMOVING…';
+        const frame = screen();
+        const result = await window.crt.uninstall(entry.id);
 
-    // A warning means it was removed but the library did not follow, which is
-    // worth saying: the row on screen is about to disagree with the disk.
-    $status.textContent = result && result.ok
-        ? ((result.warning || 'Removed')).toUpperCase()
-        : ((result && result.error) || 'COULD NOT REMOVE').toUpperCase();
-    setTimeout(() => { $status.textContent = ''; }, 8000);
-    refresh(gameScreen, game);
+        entryCache.delete(game.id);
+        launcherCache.delete(game.id);
+        try { games = await window.crt.library(); } catch (e) {}
+        const fresh = games.find(g => g.id === game.id);
+        if (fresh) game.installed = fresh.installed;
+        try {
+            entryCache.set(game.id, await window.crt.installerEntry(game.id));
+            launcherCache.set(game.id, await window.crt.launchers(game.id) || []);
+        } catch (e) {}
+
+        // A warning means it was removed but the library did not follow, which is
+        // worth saying: the row on screen is about to disagree with the disk.
+        $status.textContent = result && result.ok
+            ? ((result.warning || 'Removed')).toUpperCase()
+            : ((result && result.error) || 'COULD NOT REMOVE').toUpperCase();
+        setTimeout(() => { $status.textContent = ''; }, 8000);
+        refreshAt(frame, gameScreen, game);
+    } finally {
+        running.delete('uninstall');
+    }
 }
 
 // One game, from its own screen.
 async function scrapeGame(game, appId) {
+    const frame = screen();   // the screen that asked; the answer is only for it
     $status.textContent = 'FETCHING…';
     const result = await window.crt.scrapeOne(game.id, appId || '');
     if (!result || !result.ok) {
@@ -1175,7 +1234,7 @@ async function scrapeGame(game, appId) {
 
     $status.textContent = (result.message || 'DONE').toUpperCase();
     setTimeout(() => { $status.textContent = ''; }, 6000);
-    refresh(gameScreen, game);
+    refreshAt(frame, gameScreen, game);
 }
 
 /*
@@ -1215,12 +1274,13 @@ let matchPending = false;
 async function runSteamSearch(game) {
     if (matchPending || !query.trim()) return;
     matchPending = true;
+    const frame = screen();   // the screen that asked; the answer is only for it
     $status.textContent = 'SEARCHING…';
     try { matchResults = await window.crt.steamSearch(query.trim()) || []; }
     catch (e) { matchResults = []; }
     matchPending = false;
     $status.textContent = matchResults.length ? '' : 'NO MATCHES';
-    refresh(matchScreen, game);
+    refreshAt(frame, matchScreen, game);
 }
 
 // ⚠️ "Show only installed" lives in Filters, not here, and deliberately in one
