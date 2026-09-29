@@ -320,11 +320,11 @@ const getSteamLibraryPaths = () => host.steamLibraryPaths();
  *
  * ⚠️ Couch keeps owning the Installer engine. installer-engine.js is a
  * singleton configured by init(), and this face also asks it for store login
- * status, disk space and install info — so the engine it already set up is
+ * status, disk space and install info, so the engine it already set up is
  * handed to the module rather than letting the module init a second one.
  */
 const launcher = launch.create({
-    get db() { return db; },            // opened later, in whenReady
+    db: () => db,                       // opened later, in whenReady, so read on use
     baseDir,
     binDir,
     ensureEngine: ensureInstallerEngine,

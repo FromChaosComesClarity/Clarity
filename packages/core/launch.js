@@ -56,7 +56,8 @@ function firstUsefulLine(text) {
 
 /*
  * deps:
- *   db            the face's open games.db (used for the PICO-8 path setting)
+ *   db            the face's open games.db, or a function returning it once
+ *                 it is open (used for the PICO-8 path setting)
  *   baseDir       the portable install directory (library, Installer db, carts)
  *   binDir        where the bundled runner binaries live
  *   onLaunchIssue ({title, code, message}) — a launch that failed after we
@@ -84,13 +85,29 @@ function firstUsefulLine(text) {
  */
 function create(deps = {}) {
     const {
-        db = null, baseDir = '', binDir = '',
+        db: dbDep = null, baseDir = '', binDir = '',
         onLaunchIssue = () => {}, onProgress = () => {},
         onLaunchProgress = () => {}, onGameSession = () => {},
         ensureEngine: ensureEngineOverride = null,
         engineLaunch: engineLaunchOverride = null,
         pico8Bin: pico8BinOverride = null,
     } = deps;
+
+    /*
+     * ⚠️ The library, resolved on use rather than captured here.
+     *
+     * A face may hand in an open database, or a function returning the one it
+     * will open later. Couch creates its launcher at module load and opens the
+     * library in whenReady, so anything read out of `deps` at this point is
+     * null forever. It used to pass a `get db()` accessor for exactly that
+     * reason, which cannot work: destructuring calls a getter once, right
+     * here, and keeps whatever it returned.
+     *
+     * Nothing depended on it, because the only reader below is the PICO-8 path
+     * and Couch overrides that. The next db-backed function added here would
+     * have found a silent null, so the indirection is real now.
+     */
+    const getDb = () => (typeof dbDep === 'function' ? dbDep() : dbDep);
 
     // ── Naming and routing a launcher ────────────────────────────────────────
 
@@ -287,7 +304,8 @@ function create(deps = {}) {
 
     function pico8BinInternal() {
         try {
-            const row = db && db.prepare("SELECT value FROM settings WHERE key='pico8_path'").get();
+            const gamesDb = getDb();
+            const row = gamesDb && gamesDb.prepare("SELECT value FROM settings WHERE key='pico8_path'").get();
             if (row?.value && fs.existsSync(row.value)) return row.value;
         } catch {}
         const dir = path.join(baseDir, 'GameManagerConfig', 'pico8');
