@@ -12,67 +12,70 @@
 </div>
 
 Every game you own, Steam, GOG, Epic, itch, PICO-8, emulators, fan games, source ports and
-mods, in one place. One AppImage, three faces, no cloud, no launcher farm.
+mods, in one place. One AppImage, four faces, no cloud, no launcher farm.
 
-**2.0 is what this is becoming.** What you can download today is used daily on the machine it
-is built on, and still rough in places. There is no date on 2.0.
+### **[What it does, in full, is on the website.](https://fromchaoscomesclarity.github.io/ClarityWebSite/)**
 
-This is the Linux edition. macOS lives in its own repository,
-[Clarity-Mac](https://github.com/FromChaosComesClarity/Clarity-Mac), forked from here at v1.15.3.
-The two diverge on purpose and nothing is merged between them.
+Experimental, used daily on the machine it is built on, still rough in places. Linux edition;
+macOS is a deliberate fork in [Clarity-Mac](https://github.com/FromChaosComesClarity/Clarity-Mac).
 
-## The three faces
-
-| | | |
-|---|---|---|
-| **The Manager** | the desk | Import, organise, scrape, install, launch. Mouse and keyboard. |
-| **Couch** | the sofa | Fullscreen, gamepad-first, made for a television across a room. |
-| **Installer** | underneath | Installs GOG and Epic games headlessly, with no store client. |
-
-## Get it
+## Install and run
 
 Download `Clarity.AppImage` from [Releases](https://github.com/FromChaosComesClarity/Clarity/releases),
-make it executable, run it.
+make it executable, pick a face.
 
 ```bash
 chmod +x Clarity.AppImage
-./Clarity.AppImage              # the Manager
-./Clarity.AppImage --couch      # the couch face
+
+./Clarity.AppImage              # the Manager, at a desk
+./Clarity.AppImage --couch      # Couch, fullscreen for a modern TV
+./Clarity.AppImage --crt        # the CRT face, for a tube TV
 ```
 
-Your library, artwork and settings live in a folder beside the AppImage. Portable, backed up by
-copying it, gone when you delete it.
+No runtime to install, and no install at all: your library, artwork and settings sit in a folder
+beside the AppImage, so copying that folder backs it up and deleting it is the uninstall.
+
+## The four faces
+
+| | | |
+|---|---|---|
+| **Manager** | the desk | Import, organise, scrape, install, launch. Mouse and keyboard. |
+| **Couch** | the sofa | Fullscreen, gamepad-first, for a television across a room. |
+| **CRT** | the tube | A menu for 720x480 over composite, driven by a D-pad. |
+| **Installer** | underneath | Installs GOG and Epic games headlessly, with no store client. |
+
+**The CRT face** exists because Couch cannot work on one: Couch is built around cover art, and
+at 480 interlaced lines a cover is a thumb wide and smears. So this is a menu, where a row of
+text is the interface and a D-pad is the whole vocabulary. Installing, scraping, playlists,
+compatibility and playing all happen there, without the desktop.
+[Longer story on the site.](https://fromchaoscomesclarity.github.io/ClarityWebSite/news.html#crt-face)
 
 ## On Omarchy
 
-There is a [companion plugin](https://github.com/FromChaosComesClarity/omarchy-clarity):
-a bar widget showing what is installed and what is playing, and a launcher overlay, type a few
-letters, press Enter, play. The app reads your actual Omarchy theme, opens games fullscreen on
-the screen you chose, and stays out of the way otherwise.
+A [companion plugin](https://github.com/FromChaosComesClarity/omarchy-clarity) adds a bar widget
+and a launcher overlay: type a few letters, press Enter, play. Clarity reads your real Omarchy
+theme and opens games fullscreen on the screen you picked.
 
 ## Build it
 
 ```bash
 npm install
-npm run dist        # → dist/Clarity.AppImage
+npm run dist        # -> dist/Clarity.AppImage
 ```
 
 Needs Node 22.
 
 ## Documentation
 
-The manual ships **inside the app**, under Menu → Manual. Deeper notes on the port catalogue
-and per-game fixes live in [`docs/`](docs/) and on the
-[website](https://fromchaoscomesclarity.github.io/ClarityWebSite/).
-
-**Recipes** are Clarity's fixes for individual named games: what the fault was, and what it
-took. [`docs/RECIPES.md`](docs/RECIPES.md) says what one is, where they live and how to add
-one; the public list is the Game fixes page on the site.
+The manual ships **inside the app**, under Menu &rarr; Manual. The rest is on the website:
+[game fixes](https://fromchaoscomesclarity.github.io/ClarityWebSite/fixes.html),
+[ports and mods](https://fromchaoscomesclarity.github.io/ClarityWebSite/ports.html),
+[what changed](https://fromchaoscomesclarity.github.io/ClarityWebSite/news.html). Contributor
+notes are in [`docs/`](docs/), including [`docs/RECIPES.md`](docs/RECIPES.md) on per-game fixes.
 
 ## Support it
 
-- **Ko-fi:** <https://ko-fi.com/clarity>
-- **PIX (Brazil):** `b734a9e2-e479-42f9-abd6-c88d1b8b880e`
+**Ko-fi:** <https://ko-fi.com/clarity> · **PIX (Brazil):** `b734a9e2-e479-42f9-abd6-c88d1b8b880e`
 
 Starring the repo and reporting what breaks counts too.
 
@@ -80,7 +83,7 @@ Starring the repo and reporting what breaks counts too.
 
 <div align="center">
 
-**one library · three faces · zero cloud**
+**one library · four faces · zero cloud**
 
 Built by J.R.A. · GPL-3.0-or-later
 
