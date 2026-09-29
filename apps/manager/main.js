@@ -17,6 +17,7 @@ const Clarity_SVG_B64 = 'PHN2ZyB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgdmlld0JveD0iMCA
 const Installer_SVG_B64 = 'PHN2ZyB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgdmlld0JveD0iMCAwIDUxMiA1MTIiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHJlY3Qgd2lkdGg9IjUxMiIgaGVpZ2h0PSI1MTIiIHJ4PSIxMTIiIGZpbGw9IiMwZTExMTMiLz48cGF0aCBkPSJNMzQ4LjMgMTM3LjggQTE1MCAxNTAgMCAxIDAgMzQ4LjMgMzc0LjIiIGZpbGw9Im5vbmUiIHN0cm9rZT0iIzJmZTBkNiIgc3Ryb2tlLXdpZHRoPSI1NiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIi8+PHBhdGggZD0iTTI1NiAyMDggVjI5MiBNMjE0IDI1NCBMMjU2IDI5NiBMMjk4IDI1NCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjNGE1ZjVlIiBzdHJva2Utd2lkdGg9IjMwIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiLz48L3N2Zz4=';
 const Couch_SVG_B64    = 'PHN2ZyB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgdmlld0JveD0iMCAwIDUxMiA1MTIiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHJlY3Qgd2lkdGg9IjUxMiIgaGVpZ2h0PSI1MTIiIHJ4PSIxMTIiIGZpbGw9IiMwZTExMTMiLz48cGF0aCBkPSJNMzQ4LjMgMTM3LjggQTE1MCAxNTAgMCAxIDAgMzQ4LjMgMzc0LjIiIGZpbGw9Im5vbmUiIHN0cm9rZT0iIzJmZTBkNiIgc3Ryb2tlLXdpZHRoPSI1NiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIi8+PGNpcmNsZSBjeD0iMjU2IiBjeT0iMjU2IiByPSI0MiIgZmlsbD0iIzJmZTBkNiIvPjwvc3ZnPg==';
 const EMULATTE_SVG_B64 = 'PHN2ZyB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgdmlld0JveD0iMCAwIDUxMiA1MTIiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CiAgPCEtLSBCYXNlIGJhY2tncm91bmQgLS0+CiAgPHJlY3Qgd2lkdGg9IjUxMiIgaGVpZ2h0PSI1MTIiIHJ4PSIxMTIiIGZpbGw9IiMyQzFFMTYiLz4KICA8IS0tIE91dGVyIGJvcmRlciAtLT4KICA8cmVjdCB4PSIyNCIgeT0iMjQiIHdpZHRoPSI0NjQiIGhlaWdodD0iNDY0IiByeD0iODgiIGZpbGw9Im5vbmUiIHN0cm9rZT0iIzhCNUEyQiIgc3Ryb2tlLXdpZHRoPSIxMiIvPgoKICA8IS0tIENvZmZlZSBjdXAgYm9keSAtLT4KICA8cGF0aCBkPSJNIDE0MCAxODAgTCAzNzIgMTgwIEwgMzQwIDM5MCBDIDMzNiA0MTAgMzE4IDQyNCAyOTggNDI0IEwgMjE0IDQyNCBDIDE5NCA0MjQgMTc2IDQxMCAxNzIgMzkwIFoiCiAgICAgICAgZmlsbD0iIzQzMjgxOCIgc3Ryb2tlPSIjRDRBMzczIiBzdHJva2Utd2lkdGg9IjE2IiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+CgogIDwhLS0gQ3VwIGhhbmRsZSAtLT4KICA8cGF0aCBkPSJNIDM3MiAyMzAgQyA0NDAgMjMwIDQ0MCAzMTAgMzcyIDMxMCIKICAgICAgICBmaWxsPSJub25lIiBzdHJva2U9IiNENEEzNzMiIHN0cm9rZS13aWR0aD0iMjAiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIvPgoKICA8IS0tIENhcnRyaWRnZSB0b3AgKGdhbWUgc2xvdCkgLS0+CiAgPHJlY3QgeD0iMTYwIiB5PSIxNDAiIHdpZHRoPSIxOTIiIGhlaWdodD0iNTAiIHJ4PSIxMCIKICAgICAgICBmaWxsPSIjNDMyODE4IiBzdHJva2U9IiNENEEzNzMiIHN0cm9rZS13aWR0aD0iMTQiLz4KICA8IS0tIENhcnRyaWRnZSBub3RjaCAtLT4KICA8cmVjdCB4PSIyMjAiIHk9IjE0NSIgd2lkdGg9IjcyIiBoZWlnaHQ9IjIwIiByeD0iNCIgZmlsbD0iIzJDMUUxNiIvPgoKICA8IS0tIFN0ZWFtIHdpc3BzIC0tPgogIDxwYXRoIGQ9Ik0gMjIwIDE0MCBDIDIxMCAxMTAgMjMwIDkwIDIyMCA2NSIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjRkZFNkE3IiBzdHJva2Utd2lkdGg9IjgiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgb3BhY2l0eT0iMC42Ii8+CiAgPHBhdGggZD0iTSAyNTYgMTQwIEMgMjQ2IDEwNSAyNjYgODAgMjU2IDUwIiAgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjRkZFNkE3IiBzdHJva2Utd2lkdGg9IjgiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgb3BhY2l0eT0iMC42Ii8+CiAgPHBhdGggZD0iTSAyOTIgMTQwIEMgMjgyIDExMCAzMDIgOTAgMjkyIDY1IiBmaWxsPSJub25lIiBzdHJva2U9IiNGRkU2QTciIHN0cm9rZS13aWR0aD0iOCIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBvcGFjaXR5PSIwLjYiLz4KPC9zdmc+Cg==';
+const CRT_SVG_B64      = 'PHN2ZyB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgdmlld0JveD0iMCAwIDUxMiA1MTIiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHJlY3Qgd2lkdGg9IjUxMiIgaGVpZ2h0PSI1MTIiIHJ4PSIxMTIiIGZpbGw9IiMwZTExMTMiLz48cmVjdCB4PSI4OCIgeT0iMTIwIiB3aWR0aD0iMzM2IiBoZWlnaHQ9IjI0MCIgcng9IjM0IiBmaWxsPSJub25lIiBzdHJva2U9IiMyZmUwZDYiIHN0cm9rZS13aWR0aD0iMzAiLz48cGF0aCBkPSJNMTU4IDE5NmgxOTZNMTU4IDI0MGgxOTZNMTU4IDI4NGgxNDAiIHN0cm9rZT0iIzJmZTBkNiIgc3Ryb2tlLXdpZHRoPSIxNiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBvcGFjaXR5PSIuNSIvPjxwYXRoIGQ9Ik0xOTYgMzkybC0yNiA0NE0zMTYgMzkybDI2IDQ0IiBzdHJva2U9IiMyZmUwZDYiIHN0cm9rZS13aWR0aD0iMjYiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIvPjwvc3ZnPg==';
 
 async function searchHltb(gameName) {
     const initData = await new Promise((resolve, reject) => {
@@ -3355,6 +3356,20 @@ ipcMain.handle('sync-all-installer-games', (_, allInstallerGames, installerPath)
     return { synced };
 });
 
+ipcMain.on('launch-crt', () => {
+    // The CRT face of this same binary, exactly as launch-couch does it below. Left as its
+    // own handler rather than one parameterised by face name: they minimise and restore the
+    // Manager the same way today, and a shared helper would be the first thing in the way
+    // when one of them stops doing that.
+    const bin  = host.selfExecutable();
+    const args = host.selfSpawnArgs(['--crt'], path.join(__dirname, '..', '..'));
+    const child = spawn(bin, args, { detached: true, stdio: 'ignore' });
+    child.unref();
+    const win = BrowserWindow.getAllWindows()[0];
+    if (win) win.minimize();
+    child.on('exit', () => { const w = BrowserWindow.getAllWindows()[0]; if (w) { if (w.isMinimized()) w.restore(); } });
+});
+
 ipcMain.on('launch-couch', () => {
     // Launch the Couch face of THIS binary (separate 'couch' process), not an external AppImage.
     const bin  = host.selfExecutable();
@@ -3434,6 +3449,39 @@ ipcMain.handle('install-to-menu', () => {
         if (installed.length === 0) return { success: false, message: 'Clarity.AppImage not found in the app folder.' };
         return { success: true, message: `Installed to menu: ${installed.join(' + ')}` };
     } catch(err) { return { success: false, message: err.message }; }
+});
+
+ipcMain.handle('install-crt-to-menu', () => {
+    /*
+     * The CRT face on its own, deliberately separate from install-to-menu.
+     *
+     * That one writes Clarity and Couch together, which is what nearly everybody wants.
+     * A tube TV is not: the machine driving one is usually not the machine you sit at, and
+     * putting a 480-line face in the menu of a desktop that will never show it is clutter.
+     * So it is its own button, and install-to-menu is left exactly as it was.
+     */
+    try {
+        if (!host.desktop.canInstallMenuEntries) return { success: false, message: 'This system installs its own menu entries.' };
+        const appsDir  = host.desktop.appsDir();
+        const iconsDir = path.join(baseDir, 'icons');
+        if (!fs.existsSync(iconsDir)) fs.mkdirSync(iconsDir, { recursive: true });
+        fs.writeFileSync(path.join(iconsDir, 'CRT.svg'), Buffer.from(CRT_SVG_B64, 'base64'));
+
+        const suitePath = desktopDescriptor.suiteExecutable(baseDir, host.selfExecutable());
+        if (!suitePath) return { success: false, message: 'Clarity.AppImage not found in the app folder.' };
+        try { fs.chmodSync(suitePath, '755'); } catch {}
+
+        const repoRoot = path.join(__dirname, '..', '..');
+        host.desktop.writeLauncher(appsDir, {
+            id: 'clarity-crt', name: 'Clarity on a CRT',
+            comment: 'Clarity as a menu for a tube TV, 720x480 over composite, driven with a D-pad.',
+            exec: suitePath, args: host.selfSpawnArgs(['--crt'], repoRoot), icon: path.join(iconsDir, 'CRT.svg'),
+            categories: ['Game'], wmClass: 'clarity',
+            keywords: ['crt', 'tube', 'tv', 'composite', 'retro', 'television', 'd-pad', 'clarity'],
+        });
+        host.desktop.refreshMenu(appsDir);
+        return { success: true, message: 'Installed to menu: Clarity on a CRT' };
+    } catch (err) { return { success: false, message: err.message }; }
 });
 
 // Where a desktop shortcut goes is the host's business (see the platform backend).

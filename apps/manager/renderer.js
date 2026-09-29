@@ -1935,6 +1935,7 @@ document.querySelectorAll('.support-copy').forEach(btn => {
         setTimeout(() => { btn.textContent = was; }, 1400);
     });
 });
+document.getElementById('btn-rail-crt')?.addEventListener('click', () => window.api.launchCrt());
 document.getElementById('btn-rail-emulatte')?.addEventListener('click', () => window.api.launchEmuLatte());
 
 
@@ -3915,6 +3916,7 @@ const _PAL_ACTIONS = [
     { id: 'view-list',            name: 'List View',                run: () => switchView('view-list') },
     { id: 'view-home',            name: 'Home Dashboard',           run: () => switchView('view-home') },
     { id: 'couch',                name: 'Go Fullscreen', run: () => document.getElementById('couch-cta')?.click() },
+    { id: 'crt',                  name: 'Launch CRT Mode',          run: () => document.getElementById('btn-rail-crt')?.click() },
     { id: 'emulatte',             name: 'Launch EmuLatte',          run: () => document.getElementById('btn-rail-emulatte')?.click() },
 ];
 
@@ -7612,6 +7614,18 @@ document.getElementById('btn-install-menu').addEventListener('click', async () =
     btn.disabled = true; btn.querySelector('span').innerText = t('status.installing'); status.style.color = 'var(--text_dim)'; status.innerText = '';
     const result = await window.api.installToMenu();
     btn.disabled = false; btn.querySelector('span').innerText = t('status.add_to_menu');
+    status.style.color = result.success ? '#66bb6a' : '#ef5350';
+    status.innerText = result.message;
+});
+
+document.getElementById('btn-install-crt-menu')?.addEventListener('click', async () => {
+    const btn = document.getElementById('btn-install-crt-menu');
+    const status = document.getElementById('install-crt-menu-status');
+    const label = btn.querySelector('span');
+    const was = label.innerText;
+    btn.disabled = true; label.innerText = t('status.installing'); status.style.color = 'var(--text_dim)';
+    const result = await window.api.installCrtToMenu();
+    btn.disabled = false; label.innerText = was;
     status.style.color = result.success ? '#66bb6a' : '#ef5350';
     status.innerText = result.message;
 });

@@ -149,12 +149,14 @@ contextBridge.exposeInMainWorld('api', {
 
                                 // --- SYSTEM ---
                                 installToMenu: () => ipcRenderer.invoke('install-to-menu'),
+                                installCrtToMenu: () => ipcRenderer.invoke('install-crt-to-menu'),
                                 getCouchAutostart: () => ipcRenderer.invoke('get-couch-autostart'),
                                 setCouchAutostart: (en) => ipcRenderer.invoke('set-couch-autostart', en),
 
                                 // --- Couch COMPANION ---
                                 checkCouch: () => ipcRenderer.invoke('check-couch'),
                                 launchCouch: () => ipcRenderer.send('launch-couch'),
+                                launchCrt: () => ipcRenderer.send('launch-crt'),
 
                                 // --- EMULATTE ---
                                 checkEmuLatte: () => ipcRenderer.invoke('check-emulatte'),
