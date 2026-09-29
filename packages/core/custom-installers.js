@@ -229,6 +229,41 @@ const RECIPES = [
         data: 'outrun',
     },
     {
+        id: 'roadrash',
+        title: 'Road Rash',
+        kind: 'Game',
+        game: '',
+        blurb: 'EA\u2019s 1996 Windows port of the Mega Drive brawler-racer. Chains, clubs, and a soundtrack of actual bands. Complete in itself; the disc carries everything.',
+        source: {
+            name: 'Your own disc or backup',
+            url: '',
+            hint: 'Point at the CD image, ROADRASH.iso, or at the archive holding it. The disc has the whole game on it, so nothing else is needed.',
+        },
+        /*
+         * \u26a0\ufe0f The disc, not the repack's installer.
+         *
+         * Backups of this game usually come as a pair: a small "setup" download and the
+         * full disc image. The setup one is an Inno Setup executable, and nothing here can
+         * open those. 7z reads NSIS but not Inno, innoextract is the tool for it and is
+         * neither bundled nor a dependency worth adding for one game.
+         *
+         * It does not matter, because the disc is the better source anyway. Everything is
+         * on it, 467MB under ROADRASH/, and the game reads its data through relative paths
+         * (Audio/Music/, Data/, Images/), so a plain copy off the disc runs from its own
+         * folder. Measured on a real backup: the image lists 63 video files at 296MB, 106
+         * audio at 146MB, and ROADRASH.EXE beside them.
+         */
+        // The lookahead is load-bearing, as it is for Mini Doom. The setup download
+        // unpacks to a RoadRash.exe that is the Inno installer, not the game, and it
+        // matches the entry pattern below perfectly. Without this the install would
+        // report success and leave an installer sitting there wearing the game's name.
+        archive: /^road[\s_-]*rash(?!.*setup).*\.(7z|zip|rar|iso)$/i,
+        samples: ['Road_Rash_Win_ISO_EN.7z', 'ROADRASH.iso'],
+        dirName: 'Road Rash',
+        entry: { exe: /^roadrash\.exe$/i, platform: 'windows' },
+        data: null,
+    },
+    {
         id: 'swos2020',
         title: 'SWOS 2020',
         kind: 'Fan game',
@@ -683,7 +718,8 @@ function findExtractor(archivePath) {
 // The leading $ is required, not optional. NSIS names its scratch folders $PLUGINSDIR and
 // $TEMP; a plain "temp" is the game's own working directory and deleting it breaks the
 // game, SWOS writes its pitch and background data there and refuses to start without it.
-const INSTALLER_JUNK = /^\$(PLUGINSDIR|TEMP)$|^(vc_?redist|dxwebsetup|dotnet).*\.exe$/i;
+// .url files are the repack sites' calling cards (OldGamesDownload.url, How to install.url).
+const INSTALLER_JUNK = /^\$(PLUGINSDIR|TEMP)$|^(vc_?redist|dxwebsetup|dotnet).*\.exe$|\.url$/i;
 const INSTALLER_JUNK_PATH = /(^|\/)\$(PLUGINSDIR|TEMP)\//i;
 
 // Unpack a Windows installer by naming the members we want. Asking 7z for the whole thing
@@ -714,11 +750,30 @@ function extractInstaller(archivePath, target) {
 // setup.exe holds an 83MB data.7z. One level of unwrapping, and only when the first pass
 // produced no executable, so this never fires for a normal download.
 function unwrapNestedArchive(dir) {
+    /*
+     * ⚠️ .iso counts, and the payload is not always at the top.
+     *
+     * A disc-image backup is the same situation as an installer carrying a second
+     * archive: the thing you were given wraps the thing you want. bsdtar reads ISO9660
+     * natively, so this costs nothing beyond naming the extension.
+     *
+     * One level down as well as the top, because a repack usually puts the image in a
+     * folder of its own ("Game Files/ROADRASH.iso") beside a readme, which means
+     * flattenSingleRoot cannot lift it and a top-level-only search never sees it.
+     */
     let inner = [];
+    const wanted = /\.(7z|zip|rar|tar|gz|xz|cab|iso)$/i;
     try {
-        inner = fs.readdirSync(dir, { withFileTypes: true })
-            .filter(e => e.isFile() && /\.(7z|zip|rar|tar|gz|xz|cab)$/i.test(e.name))
-            .map(e => path.join(dir, e.name));
+        for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
+            if (e.isFile() && wanted.test(e.name)) { inner.push(path.join(dir, e.name)); continue; }
+            if (!e.isDirectory()) continue;
+            const sub = path.join(dir, e.name);
+            try {
+                for (const f of fs.readdirSync(sub, { withFileTypes: true })) {
+                    if (f.isFile() && wanted.test(f.name)) inner.push(path.join(sub, f.name));
+                }
+            } catch {}
+        }
     } catch { return false; }
     if (!inner.length) return false;
 
@@ -736,11 +791,31 @@ function unwrapNestedArchive(dir) {
 
 // Strip the installer's own scaffolding so it cannot be mistaken for the game.
 function dropInstallerJunk(dir) {
+    /*
+     * One level down as well as the top, for the same reason unwrapNestedArchive looks
+     * there: a repack puts its payload in a folder of its own and staples its calling
+     * cards beside it. Unwrapping the payload empties that folder of everything that
+     * mattered and leaves the litter, which then sits next to the installed game.
+     *
+     * Only one level, and only names on the junk list, so a game's own files are never
+     * in reach. A folder left with nothing in it afterwards was the wrapper, so it goes.
+     */
+    const sweep = (d) => {
+        let entries = [];
+        try { entries = fs.readdirSync(d, { withFileTypes: true }); } catch { return; }
+        for (const e of entries) {
+            if (!INSTALLER_JUNK.test(e.name)) continue;
+            try { fs.rmSync(path.join(d, e.name), { recursive: true, force: true }); } catch {}
+        }
+    };
+    sweep(dir);
     let entries = [];
     try { entries = fs.readdirSync(dir, { withFileTypes: true }); } catch { return; }
     for (const e of entries) {
-        if (!INSTALLER_JUNK.test(e.name)) continue;
-        try { fs.rmSync(path.join(dir, e.name), { recursive: true, force: true }); } catch {}
+        if (!e.isDirectory()) continue;
+        const sub = path.join(dir, e.name);
+        sweep(sub);
+        try { if (!fs.readdirSync(sub).length) fs.rmdirSync(sub); } catch {}
     }
 }
 
