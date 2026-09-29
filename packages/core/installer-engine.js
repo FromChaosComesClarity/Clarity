@@ -27,6 +27,8 @@ const os   = require('os');
 const { spawn } = require('child_process');
 const Database = require('better-sqlite3');
 const host = require('./platform/index.js');
+// The per-game fix catalogue ("recipes"). Used at launch, below.
+const gameFixes = require('./game-fixes.js');
 
 // ── Injected context (set by init) ────────────────────────────────────────────
 let configDir, prefixesDir, logDir, binDir, appImageDir, HOME, db, _onProgress, _onLaunchIssue, _onLaunchProgress, _onGameSession;
@@ -176,8 +178,6 @@ function resolvePathCaseInsensitive(filePath) {
 }
 
 // ── External tool helpers ─────────────────────────────────────────────────────
-// Host-specific: a macOS .app launched from Finder inherits a minimal PATH with no
-// Homebrew in it, so "is this installed" is not the same question on every platform.
 const which = (bin) => host.which(bin);
 
 // Tool paths resolved once, avoids re-running a PATH lookup on every launch/IPC call
@@ -673,12 +673,7 @@ function findShippedWrappers(resolvedExe, installPath) {
 function gogPlayTaskList(game) {
     if (!game || game.store !== 'gog' || !game.install_path || !game.app_id) return [];
     const installPath = expandTilde(game.install_path);
-    // On macOS install_path IS the .app bundle (see platform/darwin.js), and GOG nests the
-    // .info file inside it rather than at the install root the way Windows/Linux get it.
-    const infoRel = /\.app$/i.test(installPath)
-        ? path.join('Contents', 'Resources', `goggame-${game.app_id}.info`)
-        : `goggame-${game.app_id}.info`;
-    const infoFile = resolvePathCaseInsensitive(path.join(installPath, infoRel));
+    const infoFile = resolvePathCaseInsensitive(path.join(installPath, `goggame-${game.app_id}.info`));
     let info;
     try { info = JSON.parse(fs.readFileSync(infoFile, 'utf8')); } catch { return []; }
 
@@ -833,7 +828,20 @@ async function launchGame(gameId, opts = {}) {
     // before a window ever appears, which reads to the player as "the game closed
     // immediately". Restoring Windows' own resolution order is the whole fix, and it hands
     // the game the driver stack GOG shipped it with (MiniGL → nGlide → D3D → DXVK).
-    const wrappers = usingProton ? findShippedWrappers(resolvedExe, installPath) : [];
+    // A named game may declare that one of its shipped wrappers must stay shadowed. Only
+    // Arcanum does so far: GOG bundles DDrawCompat, which hooks DirectDraw's internals and
+    // cannot survive them under Wine, so handing the game its own copy kills it before a
+    // window appears. See packages/core/game-fixes.js.
+    let excepted = new Set();
+    try { excepted = gameFixes.wrapperExceptions(resolvedExe, installPath); }
+    catch (e) { console.log(`[launch] wrapper exceptions skipped: ${e.message}`); }
+
+    const wrappers = (usingProton ? findShippedWrappers(resolvedExe, installPath) : [])
+        .filter(w => {
+            if (!excepted.has(String(w).toLowerCase())) return true;
+            console.log(`[launch] leaving the ${w} shipped with this game shadowed, it does not survive the runtime`);
+            return false;
+        });
     if (wrappers.length) {
         // Entries are separated by ';', ',' separates load orders for one DLL, so a
         // comma-joined list silently sets only the first and mangles the rest.
@@ -1074,10 +1082,7 @@ async function launchGame(gameId, opts = {}) {
         catch (e) { console.error('[launch] Fallout: London fix failed:', e.message); }
     }
 
-    // Awaited so a host whose runtime needs a real async step before it can launch anything
-    // (CrossOver: creating the game's bottle, first time only) isn't forced into blocking the
-    // whole process synchronously to do it. A no-op for Linux, whose buildLaunch is plain sync.
-    const spec = await host.runtime.buildLaunch({
+    const spec = host.runtime.buildLaunch({
         game, gameId, launchExe, isBat, userArgs, allArgs, runtimePath: proton, prefix,
     });
     spawnGame(spec.cmd, spec.args, { cwd: launchCwd, env: baseEnv(spec.env), detached: true, stdio: 'ignore' });
@@ -1980,17 +1985,9 @@ async function syncOwnedLibrary() {
                 const items = Array.isArray(data) ? data : [data];
                 for (const item of items) {
                     if (!item?.id) continue;
-                    // GOG's public catalog API calls a macOS installer's os "mac"; gogdl's own
-                    // --platform flag (and therefore host.nativeOsKey / games.platform / every
-                    // launch-time comparison against it) calls the same host "osx". Two GOG
-                    // APIs, two vocabularies for the same OS, translate before matching, or
-                    // every Mac-native game in the library silently looks Windows-only.
-                    const GOG_CATALOG_OS_ALIAS = { mac: 'osx' };
-                    const oses      = [...new Set((item.downloads?.installers || [])
-                        .map(x => GOG_CATALOG_OS_ALIAS[x.os] || x.os).filter(Boolean))];
+                    const oses      = [...new Set((item.downloads?.installers || []).map(x => x.os).filter(Boolean))];
                     // `platform` is what we would run here; `platforms` is everything GOG
-                    // offers that this host could ever use. Keyed off the backend so a
-                    // library synced on one OS is not mislabelled for the other.
+                    // offers that this machine could ever use.
                     const nativeOs  = host.nativeOsKey;
                     const runsAs    = oses.includes(nativeOs) ? nativeOs : 'windows';
                     const platforms = oses.filter(o => o === nativeOs || o === 'windows').join(',') || runsAs;

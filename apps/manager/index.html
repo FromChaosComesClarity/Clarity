@@ -41,10 +41,6 @@
     .titlebar-controls { display: flex; height: 100%; -webkit-app-region: no-drag; }
     .win-btn { border: none; border-radius: 0; background: transparent; width: 45px; font-size: 14px; display: flex; align-items: center; justify-content: center; transition: background-color 0.1s; cursor: pointer; color: var(--text_main); }
     .win-btn:hover { background-color: rgba(255,255,255,0.1); color: var(--text_main); transform: none; box-shadow: none; }
-    /* macOS: the window itself draws real traffic lights (titleBarStyle:'hidden' in main.js),
-       hide the custom row and leave room at the left instead of drawing our own. */
-    body.platform-darwin .titlebar-controls { display: none; }
-    body.platform-darwin .titlebar-brand { padding-left: 78px; }
     .win-close:hover { background-color: #d32f2f; color: white; }
 
     #app-container { display: flex; flex-direction: column; flex: 1; width: 100%; height: 100%; overflow: hidden; position: relative; }
@@ -118,9 +114,6 @@
     .gallery-cover-wrap { position: relative; width: 100%; }
     .gallery-store-badges { position: absolute; bottom: 7px; right: 7px; display: flex; flex-direction: row; gap: 4px; pointer-events: none; }
     .gallery-store-badge { width: 22px; height: 22px; background-color: rgba(255,255,255,0.75); -webkit-mask-size: contain; -webkit-mask-repeat: no-repeat; -webkit-mask-position: center; }
-    /* Steam-via-CrossOver: tinted rather than white, so at a glance it reads as a different
-       kind of thing from the store logos it sits next to (see isSteamCrossOver). */
-    .gallery-cx-badge { background-color: rgba(126,203,255,0.95); }
     .install-dot { position: absolute; top: 8px; left: 8px; width: 10px; height: 10px; border-radius: 50%; border: 1.5px solid rgba(0,0,0,0.5); pointer-events: none; z-index: 2; }
     .install-dot.is-installed { background: #66bb6a; }
     .install-dot.not-installed { background: #ff9800; }
@@ -1090,6 +1083,42 @@
 
     /* ── GAMEPAGE: floating PLAY/INSTALL button ─────────────────────────────── */
     #btn-gamepage-play { position:fixed !important; bottom:28px; right:28px; font-size:18px !important; padding:14px 36px !important; border-radius:50px !important; box-shadow:0 8px 28px rgba(0,0,0,0.7) !important; letter-spacing:2px !important; z-index:50; }
+
+    /* ── Library report ─────────────────────────────────────────────────── */
+    #modal-report .rp-box { width: min(1480px, 95vw); height: 90vh; padding: 0; gap: 0; display: grid; grid-template-columns: 380px 1fr; overflow: hidden; }
+    #modal-report .rp-side { display: flex; flex-direction: column; min-height: 0; border-right: 1px solid var(--border_solid); }
+    #modal-report .rp-head { display: flex; align-items: center; justify-content: space-between; padding: 22px 22px 14px; }
+    #modal-report .rp-head h3 { margin: 0; color: var(--accent); text-transform: uppercase; letter-spacing: 2px; font-size: 15px; }
+    #modal-report .rp-x { background: transparent; border: 1px solid var(--border_solid); color: var(--text_sec); width: 30px; height: 30px; padding: 0; border-radius: 6px; font-size: 16px; line-height: 1; }
+    #modal-report .rp-scroll { flex: 1; min-height: 0; overflow-y: auto; padding: 4px 22px 16px; display: flex; flex-direction: column; gap: 8px; }
+    /* A flex column shrinks its children when the panel is shorter than its content, and the
+       segmented controls clip their overflow, so without this they collapse to a 2px line. */
+    #modal-report .rp-scroll > * { flex-shrink: 0; }
+    #modal-report .rp-lbl { font-size: 10px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--text_dim); margin-top: 10px; display: block; }
+    #modal-report .rp-row { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+    #modal-report .rp-link { background: none; border: 0; padding: 0 0 0 12px; color: var(--accent); font-size: 11px; letter-spacing: 1px; text-transform: uppercase; cursor: pointer; }
+    #modal-report .rp-sections { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+    #modal-report .rp-sec { display: flex; align-items: center; gap: 8px; padding: 6px 9px; line-height: 1.25; border: 1px solid var(--border_solid); border-radius: 6px; font-size: 12px; color: var(--text_main); cursor: pointer; user-select: none; background: rgba(0,0,0,0.15); }
+    #modal-report .rp-sec input { accent-color: var(--accent); margin: 0; }
+    #modal-report .rp-sec.on { border-color: var(--accent); }
+    #modal-report .rp-sec.off { opacity: 0.42; cursor: not-allowed; }
+    #modal-report .rp-styles { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+    #modal-report .rp-style { display: flex; flex-direction: column; gap: 6px; align-items: stretch; padding: 6px; border: 1px solid var(--border_solid); border-radius: 8px; background: transparent; color: var(--text_sec); font-size: 10px; letter-spacing: .5px; cursor: pointer; }
+    #modal-report .rp-style.active { border-color: var(--accent); color: var(--text_main); box-shadow: 0 0 0 1px var(--accent) inset; }
+    #modal-report .rp-swatch { height: 34px; border-radius: 5px; position: relative; overflow: hidden; }
+    #modal-report .rp-swatch i { position: absolute; left: 7px; bottom: 7px; width: 55%; height: 5px; border-radius: 3px; }
+    #modal-report .rp-hint { font-size: 11px; color: var(--text_dim); line-height: 1.5; margin: 4px 0 0; }
+    #modal-report .rp-check { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--text_main); margin-top: 12px; cursor: pointer; }
+    #modal-report .rp-check input { accent-color: var(--accent); margin: 0; }
+    #modal-report .rp-actions { display: grid; gap: 8px; padding: 14px 22px 6px; border-top: 1px solid var(--border_solid); }
+    #modal-report .rp-actions button { width: 100%; font-size: 12px; padding: 11px; letter-spacing: 1px; }
+    #modal-report .rp-status { font-size: 11px; color: var(--text_sec); min-height: 30px; margin: 0; padding: 4px 22px 16px; line-height: 1.45; word-break: break-all; }
+    #modal-report .rp-status.err { color: #ef5350; }
+    #modal-report .rp-preview { position: relative; min-width: 0; min-height: 0; background: repeating-conic-gradient(rgba(255,255,255,0.025) 0 25%, transparent 0 50%) 0 0 / 22px 22px, rgba(0,0,0,0.35); }
+    #modal-report .rp-stage { position: absolute; inset: 0; overflow: hidden; display: grid; place-items: center; }
+    #modal-report .rp-stage iframe { border: 0; background: transparent; transform-origin: 0 0; position: absolute; left: 0; top: 0; }
+    #modal-report .rp-empty { position: absolute; inset: 0; display: grid; place-items: center; color: var(--text_dim); font-size: 13px; padding: 40px; text-align: center; }
+    #modal-report .rp-busy { position: absolute; right: 16px; top: 14px; font-size: 10px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--text_dim); }
   </style>
   <!-- ── Pre-paint state ────────────────────────────────────────────────────────
        ⚠️ Everything here exists to stop the window being shown mid-transformation. The
@@ -1643,8 +1672,6 @@
               <option value="installed">Installed</option>
               <option value="favs">Favourites</option>
               <option value="want">Want to Play</option>
-              <option value="mac-native" id="gallery-category-mac-native">Mac-Native</option>
-              <option value="crossover" id="gallery-category-crossover">Steam via CrossOver</option>
               <option value="steam">Steam</option>
               <option value="gog">GOG</option>
               <option value="epic">Epic</option>
@@ -2078,7 +2105,6 @@
       <h2 style="margin: 0; color: var(--text_main); font-weight: 900; letter-spacing: 2px;">CLARITY</h2>
       <h3 style="margin: 0; color: var(--accent); font-weight: 900; letter-spacing: 4px;">GAMING SUITE</h3>
       <p id="about-version" style="font-size: 11px; color: var(--text_dim); margin: 6px 0 0; letter-spacing: 2px; font-weight: 700;"></p>
-      <p id="about-platform-badge" style="display:none; font-size: 10px; color: #e58a70; margin: 6px 0 0; letter-spacing: 1.5px; font-weight: 900; text-transform: uppercase;">macOS build, Experimental</p>
 
       <p style="font-size: 13px; color: var(--text_sec); margin: 15px 0 5px 0;" data-i18n="html.about_tagline">One app, many faces, your whole gaming world in one good plwed under one roof.</p>
 
@@ -2361,6 +2387,15 @@
           <input type="password" id="steam-id" placeholder="STEAMID64">
           <input type="password" id="steam-api-key" placeholder="STEAM API KEY">
           <button id="btn-sync-steam" class="primary" style="padding: 8px;" data-i18n="html.btn_fetch_steam">Fetch Steam Library</button>
+
+          <div class="steam-add" data-search="steam mod enderal missing game add app id store link manually free demo">
+            <div class="steam-add-title" data-i18n="html.steam_add_title">Missing a game Steam does not list?</div>
+            <p class="steam-add-help" data-i18n="html.steam_add_help">Mods published on Steam, such as Enderal, and free games you have never launched are absent from Steam's API, so no import can find them. Add one by name, App ID or store link and it stays in your library through every sync.</p>
+            <input type="text" id="steam-add-input" placeholder="Enderal, 933480, or a store link" data-i18n-ph="html.steam_add_ph">
+            <button id="btn-steam-add" style="padding: 8px; width: 100%;" data-i18n="html.btn_steam_add">Add Steam Game</button>
+            <div id="steam-add-results" class="steam-add-results"></div>
+            <div id="steam-add-status" class="steam-add-status"></div>
+          </div>
         </div>
 
         <!-- SteamGridDB -->
@@ -2433,6 +2468,9 @@
           <button class="cp-rail-item" data-pane="library">
             <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg><span>Library</span>
           </button>
+          <button class="cp-rail-item" data-pane="report">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><rect x="7" y="12" width="3" height="6"/><rect x="12" y="8" width="3" height="10"/><rect x="17" y="5" width="3" height="13"/></svg><span>Library Report</span>
+          </button>
           <button class="cp-rail-item" data-pane="behavior">
             <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg><span>Behavior</span>
           </button>
@@ -2467,7 +2505,6 @@
               <!-- Version chip + "what's new" link out to the GitHub releases page (no in-app updater). -->
               <div class="cp-welcome-ver">
                 <span class="cp-ver-chip" id="cp-app-version"><span class="cp-ver-dot"></span><span id="cp-app-version-num">VERSION,</span></span>
-                <span class="cp-ver-chip" id="cp-platform-badge" style="display:none; border-color:#e58a70; color:#e58a70;" title="This macOS build is unsigned and still under active development, see docs/mac-port-handoff.md">macOS · EXPERIMENTAL</span>
                 <button class="cp-ver-btn" id="btn-check-app-updates" data-i18n-title="html.cp_updates_title" title="Opens the releases page in your browser">
                   <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-3.36-7"/><polyline points="21 3 21 9 15 9"/></svg>
                   <span data-i18n="html.cp_check_updates">Check for Updates</span>
@@ -2477,6 +2514,7 @@
             </div>
           </section>
           <section class="cp-pane" data-pane="library"><div class="cp-pane-title">Library</div></section>
+          <section class="cp-pane" data-pane="report"><div class="cp-pane-title">Library Report</div></section>
           <section class="cp-pane" data-pane="appearance"><div class="cp-pane-title">Appearance</div></section>
           <section class="cp-pane" data-pane="behavior"><div class="cp-pane-title">Behavior</div></section>
           <section class="cp-pane" data-pane="connections"><div class="cp-pane-title">Connections</div></section>
@@ -2549,6 +2587,11 @@
           <div class="tool-card-title"><svg class="cp-tico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg><span data-i18n="html.card_library">Library</span></div>
           <button id="btn-update-library" class="primary" style="width: 100%; font-size: 12px; padding: 10px; letter-spacing: 1px;"><svg class="cp-bico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg><span data-i18n="html.btn_update_library">Update Library</span></button>
           <div id="update-library-status" style="font-size: 11px; font-weight: bold; color: #ffeb3b; min-height: 14px; line-height: 1.6;"></div>
+          <div class="segmented-control" id="batch-scope-control">
+            <button class="segmented-btn batch-scope-btn active" data-val="all" data-i18n="html.batch_scope_all">All Games</button>
+            <button class="segmented-btn batch-scope-btn" data-val="installed" data-i18n="html.batch_scope_installed">Installed Only</button>
+          </div>
+          <div id="batch-scope-hint" style="font-size:10px; color:var(--text_dim); text-align:center; min-height:13px; line-height:1.4;"></div>
           <button id="btn-batch-fetch" class="primary" style="width: 100%; font-size: 11px;"><svg class="cp-bico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="8 17 12 21 16 17"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.88 18.09A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.29"/></svg><span data-i18n="html.btn_batch_fetch">Batch Scrape Missing Data</span></button>
           <div id="batch-progress-wrap" style="display:none; width:100%; background: var(--bg); border-radius: 4px; height: 6px; overflow:hidden; margin-top: 2px;">
             <div id="batch-progress-fill" style="height:100%; width:0%; background: var(--accent); transition: width 0.2s linear;"></div>
@@ -2661,6 +2704,12 @@
           <div id="dosbox-status" style="font-size: 11px; text-align: center; min-height: 15px; margin-top: 6px;"></div>
         </div>
 
+        <div class="tool-card tools-section" data-search="report stats statistics share social post export pdf image images poster cards carousel wrapped summary most played achievements">
+          <div class="tool-card-title"><svg class="cp-tico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><rect x="7" y="12" width="3" height="6"/><rect x="12" y="8" width="3" height="10"/><rect x="17" y="5" width="3" height="13"/></svg><span data-i18n="report.ui.card_title">Library Report</span></div>
+          <div style="font-size: 11px; color: var(--text_dim); line-height: 1.5; margin-bottom: 2px;" data-i18n="report.ui.card_hint">Turn your library into a report: most played, genres, achievements, the pile of shame and more. Save it as a web page, a PDF or images ready to post.</div>
+          <button id="btn-open-report" class="primary" style="width: 100%; font-size: 12px; padding: 10px; letter-spacing: 1px;"><svg class="cp-bico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><rect x="7" y="12" width="3" height="6"/><rect x="12" y="8" width="3" height="10"/><rect x="17" y="5" width="3" height="13"/></svg><span data-i18n="report.ui.open">Create a Report</span></button>
+        </div>
+
         <div class="tool-card tools-section" data-search="genre genres category categorise categorize arpg crpg fps rpg racing shooter tag tags classify sort">
           <div class="tool-card-title"><svg class="cp-tico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41 13.42 20.58a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><circle cx="7" cy="7" r="1.4" fill="currentColor"/></svg><span data-i18n="html.card_genres">Game Genres</span></div>
           <div style="font-size: 11px; color: var(--text_dim); line-height: 1.5; margin-bottom: 2px;" data-i18n="html.genres_hint">Sort your library into real genres, ARPG, CRPG, FPS, Metroidvania, Racing, using the tags players voted on, so you can filter by what a game actually <i>is</i>. Anything you set by hand is never overwritten.</div>
@@ -2684,13 +2733,6 @@
             <button class="segmented-btn freegames-vis-btn active" data-val="show">Show</button>
             <button class="segmented-btn freegames-vis-btn" data-val="hide">Hide</button>
           </div>
-        </div>
-
-        <div class="tool-card tools-section" id="mac-native-tool-card" style="display:none;" data-search="mac native macos apple filter games run compatibility badge steam gog epic">
-          <div class="tool-card-title"><svg class="cp-tico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a1 1 0 0 1 1 1v2"/><path d="M12 8c-4 0-7 3-7 8 0 4 2 6 4 6 1 0 1.5-1 3-1s2 1 3 1c2 0 4-2 4-6 0-2.5-1-4.5-2.5-6 1-1 1.5-2.5 1.5-4-2 0-3.5.8-4.5 2-.6-.1-1.3 0-1.5 0z"/></svg>Mac-Native Games</div>
-          <p style="font-size:10px; color:var(--text_dim); margin:0 0 8px; line-height:1.5;">Which games have a real macOS build, not just Windows through a compatibility layer, GOG/Epic checked locally, Steam checked live per game. Marked with a small apple on the cover, and filterable from the category dropdown above the gallery ("Mac-Native").</p>
-          <button id="btn-scan-mac-native" style="width:100%; font-size:12px; padding:10px; letter-spacing:1px;" class="primary"><span>Scan for Mac Compatibility</span></button>
-          <p id="mac-native-scan-status" style="font-size:10px; color:var(--text_dim); margin:8px 0 0; line-height:1.5;"></p>
         </div>
 
         <div class="tool-card tools-section" data-search="hidden games hide show unhide manage removed library">
@@ -3076,6 +3118,54 @@
     </div>
   </div>
 
+
+  <div id="modal-report" class="modal-overlay">
+    <div class="modal-box rp-box" role="dialog" aria-labelledby="rp-heading">
+      <div class="rp-side">
+        <div class="rp-head"><h3 id="rp-heading" data-i18n="report.ui.modal_title">Library Report</h3><button id="rp-close" class="rp-x" aria-label="Close">&#10005;</button></div>
+        <div class="rp-scroll">
+          <label class="rp-lbl" for="rp-title" data-i18n="report.ui.title_label">Title</label>
+          <input id="rp-title" type="text" maxlength="60">
+          <label class="rp-lbl" for="rp-subtitle" data-i18n="report.ui.subtitle_label">Subtitle</label>
+          <input id="rp-subtitle" type="text" maxlength="60" data-i18n-ph="report.ui.subtitle_placeholder" placeholder="Your name or @handle">
+          <span class="rp-lbl" data-i18n="report.ui.format">Format</span>
+          <div class="segmented-control" id="rp-format">
+            <button class="segmented-btn" data-val="document" data-i18n="report.ui.format_document">Document</button>
+            <button class="segmented-btn" data-val="poster" data-i18n="report.ui.format_poster">Poster</button>
+            <button class="segmented-btn" data-val="cards" data-i18n="report.ui.format_cards">Cards</button>
+          </div>
+          <p id="rp-format-hint" class="rp-hint"></p>
+          <div id="rp-size-wrap">
+            <span class="rp-lbl" data-i18n="report.ui.size">Size</span>
+            <div class="segmented-control" id="rp-size">
+              <button class="segmented-btn" data-val="portrait" data-i18n="report.ui.size_portrait">Portrait 4:5</button>
+              <button class="segmented-btn" data-val="square" data-i18n="report.ui.size_square">Square</button>
+              <button class="segmented-btn" data-val="story" data-i18n="report.ui.size_story">Story 9:16</button>
+              <button class="segmented-btn" data-val="landscape" data-i18n="report.ui.size_landscape">Landscape 16:9</button>
+            </div>
+          </div>
+          <span class="rp-lbl" data-i18n="report.ui.style">Style</span>
+          <div id="rp-styles" class="rp-styles"></div>
+          <div class="rp-row"><span class="rp-lbl" data-i18n="report.ui.sections">What to include</span><span><button id="rp-all" class="rp-link" data-i18n="report.ui.select_all">All</button><button id="rp-none" class="rp-link" data-i18n="report.ui.select_none">None</button></span></div>
+          <div id="rp-sections" class="rp-sections"></div>
+          <span class="rp-lbl" data-i18n="report.ui.recent_window">Recently played covers</span>
+          <div class="segmented-control" id="rp-recent">
+            <button class="segmented-btn" data-val="30">30</button>
+            <button class="segmented-btn" data-val="90">90</button>
+            <button class="segmented-btn" data-val="365">365</button>
+          </div>
+          <label class="rp-check"><input type="checkbox" id="rp-pico8"><span data-i18n="report.ui.include_pico8">Include PICO-8 carts</span></label>
+        </div>
+        <div class="rp-actions" id="rp-actions"></div>
+        <p id="rp-status" class="rp-status" aria-live="polite"></p>
+      </div>
+      <div class="rp-preview">
+        <div id="rp-stage" class="rp-stage"><iframe id="rp-frame" title="Preview"></iframe></div>
+        <div id="rp-empty" class="rp-empty" hidden></div>
+        <span id="rp-busy" class="rp-busy" hidden></span>
+      </div>
+    </div>
+  </div>
 
   <div id="modal-hidden-games" class="modal-overlay">
     <div class="modal-box" style="max-width: 560px; width: 560px; max-height: 82vh;">
@@ -3531,7 +3621,23 @@
       align-items: center; justify-content: center; transition: 0.15s;
     }
     #np-close-btn:hover { background: rgba(0,0,0,0.75); color: var(--text_main); }
-  </style>
+  
+/* Add a Steam game the API never returns (mods, unplayed free games) */
+.steam-add { margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--border_solid); }
+.steam-add-title { font-size: 11px; font-weight: bold; color: var(--text_main); margin-bottom: 4px; }
+.steam-add-help { font-size: 11px; color: var(--text_sec); margin: 0 0 8px; line-height: 1.6; }
+.steam-add-results { display: none; flex-direction: column; gap: 4px; margin-top: 8px; max-height: 210px; overflow-y: auto; }
+.steam-add-results.active { display: flex; }
+.steam-add-pick { display: flex; align-items: center; gap: 8px; width: 100%; padding: 5px; text-align: left;
+    background: var(--bg_input, rgba(0,0,0,.2)); border: 1px solid var(--border_solid); color: var(--text_main); cursor: pointer; }
+.steam-add-pick:hover { border-color: #66c0f4; }
+.steam-add-pick img { width: 62px; height: 24px; object-fit: cover; flex-shrink: 0; background: rgba(0,0,0,.35); }
+.steam-add-pick .n { font-size: 11px; line-height: 1.3; overflow: hidden; }
+.steam-add-pick .n small { display: block; color: var(--text_dim); font-size: 10px; }
+.steam-add-status { font-size: 11px; color: var(--text_dim); min-height: 16px; margin-top: 8px; line-height: 1.5; }
+.steam-add-status.ok { color: var(--accent); }
+.steam-add-status.bad { color: #ff6b6b; }
+</style>
 
   <div id="modal-now-playing" class="modal-overlay">
     <div id="np-card">

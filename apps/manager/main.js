@@ -5,6 +5,7 @@ const os = require('os');
 const Database = require('better-sqlite3');
 const { registerSharedHandlers } = require('../../packages/core/shared-ipc.js');
 const host = require('../../packages/core/platform/index.js');
+const scrapeCore = require('../../packages/core/scrape.js');
 const desktopDescriptor = require('../../packages/core/desktop-descriptor.js');
 const fs = require('fs');
 const { exec, execFile, spawn } = require('child_process');
@@ -147,15 +148,9 @@ function createWindow () {
         x = fits ? Math.round(wa.x + (wa.width  - width)  / 2) : undefined;
         y = fits ? Math.round(wa.y + (wa.height - height) / 2) : undefined;
     }
-    // macOS: keep the real traffic lights instead of the custom-drawn win-btn row, inset to
-    // sit inside our own #titlebar rather than Electron's default top-left corner. Every other
-    // host stays frame:false with the custom row, unchanged.
-    const chrome = process.platform === 'darwin'
-        ? { titleBarStyle: 'hidden', trafficLightPosition: { x: 12, y: 10 } }
-        : { frame: false };
     const win = new BrowserWindow({
         width, height, x, y,
-        ...chrome,
+        frame: false,
         show: false,
         backgroundColor: '#1a1210',
         webPreferences: {
@@ -342,8 +337,6 @@ app.whenReady().then(() => {
         try { db.prepare("ALTER TABLE games ADD COLUMN FreeToPlay INTEGER DEFAULT 0").run(); } catch(e) {} // 1 = Steam free-to-play (played-free-games)
         try { db.prepare("ALTER TABLE games ADD COLUMN Hidden INTEGER DEFAULT 0").run(); } catch(e) {}      // 1 = user-hidden from all library views
         try { db.prepare("ALTER TABLE games ADD COLUMN SaveDirOverride TEXT").run(); } catch(e) {}          // GOG save-game manager: user-picked save folder ("Locate saves…")
-        try { db.prepare("ALTER TABLE games ADD COLUMN MacNative INTEGER DEFAULT 0").run(); } catch(e) {}    // 1 = has a native macOS build (Steam platforms.mac, or GOG/Epic via library.db)
-        try { db.prepare("ALTER TABLE games ADD COLUMN MacNativeChecked INTEGER DEFAULT 0").run(); } catch(e) {} // 1 = already checked (Steam lookup is a live API call, never re-ask once answered)
         try { db.prepare(`CREATE TABLE IF NOT EXISTS save_backups (
             id INTEGER PRIMARY KEY AUTOINCREMENT, game_id INTEGER, path TEXT, created INTEGER, bytes INTEGER, source TEXT
         )`).run(); } catch(e) {}                                                                            // log of GOG save-zip backups (incl. pre-restore snapshots)
@@ -380,7 +373,7 @@ app.whenReady().then(() => {
     createWindow();
 });
 
-app.on('window-all-closed', () => { if (process.platform !== 'darwin') app.quit(); });
+app.on('window-all-closed', () => app.quit());
 
 // In the unified suite Installer is THIS binary invoked with a leading 'installer' arg,
 // there is no separate Installer.AppImage to locate, so this always resolves.
@@ -1061,9 +1054,8 @@ ipcMain.handle('set-game-display', (_, index) => {
 
 // ── Omarchy ──────────────────────────────────────────────────────────────────
 // A desktop-level integration, not a platform: host.id is still 'linux'. Both modules are
-// null on macOS and self-gating on Linux, so every handler here answers "not detected" on a
-// host that is not Omarchy rather than throwing. ⚠️ Optional chaining is not decoration,
-// desktop.displayPicker being null crashed this file once on macOS for want of exactly that.
+// self-gating, so every handler here answers "not detected" on a desktop that is not Omarchy
+// rather than throwing.
 const omarchy = host.desktop?.omarchy || null;
 
 ipcMain.handle('omarchy-status', () => {
@@ -1215,7 +1207,9 @@ ipcMain.handle('custom-install-pick', async (_, recipeId) => {
     const res = await dialog.showOpenDialog(parent, {
         title: recipe ? `Select the ${recipe.title} download` : 'Select the download',
         // Some projects ship a setup.exe rather than an archive; it is unpacked, not run.
-        filters: [{ name: 'Downloads', extensions: ['zip', '7z', 'rar', 'exe', 'tar', 'gz', 'xz'] }],
+        // The list is asked of the catalogue rather than written out here, so a recipe that
+        // accepts a new format (a bare .pk3 already did) is selectable without touching this.
+        filters: [{ name: 'Downloads', extensions: customInstallers.archiveExtensions() }],
         properties: ['openFile'],
     });
     if (res.canceled || !res.filePaths.length) return { ok: false, canceled: true };
@@ -1667,7 +1661,6 @@ ipcMain.handle('check-emulatte', () => !!findEmuLattePath());
 const getSteamLibraryPaths = () => host.steamLibraryPaths();
 function guessLauncherLabel(cmd) {
     if (!cmd) return 'Custom';
-    if (/^steambottle:\/\//i.test(cmd))           return 'Steam via CrossOver';
     if (/steam:\/\/rungameid/i.test(cmd))         return 'Steam';
     if (/installer:\/\/launch\/gog/i.test(cmd))      return 'GOG via Installer';
     if (/installer:\/\/launch\/epic/i.test(cmd))     return 'Epic via Installer';
@@ -1680,7 +1673,6 @@ function guessLauncherLabel(cmd) {
 
 // Which store a single launch command belongs to (null = manual/custom/emulator/etc.).
 function launcherStore(cmd) {
-    if (/^steambottle:\/\//i.test(cmd))          return 'steam';
     if (/steam:\/\/rungameid/i.test(cmd))        return 'steam';
     if (/installer:\/\/launch\/gog\//i.test(cmd))  return 'gog';
     if (/installer:\/\/launch\/epic\//i.test(cmd)) return 'epic';
@@ -2310,6 +2302,55 @@ function upsertSteamGame(appid, rawName) {
     return 'added';
 }
 
+// ── Steam apps the Web API never returns ───────────────────────────
+// GetOwnedGames only ever lists apps the account owns as store products. Mods published
+// on Steam (Enderal: Forgotten Stories, for one) are type="mod": adding one to your
+// library grants no licence the API reports, so it is absent from every sync, and until
+// it is installed there is no local appmanifest either, so the appmanifest fallback
+// cannot see it. The only way in is to name the app, so anything added by hand is
+// remembered here and fed back into sync-steam's removal detection, which would
+// otherwise prune the row on the very next sync for being absent from Steam's answer.
+function manualSteamAppids() {
+    try {
+        const raw = db.prepare("SELECT value FROM settings WHERE key='steam_manual_appids'").get()?.value;
+        const list = JSON.parse(raw || '[]');
+        return Array.isArray(list) ? list.map(String) : [];
+    } catch { return []; }
+}
+
+function setManualSteamAppids(list) {
+    db.prepare("INSERT OR REPLACE INTO settings (key,value) VALUES ('steam_manual_appids',?)")
+      .run(JSON.stringify([...new Set(list.map(String))]));
+}
+
+function rememberManualSteamAppid(appid) {
+    const list = manualSteamAppids();
+    if (!list.includes(String(appid))) setManualSteamAppids([...list, String(appid)]);
+}
+
+function forgetManualSteamAppid(appid) {
+    const id = String(appid || '').replace(/\.0+$/, '');
+    const list = manualSteamAppids();
+    if (id && list.includes(id)) setManualSteamAppids(list.filter(x => x !== id));
+}
+
+// Digits, a store link, or a steam:// link. Anything else is a name to search for.
+function parseSteamAppId(input) {
+    const s = String(input || '').trim();
+    if (/^\d+$/.test(s)) return s;
+    const m = s.match(/steampowered\.com\/(?:app|apps)\/(\d+)/i)
+           || s.match(/steam:\/\/(?:install|rungameid|run|advertise|store)\/(\d+)/i)
+           || s.match(/[?&]appids?=(\d+)/i);
+    return m ? m[1] : null;
+}
+
+async function steamAppDetails(appid) {
+    const res = await fetch(`https://store.steampowered.com/api/appdetails?appids=${appid}&l=english`);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const entry = (await res.json())?.[String(appid)];
+    return entry && entry.success && entry.data ? entry.data : null;
+}
+
 // ── Disk footprint scan ──────────────────────────────────────────────────────
 function _dirSizeBytes(dir) {
     let total = 0, guard = 0; const stack = [dir];
@@ -2333,79 +2374,6 @@ function _diskStoreBucket(s) {
     if (s.includes('emulation')) return 'Emulation'; if (s.includes('physical')) return 'Physical'; if (s.includes('apps')) return 'Apps';
     if (s.includes('others')) return 'Others'; return 'Other';
 }
-// Which games have a native macOS build, Steam via its public store API (platforms.mac),
-// GOG/Epic via library.db's platform/platforms (already correctly tagged 'osx' there, see
-// darwin.js and the GOG_CATALOG_OS_ALIAS fix in installer-engine.js). Only meaningful on macOS;
-// gated by host.id so a Linux run of this same shared file never touches it.
-//
-// Steam's endpoint needs a live call per game with no bulk form, so results are cached in
-// MacNativeChecked and only re-asked with force. GOG/Epic reads are free (local library.db),
-// so those always refresh.
-let _macNativeScanRunning = false;
-ipcMain.handle('scan-mac-native', async (evt, opts) => {
-    if (host.id !== 'darwin') return { ok: false, error: 'macOS only.' };
-    if (!db) return { ok: false, error: 'Library not ready.' };
-    if (_macNativeScanRunning) return { ok: false, error: 'already_running' };
-    _macNativeScanRunning = true;
-    const force = !!(opts && opts.force);
-    const send = (scanned, total, label) => { try { evt.sender.send('mac-native-scan-progress', { scanned, total, label }); } catch {} };
-    try {
-        // GOG/Epic, free, local, always refreshed.
-        const gpath = host.findInstallerDb(baseDir);
-        const installerPlatforms = new Map();
-        if (gpath) {
-            try {
-                const gdb = new Database(gpath, { readonly: true, timeout: 5000 });
-                for (const r of gdb.prepare("SELECT id, platform, platforms FROM games").all())
-                    installerPlatforms.set(String(r.id), `${r.platform || ''},${r.platforms || ''}`);
-                gdb.close();
-            } catch {}
-        }
-        const installerRows = db.prepare("SELECT id, InstallerGameId FROM games WHERE InstallerGameId IS NOT NULL AND InstallerGameId != ''").all();
-        let updated = 0;
-        for (const g of installerRows) {
-            // library.db's own `id` column already carries the store_appid form ("gog_123…"),
-            // same as InstallerGameId itself, key on that directly, not the split appId (see
-            // disk-scan's installerPaths for the same lookup done right).
-            const blob = installerPlatforms.get(String(g.InstallerGameId)) || '';
-            const isMac = blob.split(',').map(s => s.trim()).includes('osx');
-            db.prepare("UPDATE games SET MacNative=?, MacNativeChecked=1 WHERE id=?").run(isMac ? 1 : 0, g.id);
-            updated++;
-        }
-
-        // Steam, one live lookup per game, only for what hasn't been asked yet (or `force`).
-        let steamRows = db.prepare(
-            `SELECT id, SteamAppID FROM games WHERE SteamAppID IS NOT NULL AND SteamAppID != '' AND SteamAppID != 'None'` +
-            (force ? '' : ' AND MacNativeChecked=0')
-        ).all();
-        const total = steamRows.length;
-        let scanned = 0;
-        for (const r of steamRows) {
-            scanned++;
-            const appId = String(r.SteamAppID).replace(/\.0+$/, '').trim();
-            send(scanned, total, `Checking Steam #${appId}…`);
-            let isMac = false;
-            try {
-                const res = await fetch(`https://store.steampowered.com/api/appdetails?appids=${appId}&filters=platforms`);
-                const j = await res.json();
-                isMac = !!j?.[appId]?.data?.platforms?.mac;
-            } catch {}
-            db.prepare("UPDATE games SET MacNative=?, MacNativeChecked=1 WHERE id=?").run(isMac ? 1 : 0, r.id);
-            updated++;
-            // Steam's public store API has no documented rate limit but is known to soft-throttle
-            // bursts, a small gap per call is cheap insurance against a scan of hundreds of games
-            // silently degrading into a wall of failed lookups partway through.
-            await new Promise(res => setTimeout(res, 150));
-        }
-        send(total, total, '');
-        return { ok: true, updated, macNative: db.prepare("SELECT COUNT(*) c FROM games WHERE MacNative=1").get().c };
-    } catch (e) {
-        return { ok: false, error: e.message };
-    } finally {
-        _macNativeScanRunning = false;
-    }
-});
-
 ipcMain.handle('disk-get', () => { try { const raw = db.prepare("SELECT value FROM settings WHERE key='disk_usage'").get()?.value; return raw ? JSON.parse(raw) : null; } catch { return null; } });
 ipcMain.handle('disk-scan', async () => {
     if (!db) return null;
@@ -2567,10 +2535,6 @@ function invalidateInstallerInstalledCache() {
 // (custom / emulator / manual, those key off "has a launch command" elsewhere).
 function launcherInstalled(cmd, steamAppId) {
     const c = cmd || '';
-    // Bottled Steam (macOS): the appmanifest lives inside a CrossOver bottle, which
-    // steamLibraryPaths() already reports, so the same install check answers for it.
-    const sb = host.parseSteamBottleCommand(c);
-    if (sb) return isSteamGameInstalled(sb.appId || steamAppId);
     const sm = c.match(/steam:\/\/rungameid\/(\d+)/i);
     if (sm) return isSteamGameInstalled(sm[1] || steamAppId);
     const gm = c.match(/installer:\/\/launch\/(gog|epic)\/([^"\s]+)/i);
@@ -2585,7 +2549,7 @@ function launcherInstalled(cmd, steamAppId) {
 // class this fixes and never overrides the GOG/Epic reconciler.
 function resolveInstallState(game) {
     const cmds = launchCmdsOf(game);
-    if (!cmds.some(c => /steam:\/\/rungameid/i.test(c) || /^steambottle:\/\//i.test(c))) return null;
+    if (!cmds.some(c => /steam:\/\/rungameid/i.test(c))) return null;
     let allTracked = true;
     for (const cmd of cmds) {
         const s = launcherInstalled(cmd, game.SteamAppID);
@@ -2627,72 +2591,13 @@ ipcMain.handle('verify-install-status', (e, gameId) => {
 // plus an appid (a mixed-store row whose Steam launcher is only implied, see expandLaunchers).
 const STEAM_FRONTING_SQL =
     "LaunchCommand LIKE '%steam://rungameid%' OR LaunchCommands LIKE '%steam://rungameid%' " +
-    "OR LaunchCommand LIKE '%steambottle://%' OR LaunchCommands LIKE '%steambottle://%' " +
     "OR (LOWER(Store) LIKE '%steam%' AND SteamAppID IS NOT NULL AND SteamAppID NOT IN ('', 'None'))";
-
-// ⚠️ A Steam game's launch command is not static on macOS. Install it into a CrossOver
-// bottle and it has to launch through that bottle; remove it from the bottle and it has to
-// go back to Mac Steam. host.steamLaunchCommand() already answers which is correct *right
-// now*, so reconciling is just "rewrite any stored Steam command that disagrees with it".
-//
-// This is what makes the feature work for rows that already existed: DOOM 64 was imported
-// from the Steam Web API long before the bottle did, so it carries `open steam://…`. The
-// appmanifest inside the bottle is real, so it would show as Installed and then fail to
-// launch against a Mac Steam that has never heard of it.
-//
-// ⚠️ Deliberately narrow: a row is only touched when a bottle is involved on one side or
-// the other. Rewriting every Steam command to whatever the platform would generate today
-// would clobber hand-edited commands, and would churn every row on Linux for nothing.
-function reconcileSteamBottleCommands() {
-    if (!db) return 0;
-    const isBottleCmd = c => /^steambottle:\/\//i.test(String(c || '').trim());
-    const isSteamCmd  = c => /steam:\/\/rungameid/i.test(String(c || '')) || isBottleCmd(c);
-    let changed = 0;
-    let rows = [];
-    try {
-        rows = db.prepare(
-            "SELECT id, SteamAppID, LaunchCommand, LaunchCommands FROM games " +
-            "WHERE SteamAppID IS NOT NULL AND SteamAppID NOT IN ('', 'None') AND LOWER(Store) LIKE '%steam%'"
-        ).all();
-    } catch (e) { return 0; }
-
-    for (const r of rows) {
-        const appId = String(r.SteamAppID).replace(/\.0+$/, '').trim();
-        if (!/^\d+$/.test(appId)) continue;
-        const want = host.steamLaunchCommand(appId);
-        // Only rows moving into or out of a bottle are our business.
-        if (!isBottleCmd(want) && !isBottleCmd(r.LaunchCommand) && !isBottleCmd(r.LaunchCommands)) continue;
-
-        let cmd = r.LaunchCommand, cmds = r.LaunchCommands, touched = false;
-        if (isSteamCmd(cmd) && cmd !== want) { cmd = want; touched = true; }
-        try {
-            const arr = JSON.parse(r.LaunchCommands || 'null');
-            if (Array.isArray(arr)) {
-                let n = false;
-                for (const l of arr) {
-                    if (l && isSteamCmd(l.cmd) && l.cmd !== want) { l.cmd = want; l.label = guessLauncherLabel(want); n = true; }
-                }
-                if (n) { cmds = JSON.stringify(arr); touched = true; }
-            }
-        } catch {}
-        if (touched) {
-            try {
-                db.prepare("UPDATE games SET LaunchCommand=?, LaunchCommands=? WHERE id=?").run(cmd, cmds, r.id);
-                console.log(`[steam-bottle] ${r.id} → ${cmd}`);
-                changed++;
-            } catch (e) {}
-        }
-    }
-    return changed;
-}
 
 // ── DYNAMIC INSTALL WATCHER ───────────────────────────────────────────────
 // Reconcile Installed for every Steam-fronting row (incl. mixed-store rows whose Steam
 // launcher lives in LaunchCommands, not the primary). Returns how many rows changed.
 function reconcileSteamInstalls() {
     if (!db) return 0;
-    // Commands first: install state is meaningless if the row would launch the wrong Steam.
-    reconcileSteamBottleCommands();
     let changed = 0;
     const games = db.prepare(
         "SELECT id, Store, SteamAppID, InstallerGameId, LaunchCommand, LaunchCommands, Installed FROM games " +
@@ -2753,10 +2658,6 @@ function launcherSchemeInstalled(cmd) {
     // steam:// can appear bare or wrapped ("steam steam://rungameid/123 -silent"), so match it
     // anywhere in the command rather than anchoring. isSteamGameInstalled() reads the
     // appmanifest, which is the same truth reconcileSteamInstalls() uses.
-    // A bottled Steam game answers from the same appmanifest, just one that lives
-    // inside a CrossOver bottle (steamLibraryPaths already returns those dirs).
-    const sb = host.parseSteamBottleCommand(c);
-    if (sb) { try { const v = isSteamGameInstalled(sb.appId); return v === null ? null : !!v; } catch { return null; } }
 
     const sm = c.match(/steam:\/\/rungameid\/(\d+)/i);
     if (sm) { try { const v = isSteamGameInstalled(sm[1]); return v === null ? null : !!v; } catch { return null; } }
@@ -3229,8 +3130,7 @@ ipcMain.handle('scan-updates', async (evt) => {
         let steamRows = [];
         try { steamRows = db.prepare(
             "SELECT id, Game, SteamAppID FROM games " +
-            "WHERE (LaunchCommand LIKE '%steam://rungameid%' OR LaunchCommands LIKE '%steam://rungameid%' " +
-            "   OR LaunchCommand LIKE '%steambottle://%' OR LaunchCommands LIKE '%steambottle://%') AND Installed=1"
+            "WHERE (LaunchCommand LIKE '%steam://rungameid%' OR LaunchCommands LIKE '%steam://rungameid%') AND Installed=1"
         ).all(); } catch {}
         for (const r of steamRows) {
             const appId = r.SteamAppID ? String(r.SteamAppID).replace(/\.0+$/, '').trim() : '';
@@ -3437,16 +3337,22 @@ ipcMain.handle('install-to-menu', () => {
         const installed = [];
         if (suitePath) {
             try { fs.chmodSync(suitePath, '755'); } catch {}
+            // ⚠️ suitePath is the raw electron binary in dev (no AppImage in baseDir), and
+            // Electron needs the repo root as an argument in that case or it shows its own
+            // demo screen instead of Clarity -- silently, no error. host.selfSpawnArgs already
+            // solves exactly this for re-spawning a face (see spawnFace above); the launcher
+            // entries just weren't using it. Packaged (AppImage), this is a no-op passthrough.
+            const repoRoot = path.join(__dirname, '..', '..');
             host.desktop.writeLauncher(appsDir, {
                 id: 'clarity', name: 'Clarity',
                 comment: 'Your game library, Manager, Installer and Couch in one.',
-                exec: suitePath, icon: path.join(iconsDir, 'Clarity.svg'),
+                exec: suitePath, args: host.selfSpawnArgs([], repoRoot), icon: path.join(iconsDir, 'Clarity.svg'),
                 categories: ['Game', 'Utility'], wmClass: 'clarity',
             });
             host.desktop.writeLauncher(appsDir, {
                 id: 'clarity-couch', name: 'Couch (Fullscreen)',
                 comment: 'Clarity in fullscreen, gamepad-first mode, made for the living room / TV.',
-                exec: suitePath, args: ['--couch'], icon: path.join(iconsDir, 'Couch.svg'),
+                exec: suitePath, args: host.selfSpawnArgs(['--couch'], repoRoot), icon: path.join(iconsDir, 'Couch.svg'),
                 categories: ['Game'], wmClass: 'couch',
                 keywords: ['couch', 'tv', 'living room', 'gamepad', 'controller', 'fullscreen',
                            'big picture', 'bigpicture', 'clarity'],
@@ -3507,7 +3413,8 @@ ipcMain.handle('add-game-shortcut', (_, gameId, targets) => {
             id: `clarity-game-${game.id}`,
             name: String(game.Game || 'Game'),
             comment: `Launch ${String(game.Game || 'Game')} via Clarity`,
-            exec: suitePath, args: [`--game=${game.id}`], icon: iconPath,
+            // See the install-to-menu handler above for why selfSpawnArgs, not a bare array.
+            exec: suitePath, args: host.selfSpawnArgs([`--game=${game.id}`], path.join(__dirname, '..', '..')), icon: iconPath,
             categories: ['Game'], wmClass: 'clarity',
         };
 
@@ -3655,11 +3562,6 @@ function titleSimilarity(a, b) {
     let inter = 0;
     for (const t of ta) if (tb.has(t)) inter++;
     return inter / (ta.size + tb.size - inter);
-}
-
-function igdbImg(url, size = 'cover_big') {
-    if (!url) return null;
-    return 'https:' + url.replace('t_thumb', `t_${size}`);
 }
 
 // ── GOG Achievements ──────────────────────────────────────────────────────────
@@ -3999,7 +3901,14 @@ ipcMain.handle('update-game', (event, id, data) => {
 });
 
 ipcMain.handle('delete-game', (event, id) => {
-    try { db.prepare(`DELETE FROM games WHERE id=?`).run(id); return true; } catch (err) { return false; }
+    try {
+        // A manually added Steam app that the user deletes should stay deleted, so drop it
+        // from the keep-list that shields it from sync-steam's removal detection.
+        const row = db.prepare("SELECT SteamAppID FROM games WHERE id=?").get(id);
+        if (row && row.SteamAppID) forgetManualSteamAppid(row.SteamAppID);
+        db.prepare(`DELETE FROM games WHERE id=?`).run(id);
+        return true;
+    } catch (err) { return false; }
 });
 
 ipcMain.on('launch-game', (event, cmd, launchArgs, executable) => {
@@ -4040,20 +3949,6 @@ ipcMain.on('launch-game', (event, cmd, launchArgs, executable) => {
             }
             return;
         }
-    }
-
-    // Steam game living inside a CrossOver bottle (macOS). Resolved here rather than
-    // stored as a literal wine invocation, so a CrossOver move or reinstall does not
-    // invalidate every command in the database.
-    const sBottle = host.parseSteamBottleCommand(cmd);
-    if (sBottle) {
-        const r = host.steamBottleLaunch(sBottle.bottle, sBottle.appId);
-        if (r && r.error) { console.error('[launch-game] bottled Steam:', r.error); reportLaunchFailure({ reason: { code: 'CROSSOVER_STEAM', message: r.error } }); }
-        else if (r) {
-            spawn(r.cmd, r.args, { env: { ...process.env, ...r.env }, detached: true, stdio: 'ignore' }).unref();
-            console.log('[launch-game] launched via', r.method);
-        }
-        return;
     }
 
     // itch.io, hand the scheme to the desktop's opener (shell.openExternal rejects custom schemes)
@@ -4348,6 +4243,12 @@ ipcMain.handle('update-last-played', (event, id) => {
 
 ipcMain.handle('get-strings', (_, lang) => require('./i18n')(lang || 'en'));
 
+// ── LIBRARY REPORT ────────────────────────────────────────────────────────
+// Settings, Library, Library Report: a picked set of stats saved as a web page, a PDF or images.
+require('./report/report-main.js').registerReportIpc({
+    ipcMain, getDb: () => db, baseDir, BrowserWindow, dialog, nativeImage, loadStrings: require('./i18n'),
+});
+
 // ── ITCH.IO SYNC ──────────────────────────────────────────────────────────
 
 async function doItchSync() {
@@ -4638,6 +4539,9 @@ ipcMain.handle('sync-steam', async (event, steamId, apiKey) => {
         let removed = 0;
         if (games.length) {
             const presentIds = new Set(games.map(g => String(g.appid)));
+            // Apps added by hand (mods and other titles the API cannot report) count as
+            // present, or every sync would prune what the user just asked for.
+            for (const id of manualSteamAppids()) presentIds.add(id);
             for (const dir of getSteamLibraryPaths()) {
                 let files; try { files = fs.readdirSync(dir); } catch { continue; }
                 for (const f of files) { const m = f.match(/^appmanifest_(\d+)\.acf$/); if (m) presentIds.add(m[1]); }
@@ -4646,8 +4550,7 @@ ipcMain.handle('sync-steam', async (event, steamId, apiKey) => {
             // entry that merely borrows a SteamAppID for artwork scraping.
             const steamRows = db.prepare(
                 "SELECT id, Store, LaunchCommand, LaunchCommands, SteamAppID, InstallerGameId FROM games " +
-                "WHERE LaunchCommand LIKE '%steam://rungameid%' OR LaunchCommands LIKE '%steam://rungameid%' " +
-                "   OR LaunchCommand LIKE '%steambottle://%' OR LaunchCommands LIKE '%steambottle://%'"
+                "WHERE LaunchCommand LIKE '%steam://rungameid%' OR LaunchCommands LIKE '%steam://rungameid%'"
             ).all();
             db.transaction(() => {
                 for (const row of steamRows) {
@@ -4668,6 +4571,53 @@ ipcMain.handle('sync-steam', async (event, steamId, apiKey) => {
     } catch (err) {
         return { success: false, message: `Steam API Error: ${err.message}` };
     }
+});
+
+// Add a Steam app by name, App ID or store link, for the games Steam's API will never
+// hand over. Returns the new row so the caller can run the normal scrape on it.
+ipcMain.handle('steam-add-app', async (event, input) => {
+    const raw = String(input || '').trim();
+    if (!raw) return { success: false, message: 'Enter a name, App ID or Steam store link.' };
+
+    let appid = parseSteamAppId(raw);
+
+    // No ID in the text, so treat it as a name and let the caller pick from the store search.
+    if (!appid) {
+        let results;
+        try {
+            const res = await fetch(`https://store.steampowered.com/api/storesearch/?term=${encodeURIComponent(raw)}&l=english&cc=US`);
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            const data = await res.json();
+            results = (data.items || []).map(i => ({ id: String(i.id), name: String(i.name || '').trim(), image: i.tiny_image || '' }));
+        } catch (err) { return { success: false, message: `Steam search failed: ${err.message}` }; }
+        if (!results.length) return { success: false, message: `Steam has nothing called "${raw}".` };
+        if (results.length > 1) return { success: true, needsPick: true, results };
+        appid = results[0].id;
+    }
+
+    let data;
+    try { data = await steamAppDetails(appid); }
+    catch (err) { return { success: false, message: `Steam lookup failed: ${err.message}` }; }
+    if (!data) return { success: false, message: `Steam has no app ${appid}.` };
+
+    // Soundtracks, DLC and videos share the app namespace and are not playable on their own.
+    const NOT_PLAYABLE = { dlc: 'a DLC', music: 'a soundtrack', video: 'a video', episode: 'an episode', series: 'a series', hardware: 'hardware' };
+    if (NOT_PLAYABLE[data.type]) {
+        return { success: false, message: `${data.name} is ${NOT_PLAYABLE[data.type]}, not a game Steam can install on its own.` };
+    }
+
+    const name = String(data.name || '').trim() || `Steam App ${appid}`;
+    const status = upsertSteamGame(appid, name);
+    if (!status) return { success: false, message: `Could not add ${name}.` };
+    rememberManualSteamAppid(appid);
+    if (data.is_free) { try { db.prepare("UPDATE games SET FreeToPlay=1 WHERE SteamAppID=?").run(String(appid)); } catch {} }
+
+    const row = db.prepare("SELECT id, Game FROM games WHERE SteamAppID=?").get(String(appid));
+    return {
+        success: true, status, appid: String(appid),
+        id: row ? row.id : null, name: row ? row.Game : name,
+        type: data.type, free: !!data.is_free, installed: isSteamGameInstalled(appid),
+    };
 });
 
 ipcMain.handle('sync-gog', async () => {
@@ -4856,34 +4806,6 @@ ipcMain.handle('search-steam', async (e, gameName) => {
     } catch(e) { return []; }
 });
 
-async function sgdbFetchFirst(gameName, apiKey, appId, assetType) {
-    try {
-        const headers = { "Authorization": `Bearer ${apiKey}`, "User-Agent": "Mozilla/5.0" };
-        let sgdbId = null;
-        if (appId) {
-            const r = await fetch(`https://www.steamgriddb.com/api/v2/games/steam/${appId}`, { headers });
-            const d = await r.json();
-            if (d.success && d.data) sgdbId = d.data.id;
-        }
-        if (!sgdbId) {
-            const res = await fetch(`https://www.steamgriddb.com/api/v2/search/autocomplete/${encodeURIComponent(gameName)}`, { headers });
-            const data = await res.json();
-            if (!data.success || !data.data?.length) return null;
-            sgdbId = data.data[0].id;
-        }
-        const endpoint = assetType === 'hero' ? 'heroes' : assetType === 'logo' ? 'logos' : 'grids';
-        const res2 = await fetch(`https://www.steamgriddb.com/api/v2/${endpoint}/game/${sgdbId}`, { headers });
-        const data2 = await res2.json();
-        if (!data2.success || !data2.data?.length) return null;
-        const url = data2.data[0].url;
-        const ext = assetType === 'logo' ? 'png' : 'jpg';
-        const safeN = gameName.replace(/[\\/:*?"<>|#]/g, '').trim();
-        const fileName = `${safeN} - SGDB ${assetType}.${ext}`;
-        if (await downloadImage(url, path.join(imagesDir, fileName))) return `GameManagerConfig/images/${fileName}`;
-        return null;
-    } catch(e) { return null; }
-}
-
 ipcMain.handle('sgdb-search', async (e, gameName, apiKey, appId, assetType = 'cover') => {
     try {
         const headers = { "Authorization": `Bearer ${apiKey}`, "User-Agent": "Mozilla/5.0" };
@@ -4946,185 +4868,29 @@ async function downloadImage(url, destPath) {
     } catch (err) { return false; }
 }
 
+/*
+ * The scrape, which now lives in packages/core/scrape.js.
+ *
+ * This handler was the complete implementation and the module was lifted from
+ * it, so that the CRT face could scrape without a second copy — the same move,
+ * and the same reasoning, as packages/core/launch.js. Leaving both in place
+ * would mean the two faces drifting apart the first time a source changed.
+ *
+ * ⚠️ The renderer expects { success, message }; the module answers { ok,
+ * message } like everything else in packages/core. Mapped here rather than
+ * changing either side.
+ */
+// ⚠️ Built on demand, not at require time: `db` is opened later, and a scraper
+// holding a null db would silently write nothing.
+let _scraper = null;
+function scraper() {
+    if (!_scraper) _scraper = scrapeCore.create({ db, imagesDir });
+    return _scraper;
+}
+
 ipcMain.handle('auto-fetch', async (event, gameId, gameName, specificAppId) => {
-    try {
-        const safeName = gameName.replace(/[\\/:*?"<>|#]/g, '').trim();
-        let appId = specificAppId;
-
-        // ── 1. STEAM SEARCH (find App ID if missing) ──────────────────────
-        if (!appId) {
-            try {
-                const sr = await fetch(`https://store.steampowered.com/api/storesearch/?term=${encodeURIComponent(gameName)}&l=english&cc=US`);
-                const sd = await sr.json();
-                if (sd.items?.length > 0) {
-                    const match = sd.items.find(item => titleSimilarity(item.name || '', gameName) >= 0.4);
-                    if (match) appId = match.id;
-                }
-            } catch(e) {}
-        }
-
-        // ── 2. STEAM DETAILS ──────────────────────────────────────────────
-        // Read existing local images, preserved if already set; never overwritten
-        const existing = db.prepare("SELECT CoverArt, HeroArt, Logo, Icon, Screenshot FROM games WHERE id=?").get(gameId) || {};
-        const isLocal = (v) => v && String(v).startsWith('GameManagerConfig');
-
-        let steamSuccess = false, appData = null;
-        let desc = "", htmlDesc = "", dev = "", pub = "", released = "", meta = "";
-        let genre = "", coop = "None", players = "", tags = "";
-        let hltbResult = "", protonResult = "", steamTrailerUrl = "";
-        let dbCoverPath  = isLocal(existing.CoverArt)   ? existing.CoverArt   : "";
-        let dbHeroPath   = isLocal(existing.HeroArt)    ? existing.HeroArt    : "";
-        let dbLogoPath   = isLocal(existing.Logo)       ? existing.Logo       : "";
-        let dbScreenPath = isLocal(existing.Screenshot) ? existing.Screenshot : "";
-
-        if (appId) {
-            try {
-                const dr = await fetch(`https://store.steampowered.com/api/appdetails?appids=${appId}`);
-                const dd = await dr.json();
-                if (dd[appId]?.success) {
-                    steamSuccess = true;
-                    appData = dd[appId].data;
-
-                    desc     = appData.short_description || "";
-                    htmlDesc = appData.detailed_description || "";
-                    dev      = appData.developers?.join(', ') || "";
-                    pub      = appData.publishers?.join(', ') || "";
-                    released = appData.release_date?.date?.slice(-4) || "";
-                    meta     = appData.metacritic ? String(appData.metacritic.score) : "";
-                    genre    = appData.genres?.map(g => g.description).join(', ') || "";
-
-                    const cats = appData.categories?.map(c => c.description) || [];
-                    if (cats.includes("Online Co-op") && cats.includes("Shared/Split Screen Co-op")) coop = "Local & Online";
-                    else if (cats.includes("Online Co-op")) coop = "Online";
-                    else if (cats.includes("Shared/Split Screen Co-op")) coop = "Local";
-                    else if (cats.includes("Co-op")) coop = "Online/Local";
-                    players = [cats.includes("Single-player") && "Single-player", cats.includes("Multi-player") && "Multi-player"].filter(Boolean).join(', ');
-                    tags    = cats.slice(0, 5).join(", ");
-
-                    // HLTB
-                    try {
-                        let hr = await searchHltb(gameName);
-                        if (!hr.length) hr = await searchHltb(gameName.replace(/[:\-].*/, '').replace(/[™®©]/g, '').trim());
-                        if (hr.length > 0 && hr[0].comp_main > 0) hltbResult = `${Math.round(hr[0].comp_main / 3600)} Hours`;
-                    } catch(e) {}
-
-                    // ProtonDB
-                    try {
-                        const pr = await fetch(`https://www.protondb.com/api/v1/reports/summaries/${appId}.json`);
-                        if (pr.ok) { const pd = await pr.json(); if (pd.tier) protonResult = pd.tier.toUpperCase(); }
-                    } catch(e) {}
-
-                    // Cover (skip if already have a local file)
-                    if (!dbCoverPath) {
-                        const coverFileName = `${safeName} - Cover.jpg`;
-                        const coverPath = path.join(imagesDir, coverFileName);
-                        let coverOk = await downloadImage(`https://steamcdn-a.akamaihd.net/steam/apps/${appId}/library_600x900.jpg`, coverPath);
-                        if (!coverOk && appData.header_image) coverOk = await downloadImage(appData.header_image, coverPath);
-                        if (coverOk) dbCoverPath = `GameManagerConfig/images/${coverFileName}`;
-                    }
-
-                    // Hero (skip if already have a local file)
-                    if (!dbHeroPath) {
-                        const heroFileName = `${safeName} - Hero.jpg`;
-                        if (await downloadImage(`https://steamcdn-a.akamaihd.net/steam/apps/${appId}/library_hero.jpg`, path.join(imagesDir, heroFileName)))
-                            dbHeroPath = `GameManagerConfig/images/${heroFileName}`;
-                    }
-
-                    // Logo (skip if already have a local file)
-                    if (!dbLogoPath) {
-                        const logoFileName = `${safeName} - Logo.png`;
-                        if (await downloadImage(`https://steamcdn-a.akamaihd.net/steam/apps/${appId}/logo.png`, path.join(imagesDir, logoFileName)))
-                            dbLogoPath = `GameManagerConfig/images/${logoFileName}`;
-                    }
-
-                    // Screenshots (skip if already have local screenshots)
-                    if (!dbScreenPath && appData.screenshots?.length > 0) {
-                        const saved = [];
-                        for (let i = 0; i < Math.min(5, appData.screenshots.length); i++) {
-                            const fn = `${safeName} - Screen ${i+1}.jpg`;
-                            if (await downloadImage(appData.screenshots[i].path_full, path.join(imagesDir, fn)))
-                                saved.push(`GameManagerConfig/images/${fn}`);
-                        }
-                        if (saved.length) dbScreenPath = saved.join('|');
-                    }
-
-                    // Steam trailer
-                    const movie = appData.movies?.[0];
-                    if (movie) steamTrailerUrl = movie.mp4?.max || movie.webm?.max || movie.webm?.['480'] || "";
-                }
-            } catch(e) {}
-        }
-
-        // ── 3. SGDB FALLBACK, Hero Art & Logo ───────────────────────────
-        const sgdbApiKey = db?.prepare("SELECT value FROM settings WHERE key='steamgriddb_api'").get()?.value;
-        if (sgdbApiKey) {
-            if (!dbHeroPath) dbHeroPath = await sgdbFetchFirst(gameName, sgdbApiKey, appId, 'hero') || "";
-            if (!dbLogoPath) dbLogoPath = await sgdbFetchFirst(gameName, sgdbApiKey, appId, 'logo') || "";
-        }
-
-        // ── 4. IGDB ENRICHMENT ────────────────────────────────────────────
-        let similarGames = "", franchise = "", igdbTrailerId = "";
-        const igdb = await igdbSearch(gameName, appId);
-
-        const isAdultContent = igdb?.themes?.some(t => t.id === 42);
-        const igdbTitleSim   = igdb ? titleSimilarity(igdb.name || '', gameName) : 1;
-        const skipIgdbArtwork = isAdultContent || igdbTitleSim < 0.4;
-
-        if (igdb) {
-            // Similar games & franchise (for all games)
-            if (igdb.similar_games?.length) similarGames = igdb.similar_games.map(g => g.name).slice(0, 6).join(', ');
-            franchise = igdb.franchises?.[0]?.name || igdb.collection?.name || "";
-            igdbTrailerId = igdb.videos?.[0]?.video_id || "";
-
-            // Fill gaps, used when Steam failed or game is non-Steam
-            if (!desc   && igdb.summary)               desc    = igdb.summary;
-            if (!dev    && igdb.involved_companies)     dev     = igdb.involved_companies.filter(c => c.developer).map(c => c.company.name).join(', ');
-            if (!pub    && igdb.involved_companies)     pub     = igdb.involved_companies.filter(c => c.publisher).map(c => c.company.name).join(', ');
-            if (!genre  && igdb.genres)                 genre   = [...(igdb.genres?.map(g => g.name) || []), ...(igdb.themes?.map(t => t.name) || [])].slice(0, 3).join(', ');
-            if (!released && igdb.first_release_date)   released = new Date(igdb.first_release_date * 1000).getFullYear().toString();
-            if (!meta   && igdb.aggregated_rating)      meta    = Math.round(igdb.aggregated_rating).toString();
-
-            // Discover Steam App ID for non-Steam games → enables ProtonDB
-            if (!appId) {
-                const steamExt = igdb.external_games?.find(e => e.category === 1);
-                if (steamExt?.uid) {
-                    appId = String(steamExt.uid).replace(/\.0+$/, '');
-                    try {
-                        const pr = await fetch(`https://www.protondb.com/api/v1/reports/summaries/${appId}.json`);
-                        if (pr.ok) { const pd = await pr.json(); if (pd.tier) protonResult = pd.tier.toUpperCase(); }
-                    } catch(e) {}
-                }
-            }
-
-            // Cover from IGDB (fallback), skip if adult content or title mismatch
-            if (!dbCoverPath && igdb.cover?.url && !skipIgdbArtwork) {
-                const fn = `${safeName} - Cover.jpg`;
-                if (await downloadImage(igdbImg(igdb.cover.url, 'cover_big'), path.join(imagesDir, fn)))
-                    dbCoverPath = `GameManagerConfig/images/${fn}`;
-            }
-
-            // Screenshots from IGDB (fallback), skip if adult content or title mismatch
-            if (!dbScreenPath && igdb.screenshots?.length && !skipIgdbArtwork) {
-                const saved = [];
-                for (let i = 0; i < Math.min(5, igdb.screenshots.length); i++) {
-                    const fn = `${safeName} - Screen ${i+1}.jpg`;
-                    if (await downloadImage(igdbImg(igdb.screenshots[i].url, 'screenshot_big'), path.join(imagesDir, fn)))
-                        saved.push(`GameManagerConfig/images/${fn}`);
-                }
-                if (saved.length) dbScreenPath = saved.join('|');
-            }
-        }
-
-        // ── 5. SAVE ───────────────────────────────────────────────────────
-        if (!steamSuccess && !igdb) return { success: false, message: "No data found on Steam or IGDB." };
-
-        const descI18n = await fetchDescI18n(appId, desc);
-        db.prepare(`UPDATE games SET Description=?, SteamDesc=?, Description_i18n=?, DEV=?, PUB=?, RELEASED=?, METACRITIC=?, GENRE=?, CoverArt=?, HeroArt=?, Logo=?, Screenshot=?, SteamAppID=?, Coop=?, NumPlayers=?, Tags=?, HLTB_Main=?, ProtonTier=?, SteamTrailer=?, SimilarGames=?, Franchise=?, IGDBTrailer=? WHERE id=?`)
-        .run(desc, htmlDesc, descI18n, dev, pub, released, meta, genre, dbCoverPath, dbHeroPath, dbLogoPath, dbScreenPath, appId || "", coop, players, tags, hltbResult, protonResult, steamTrailerUrl, similarGames, franchise, igdbTrailerId, gameId);
-
-        const sources = [steamSuccess && 'Steam', igdb && 'IGDB'].filter(Boolean).join(' + ');
-        return { success: true, message: `Data fetched via ${sources}!` };
-    } catch (err) { return { success: false, message: `Scraping error: ${err.message}` }; }
+    const result = await scraper().autoFetch(gameId, gameName, specificAppId || '');
+    return { success: !!result.ok, message: result.message };
 });
 
 // Text-only variant, same as auto-fetch but skips all image downloads

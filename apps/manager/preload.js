@@ -11,7 +11,6 @@ const _isOmarchy = (() => {
 })();
 
 contextBridge.exposeInMainWorld('api', {
-    platform: process.platform,
     isOmarchy: _isOmarchy,
     getBaseDir: () => ipcRenderer.invoke('get-basedir'),
                                 getGames: () => ipcRenderer.invoke('get-games'),
@@ -47,8 +46,6 @@ contextBridge.exposeInMainWorld('api', {
                                 cancelGenreScan: () => ipcRenderer.invoke('cancel-genre-scan'),
                                 quickGenrePass: () => ipcRenderer.invoke('quick-genre-pass'),
                                 onGenreScanProgress: (cb) => ipcRenderer.on('genre-scan-progress', (_e, d) => cb(d)),
-                                scanMacNative: (opts) => ipcRenderer.invoke('scan-mac-native', opts),
-                                onMacNativeScanProgress: (cb) => ipcRenderer.on('mac-native-scan-progress', (_e, d) => cb(d)),
                                 addGameShortcut: (id, targets) => ipcRenderer.invoke('add-game-shortcut', id, targets),
                                 resolveGameFolder: (id) => ipcRenderer.invoke('resolve-game-folder', id),
                                 openGameFolder: (id) => ipcRenderer.invoke('open-game-folder', id),
@@ -81,6 +78,7 @@ contextBridge.exposeInMainWorld('api', {
                                 autoFetch: (id, name, appId) => ipcRenderer.invoke('auto-fetch', id, name, appId),
                                 autoFetchText: (id, name, appId) => ipcRenderer.invoke('auto-fetch-text', id, name, appId),
                                 searchSteam: (name) => ipcRenderer.invoke('search-steam', name),
+                                steamAddApp: (input) => ipcRenderer.invoke('steam-add-app', input),
                                 launchGame: (cmd, launchArgs, executable) => ipcRenderer.send('launch-game', cmd, launchArgs, executable),
                                 syncGog: () => ipcRenderer.invoke('sync-gog'),
 
@@ -175,6 +173,9 @@ contextBridge.exposeInMainWorld('api', {
 
                                 // --- I18N ---
                                 getStrings: (lang) => ipcRenderer.invoke('get-strings', lang),
+                                reportSections: (prefs) => ipcRenderer.invoke('report-sections', prefs),
+                                reportPreview: (prefs) => ipcRenderer.invoke('report-preview', prefs),
+                                reportExport: (prefs, format) => ipcRenderer.invoke('report-export', prefs, format),
 
                                 // --- STORE BROWSER ---
                                 openStoreBrowser: (store, colors) => ipcRenderer.invoke('open-store-browser', store, colors),

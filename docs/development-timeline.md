@@ -242,6 +242,10 @@ host-shaped spots outside the backend."*
 traffic lights, native GOG install/launch/uninstall, a Mac-native filter and badge, and finally
 **Windows games on macOS through CrossOver**.
 
+**On 2026-09-12 macOS became its own repository**, Clarity-Mac, forked at v1.15.3. From then on
+this repository is the Linux edition only, the two diverge on purpose, and a fix that belongs to
+both is applied to each deliberately.
+
 Two commits for character: *"Correct the framing: Linux is primary, macOS is a second host"*,
 and *"macos-guide: drop the 'years of mileage' claim, it's not true."*
 

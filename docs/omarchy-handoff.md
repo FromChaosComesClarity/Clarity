@@ -13,9 +13,6 @@ Wherever this document says "the reference desktop", it means this machine.
 What is genuinely new here is the **desktop environment**: a Wayland tiling compositor instead of
 KDE/KWin. That is a layer the codebase already has a place for, see *Where Hyprland features go*.
 
-Companion documents: `docs/mac-port-handoff.md` (the macOS equivalent) and
-`docs/mac-port-phase-a.md` (what the host boundary is and why).
-
 ---
 
 ## The rules that matter before you write anything
@@ -94,19 +91,20 @@ Companion documents: `docs/mac-port-handoff.md` (the macOS equivalent) and
 
    ⚠️ `npx asar extract-file` writes into the **current** directory. Never run it from the repo
    root. It will overwrite the real `linux.js` with the packaged copy. Hence the `mktemp -d`.
-2. **Linux outranks macOS, and this is the Linux host.** A regression here blocks a merge; a
-   macOS gap does not. A KDE-only feature not existing under Hyprland is not a regression, and
-   neither is the reverse.
+2. **This is the only host.** macOS moved to its own repository, Clarity-Mac, at v1.15.3, and
+   nothing is merged between the two, so there is no second platform to hold a change back for.
+   A KDE-only feature not existing under Hyprland is not a regression, and neither is the
+   reverse.
 
    ⚠️ **KWin code still ships but can no longer be exercised.** `kwin-display.js` is behind an
    `isSupported()` gate and simply disappears under Hyprland, so it cannot visibly regress here.
    Treat it as code you can read but not test, and do not delete it because it looks dead.
-3. **Two machines push to one repo, this one and the Air. `git fetch` first, always.** This
-   cost three rejected pushes on 2026-08-24, back when there were three. A rejected push is
+3. **`git fetch` first, always.** The Air pushes to Clarity-Mac now rather than here, but this
+   cost three rejected pushes on 2026-08-24, back when three machines shared this repository. A rejected push is
    **not** all-or-nothing, git pushes refs independently, so a tag can land while the branches
    fail. Use `--atomic` when it matters.
 4. **`apps/*/main.js` stays host-agnostic.** If Hyprland work needs to touch one, the boundary
-   is in the wrong place. Same rule the macOS port lives under.
+   is in the wrong place.
 
 ---
 
@@ -277,8 +275,8 @@ desktop-environment-specific feature:
 
 ⚠️ That last point is not theoretical: `apps/manager/main.js`'s `display-options` handler called
 `displayPicker.isSupported()` with no null guard, which was fine on KDE and an instant crash on
-macOS where the picker is legitimately `null`. A second *desktop environment* can expose the
-same class of bug a second *platform* did.
+any host where the picker is legitimately `null`. A second *desktop environment* can expose the
+same class of bug.
 
 So a Hyprland equivalent, a display/workspace picker, say, is a new module beside
 `kwin-display.js`, selected at runtime, **not** a branch inside `linux.js` and definitely not
@@ -295,11 +293,10 @@ instead. Do not assume the same constraint applies here; check before designing 
 ## Branches and the release cycle
 
 ```
-main == experimental == mac        # kept level; all three push to origin
+main == experimental        # kept level; both push to origin
 ```
 
-New work goes on `experimental`, ff-merges into `main` when Jose says so, then both are pushed
-and `mac` is brought level. Releases: bump `package.json` + `package-lock.json`, write
+New work goes on `experimental`, ff-merges into `main` when Jose says so, then both are pushed. Releases: bump `package.json` + `package-lock.json`, write
 `RELEASE_NOTES_vX.Y.Z.md`, tag, push, then: `git checkout <tag>`, build from the tag, never from
 `main`, `npm install`, `npm run dist`, run **both checks in rule 1**, and only then
 `gh release create`.
@@ -310,7 +307,9 @@ that. **Never move a published tag**, the fix for a release missing a commit is 
 version, not a retagged old one. Also clear `dist/` first; a stale AppImage from the previous
 release sits there looking exactly like a fresh one.
 
-Do not delete the `mac` branch, the Air pushes to it, and macOS work continues there.
+There is no `mac` branch any more. macOS work lives in
+[Clarity-Mac](https://github.com/FromChaosComesClarity/Clarity-Mac), forked at v1.15.3. A fix that
+belongs to both editions is applied to each deliberately, never merged across.
 
 ---
 

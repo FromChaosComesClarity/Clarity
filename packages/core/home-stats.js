@@ -33,6 +33,23 @@ function isInstalled(g) {
 
 function isPico(g) { return (g.Store || '').toLowerCase().includes('pico'); }
 
+// Share of ProtonDB-rated games that run well: Native, Platinum or Gold. PENDING means ProtonDB
+// has too few reports to rate the game, so it is left out of the denominator rather than
+// counted as not ready. The Home wrap-up and the library report both read this one definition.
+const PROTON_RATED = ['NATIVE', 'PLATINUM', 'GOLD', 'SILVER', 'BRONZE', 'BORKED'];
+const PROTON_READY = new Set(['NATIVE', 'PLATINUM', 'GOLD']);
+function protonReadiness(games) {
+    const tiers = new Map();
+    for (const g of games) {
+        const t = String(g.ProtonTier || '').trim().toUpperCase();
+        if (PROTON_RATED.includes(t)) tiers.set(t, (tiers.get(t) || 0) + 1);
+    }
+    let rated = 0, ready = 0;
+    for (const [t, n] of tiers) { rated += n; if (PROTON_READY.has(t)) ready += n; }
+    return { rated, ready, pct: rated ? Math.round(ready / rated * 100) : null,
+             tiers: PROTON_RATED.map(label => ({ label, value: tiers.get(label) || 0 })).filter(x => x.value > 0) };
+}
+
 // Collapse a (possibly comma-joined / merged) Store string into one canonical bucket.
 function storeBucket(store) {
     const s = (store || '').toLowerCase();
@@ -183,8 +200,6 @@ function computeHomeSnapshot(games, opts = {}) {
     let addedThisYear = 0;
     for (const g of games) { const da = leadingInt(g.date_added); if (da && da >= yearStartSec) addedThisYear++; }
     const genreTally = sortedTally(genres), decadeTally = sortedTally(decades);
-    let protonRated = 0, protonReadyN = 0;
-    for (const { label, count } of sortedTally(proton)) { protonRated += count; if (label === 'GOLD' || label === 'PLATINUM' || label === 'NATIVE') protonReadyN += count; }
     const wrapped = {
         year: new Date().getFullYear(),
         totalHours: Math.round(totalPlaytimeMin / 60),
@@ -192,7 +207,7 @@ function computeHomeSnapshot(games, opts = {}) {
         addedThisYear, beaten: played, totalGames: total,
         topGenre: genreTally.length ? genreTally[0].label : null,
         topDecade: decadeTally.length ? decadeTally[0].label : null,
-        protonReadyPct: protonRated ? Math.round(protonReadyN / protonRated * 100) : null,
+        protonReadyPct: protonReadiness(games).pct,
     };
 
     return {
@@ -224,4 +239,4 @@ function pickRandom(games, c = {}) {
     return tile(pool[Math.floor(Math.random() * pool.length)]);
 }
 
-module.exports = { computeHomeSnapshot, pickRandom, isBacklog, isInstalled, isPlayed, storeBucket };
+module.exports = { computeHomeSnapshot, pickRandom, isBacklog, isInstalled, isPlayed, isFav, isWant, isPico, hasLaunched, storeBucket, leadingInt, protonReadiness };

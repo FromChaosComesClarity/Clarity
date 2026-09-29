@@ -90,19 +90,14 @@ function renameColumn(db, table, from, to) {
 }
 
 // ── Paths ────────────────────────────────────────────────────────────────────
-// Electron derives userData from app.setName, but the ROOT differs per platform:
-// ~/.config on Linux, ~/Library/Application Support on macOS. The library and app
-// directories are the user's own choice and are laid out the same way on both.
-const MAC     = process.platform === 'darwin';
-const cfg     = name => MAC ? path.join(HOME, 'Library', 'Application Support', name)
-                            : path.join(HOME, '.config', name);
+// Electron derives userData from app.setName, under ~/.config.
+const cfg     = name => path.join(HOME, '.config', name);
 const OLD = {
     manager: cfg('cafeneurotico'),
     engine:  cfg('grinder'),
     couch:   cfg('crema'),
     games:   path.join(HOME, 'Games', 'CafeNeurotico'),
-    appDir:  MAC ? path.join(HOME, 'Library', 'Application Support', 'CafeNeurotico')
-                 : path.join(HOME, 'Games', 'CNGM'),
+    appDir:  path.join(HOME, 'Games', 'CNGM'),
     stray:   path.join(HOME, 'CafeNeurotico'),
 };
 const NEW = {
@@ -110,11 +105,10 @@ const NEW = {
     engine:  cfg('clarity-installer'),
     couch:   cfg('clarity-couch'),
     games:   path.join(HOME, 'Games', 'Clarity'),
-    appDir:  MAC ? path.join(HOME, 'Library', 'Application Support', 'Clarity')
-                 : path.join(HOME, 'Clarity'),
+    appDir:  path.join(HOME, 'Clarity'),
 };
 
-console.log(`\n  Cafe Neurotico → Clarity migration  [${APPLY ? 'APPLYING' : 'DRY RUN, pass --apply to execute'}]  ${MAC ? 'macOS' : 'Linux'}\n`);
+console.log(`\n  Cafe Neurotico → Clarity migration  [${APPLY ? 'APPLYING' : 'DRY RUN, pass --apply to execute'}]\n`);
 
 // Refuse to run against a live process: moving a userData dir out from under a running
 // Electron app corrupts its Local Storage and leaves a stale singleton lock.
@@ -158,11 +152,11 @@ move(path.join(appDir, 'CafeNeurotico_old.AppImage'), path.join(appDir, 'Clarity
 move(path.join(gmc, 'grinder-progress.json'),             path.join(gmc, 'installer-progress.json'));
 
 // ⚠️ The installer's config directory, for installs that keep it beside the app data rather
-// than in the engine's own userData. This is findInstallerDb's SECOND candidate, and on macOS
-// it is the one actually in use, because the Manager face creates the database next to the app
-// data. It carries library.db, gogdl_auth.json and the wine prefixes, and the engine resolves
-// the latter two from `path.dirname(dbPath)` — so they have to travel together, under one
-// rename of the whole directory rather than file by file.
+// than in the engine's own userData. This is findInstallerDb's SECOND candidate, the one in
+// use whenever the Manager face created the database next to the app data. It carries
+// library.db, gogdl_auth.json and the wine prefixes. The engine resolves the latter two from
+// `path.dirname(dbPath)`, so all three have to travel together, under one rename of the whole
+// directory rather than file by file.
 move(path.join(appDir, 'GRINDERConfig'), path.join(appDir, 'InstallerConfig'));
 const instCfg = live(path.join(appDir, 'InstallerConfig'), path.join(appDir, 'GRINDERConfig'));
 
@@ -176,7 +170,7 @@ move(path.join(apps, 'CafeNeuroticoClock.AppImage'), path.join(apps, 'ClarityClo
 
 console.log('\n▸ Installer database (library.db)');
 // ⚠️ Both candidate homes, in findInstallerDb's own order. Migrating only the engine's
-// userData left a Mac's real database behind as GRINDERConfig/grinder.db, where nothing looks
+// userData left a real database behind as GRINDERConfig/grinder.db, where nothing looks
 // for it any more, and the next sign-in or install then created an empty library.db beside a
 // full games directory it could no longer see. That is the exact failure this script exists to
 // prevent, so it has to cover every path the app is willing to read.

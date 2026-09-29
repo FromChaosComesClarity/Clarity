@@ -28,7 +28,6 @@ const { spawnSync } = require('child_process');
 const RECIPES = [
     {
         id: 'ironwail',
-        hosts: ['linux'],
         title: 'Ironwail',
         kind: 'Source port',
         game: 'Quake',
@@ -46,7 +45,6 @@ const RECIPES = [
     },
     {
         id: 'vkquake',
-        hosts: ['linux'],
         title: 'vkQuake',
         kind: 'Source port',
         game: 'Quake',
@@ -64,7 +62,6 @@ const RECIPES = [
     },
     {
         id: 'quake-rt',
-        hosts: ['linux'],
         title: 'Quake: Ray Traced',
         kind: 'Source port',
         game: 'Quake',
@@ -82,7 +79,6 @@ const RECIPES = [
     },
     {
         id: 'gzdoom',
-        hosts: ['linux'],
         title: 'GZDoom',
         kind: 'Source port',
         game: 'Doom',
@@ -100,7 +96,6 @@ const RECIPES = [
     },
     {
         id: 'uzdoom',
-        hosts: ['linux'],
         title: 'UZDoom',
         kind: 'Source port',
         game: 'Doom',
@@ -118,7 +113,6 @@ const RECIPES = [
     },
     {
         id: 'minidoom2',
-        hosts: ['linux'],
         title: 'Mini Doom 2',
         kind: 'Fan game',
         game: '',
@@ -136,7 +130,6 @@ const RECIPES = [
     },
     {
         id: 'minidoom1',
-        hosts: ['linux'],
         title: 'Mini Doom',
         kind: 'Fan game',
         game: '',
@@ -157,7 +150,6 @@ const RECIPES = [
     },
     {
         id: 'ecwolf',
-        hosts: ['linux'],
         title: 'ECWolf',
         kind: 'Source port',
         game: 'Wolfenstein 3D',
@@ -175,7 +167,6 @@ const RECIPES = [
     },
     {
         id: 'raze',
-        hosts: ['linux'],
         title: 'Raze',
         kind: 'Source port',
         game: 'Build engine games',
@@ -198,7 +189,6 @@ const RECIPES = [
     },
     {
         id: 'buildgdx',
-        hosts: ['linux'],
         title: 'BuildGDX',
         kind: 'Source port',
         game: 'Build engine games',
@@ -219,7 +209,6 @@ const RECIPES = [
     },
     {
         id: 'cannonball',
-        hosts: ['linux'],
         title: 'CannonBall',
         kind: 'Custom engine',
         game: 'OutRun',
@@ -240,7 +229,6 @@ const RECIPES = [
     },
     {
         id: 'swos2020',
-        hosts: ['linux'],
         title: 'SWOS 2020',
         kind: 'Fan game',
         game: '',
@@ -265,7 +253,6 @@ const RECIPES = [
     // chosen deliberately and never claims someone else's download.
     {
         id: 'quake-mod',
-        hosts: ['linux'],
         title: 'Any Quake mod or episode',
         kind: 'Mod',
         game: 'Quake',
@@ -288,7 +275,6 @@ const RECIPES = [
     // folders with their own engine, and no recipe can improve on simply registering them.
     {
         id: 'folder',
-        hosts: ['linux'],
         title: 'A game folder you already have',
         kind: 'Folder',
         game: '',
@@ -314,7 +300,6 @@ const RECIPES = [
     // than copied per mod, because that is how GZDoom is designed to work.
     {
         id: 'brutaldoom',
-        hosts: ['linux'],
         title: 'Brutal Doom',
         kind: 'Mod',
         game: 'Doom',
@@ -336,7 +321,6 @@ const RECIPES = [
     },
     {
         id: 'brutaldoom-black',
-        hosts: ['linux'],
         title: 'Brutal Doom: Black Edition',
         kind: 'Mod',
         game: 'Doom',
@@ -363,7 +347,6 @@ const RECIPES = [
     // claim every archive; it only ever runs when the user picks it deliberately.
     {
         id: 'doom-mod',
-        hosts: ['linux'],
         title: 'Any Doom mod or texture pack',
         kind: 'Mod',
         game: 'Doom',
@@ -387,7 +370,6 @@ const RECIPES = [
     // one rigid layout, nothing to curate per game.
     {
         id: 'openbor',
-        hosts: ['linux'],
         title: 'OpenBOR game',
         kind: 'OpenBOR',
         game: '',
@@ -412,6 +394,15 @@ const RECIPES = [
 // folder is the real thing. Probing for the file rather than trusting the title is what
 // makes this safe: a library row can be named anything, but only a genuine Quake install
 // has id1/pak0.pak in it.
+
+// Every extension Wolfenstein-engine data comes in. Kept in one place because two patterns
+// depend on it: the wolf3d spec that finds the data, and IS_GAME_DATA that stops one game's
+// data being mirrored into another's folder. Two hand-written copies had already drifted
+// once on the macOS edition. .sdm and .n3d are not guesses: ECWolf names the full set it
+// accepts when it cannot find one, "(*.wl6, *.wl1, *.sdm, *.sod, *.n3d)", which covers
+// the shareware Spear demo and Super 3D Noah's Ark.
+const WOLF3D_DATA_EXT = 'wl6|wl1|sdm|sod|sd[123]|n3d';
+
 const DATA_SPECS = {
     quake: {
         label: 'Quake (the original 1996 release)',
@@ -468,7 +459,7 @@ const DATA_SPECS = {
     // release takes the complete set and there is no list of filenames to get wrong.
     wolf3d: {
         label: 'Wolfenstein 3D or Spear of Destiny',
-        files: [{ find: /\.(wl6|wl1|sod|sd[123])$/i, into: '' }],
+        files: [{ find: new RegExp(`\\.(${WOLF3D_DATA_EXT})$`, 'i'), into: '' }],
         requireAny: true,
         titles: [/wolfenstein\s*3-?d/i, /spear of destiny/i],
         // The modern shooters share the name and have nothing to do with this.
@@ -588,7 +579,6 @@ const BUILD_BLURB = {
 for (const [id, g] of Object.entries(BUILD_GAMES)) {
     RECIPES.push({
         id: `build-game-${id}`,
-        hosts: ['linux'],
         title: g.label.replace(/ \(.*\)$/, ''),
         kind: 'Game',
         game: 'Build engine games',
@@ -637,11 +627,6 @@ for (const [id, g] of Object.entries(BUILD_GAMES)) {
 function selfCheck() {
     const problems = [];
     for (const r of RECIPES) {
-        // Every recipe declares the hosts it is valid on. The catalogue is a Linux one today
-        //, each entry points at a Windows download run through a compatibility layer, and a
-        // macOS catalogue built from native source-port releases will live alongside it here
-        // rather than in a fork. An untagged recipe would silently be offered on both.
-        if (!Array.isArray(r.hosts) || !r.hosts.length) { problems.push(`${r.id}: no hosts declared`); continue; }
         if (r.contains || r.generic || r.onEngine || r.folder) continue;   // no archive of their own
         if (!r.samples || !r.samples.length) { problems.push(`${r.id}: no samples to check`); continue; }
         for (const s of r.samples) {
@@ -887,6 +872,27 @@ function listRecipes() {
         onEngine: !!r.onEngine, needsArchive: !!r.needsArchive, folder: !!r.folder,
         data: r.data ? { id: r.data, label: DATA_SPECS[r.data]?.label || r.data } : null,
     }));
+}
+
+// Which file extensions the install picker offers. Derived from the recipes' own samples
+// rather than written out by hand, because a hand-written list silently stops matching the
+// catalogue: the Brutal Doom recipe has always accepted a bare .pk3, and the fixed list of
+// zip/7z/rar/exe/tar/gz/xz meant the file browser would not let you select one.
+//
+// Unioned with that original list rather than replacing it, so this can only ever add
+// formats. selfCheck already proves every sample matches its own recipe's archive pattern,
+// which is what makes samples a trustworthy source for this.
+const BASE_ARCHIVE_EXTENSIONS = ['zip', '7z', 'rar', 'exe', 'tar', 'gz', 'xz'];
+
+function archiveExtensions() {
+    const out = new Set(BASE_ARCHIVE_EXTENSIONS);
+    for (const r of RECIPES) {
+        for (const sample of (r.samples || [])) {
+            const ext = path.extname(sample).replace(/^\./, '').toLowerCase();
+            if (ext) out.add(ext);
+        }
+    }
+    return [...out].sort();
 }
 
 function getRecipe(id) { return RECIPES.find(r => r.id === id) || null; }
@@ -1551,7 +1557,7 @@ function extractModFolder(archivePath, modDir, target) {
 
 // Engine files are everything that is not game data. raze.pk3 is the engine's own archive
 // and must come along; .grp/.rff/.art belong to whichever game was linked in previously.
-const IS_GAME_DATA = /\.(grp|rff|art|wl6|wl1|sod|sd[123])$|^blood\.ini$/i;
+const IS_GAME_DATA = new RegExp(`\\.(grp|rff|art|${WOLF3D_DATA_EXT})$|^blood\\.ini$`, 'i');
 
 // Written into each game folder: which engines were mirrored in and what starts them.
 // Read at Play time so a game both engines support can offer the choice.
@@ -1897,6 +1903,7 @@ function installMod({ recipeId, archivePath, engineRoot, engineExe, dataRows, se
 }
 
 module.exports = {
+    archiveExtensions,
     RECIPES, DATA_SPECS, installMod, listModCandidates, listIwads,
     scanFolderEntries, addFromFolder, installGameOnEngine, mirrorEngine, readEngines, ENGINES_FILE,
     findModFolderName, extractModFolder,

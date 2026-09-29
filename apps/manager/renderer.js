@@ -1172,13 +1172,10 @@ async function openInstallerInstall(game) {
     $('gi-cancel').textContent = 'Cancel';
     modal.classList.add('active');
 
-    // Platform choice, only for GOG games that ship BOTH a native build for this host and a
-    // Windows build. The native key varies by host (gogdl calls it 'linux' on Linux, 'osx' on
-    // macOS), hardcoding 'linux' here meant a Mac-native GOG game never got offered its own
-    // native build at all: hasChoice stayed false, so the platform silently fell through to
-    // whatever library.db already had (usually fine) rather than ever being a real choice.
-    const nativeKey   = window.api.platform === 'darwin' ? 'osx' : 'linux';
-    const nativeLabel = window.api.platform === 'darwin' ? 'Mac Native' : 'Linux Native';
+    // Platform choice, only for GOG games that ship BOTH a native Linux build and a Windows
+    // build.
+    const nativeKey   = 'linux';
+    const nativeLabel = 'Linux Native';
     let selectedPlatform;
     let hasChoice = false;
     const platRow = $('gi-platform-row');
@@ -1327,8 +1324,7 @@ async function showLaunchFailure(info) {
     $('pr-step').textContent = ''; $('pr-progress-msg').textContent = '';
     // Only offer to install a Windows runtime when the failure is actually about one missing,
     // this used to show unconditionally, so a completely unrelated failure (a stale library.db
-    // lookup, a bad path) still offered "Install GE-Proton" as if that would fix it. Confusing
-    // on Linux; actively wrong on macOS, where GE-Proton isn't a concept that exists at all.
+    // lookup, a bad path) still offered "Install GE-Proton" as if that would fix it.
     $('pr-install').style.display = isProtonIssue ? '' : 'none';
     $('pr-install').disabled = false;
     $('pr-install').textContent = 'Install GE-Proton';
@@ -1584,7 +1580,7 @@ function isGameInstalled(g) {
     return !!g && !!g.LaunchCommand && (g.Installed == null || g.Installed == 1);
 }
 
-const QUALIFIER_FILTERS = new Set(['installed','favs','want','playable','mac-native','crossover']);
+const QUALIFIER_FILTERS = new Set(['installed','favs','want','playable']);
 
 // ── Genres ───────────────────────────────────────────────────────────────────
 // The vocabulary lives in packages/core/genres.js and arrives via the genre-list IPC,
@@ -1974,10 +1970,6 @@ function getSafePath(rawPath) {
 }
 
 // --- WINDOW CONTROLS ---
-// macOS gets the real traffic lights (see main.js's titleBarStyle:'hidden'); the custom row
-// stays hidden there via body.platform-darwin in CSS rather than removed, so nothing else that
-// queries #btn-min/#btn-max/#btn-close has to know the host differs.
-if (window.api.platform === 'darwin') document.body.classList.add('platform-darwin');
 document.getElementById('btn-min').addEventListener('click', () => window.api.minimizeApp());
 document.getElementById('btn-max').addEventListener('click', () => window.api.maximizeApp());
 document.getElementById('btn-close').addEventListener('click', () => window.api.closeApp());
@@ -2087,71 +2079,6 @@ document.getElementById('btn-close-free-games')?.addEventListener('click', () =>
     document.getElementById('modal-free-games')?.classList.remove('active'));
 document.getElementById('modal-free-games')?.addEventListener('click', (e) => {
     if (e.target.id === 'modal-free-games') e.currentTarget.classList.remove('active');
-});
-
-// ── MAC-NATIVE FILTER (macOS only) ──────────────────────────────────────────
-// Which games have a real macOS build vs. Windows-only. GOG/Epic are tagged from library.db
-// (free, local); Steam needs a live per-game lookup, so it's a user-triggered scan rather than
-// something that runs on every sync, see scan-mac-native in main.js. The filter itself is just
-// another qualifier in activeFilters (see QUALIFIER_FILTERS/applyFilters), reachable from the
-// same "ALL GAMES ▾" dropdown Favourites/Want/Installed already live in, not a bespoke toggle,
-// so it's exactly as easy to find as those.
-function isMacNative(game) { return game && (game.MacNative == 1); }
-if (window.api.platform === 'darwin') {
-    document.getElementById('mac-native-tool-card')?.style.setProperty('display', '');
-} else {
-    // Not meaningful data on any other host, so REMOVE both surfaces rather than hide them.
-    // Hiding is not enough in either case, for the same underlying reason: several code paths
-    // walk the DOM instead of reading CSS. enhanceSelect()'s popup reads sel.options directly,
-    // and the Control Panel used to reset `display` on EVERY .tools-section in three places
-    // (openToolsModal, closeTools, and the search filter), which silently un-did the inline
-    // display:none this card ships with the moment the panel was opened. Those three resets
-    // are gone as of wave 2A. That shipped in 1.8.0:
-    // Linux users saw a "Mac-Native Games" card offering a scan the backend refuses anyway
-    // (scan-mac-native is gated on host.id === 'darwin').
-    document.getElementById('gallery-category-mac-native')?.remove();
-    document.getElementById('mac-native-tool-card')?.remove();
-}
-// ── STEAM-VIA-CROSSOVER FILTER (macOS only) ─────────────────────────────────
-// A Windows Steam game the user installed into a CrossOver bottle. Deliberately derived
-// from the launch command rather than a stored column: the command is already reconciled
-// against what is really on disk (see reconcileSteamBottleCommands in main.js), so there is
-// no second piece of state to keep in sync, and a game that leaves the bottle stops being
-// tagged the moment its command is rewritten back.
-//
-// This is the opposite of Mac-Native, and both can be on screen at once: one says "a real
-// macOS build", this one says "a Windows build, running through CrossOver".
-const CX_BOTTLE_MASK = "data:image/svg+xml;utf8," + encodeURIComponent(
-    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">' +
-    '<path fill="#000" d="M10 2h4v1.2h-1.1v3.1c0 .7.2 1.1.7 1.7l1.9 2.3c.6.7.9 1.5.9 2.4V20a2 2 0 0 1-2 2H9.6a2 2 0 0 1-2-2v-7.3c0-.9.3-1.7.9-2.4l1.9-2.3c.5-.6.7-1 .7-1.7V3.2H10z"/>' +
-    '<path fill="#000" d="M8 14h8v1.4H8z"/></svg>');
-
-function isSteamCrossOver(game) {
-    if (!game) return false;
-    const cmds = [game.LaunchCommand];
-    try { for (const l of JSON.parse(game.LaunchCommands || '[]')) if (l && l.cmd) cmds.push(l.cmd); } catch {}
-    return cmds.some(c => /^steambottle:\/\//i.test(String(c || '').trim()));
-}
-if (window.api.platform !== 'darwin') {
-    // Removed, not hidden, for the same DOM-walking reason as the Mac-Native option above.
-    document.getElementById('gallery-category-crossover')?.remove();
-}
-
-document.getElementById('btn-scan-mac-native')?.addEventListener('click', async () => {
-    const btn = document.getElementById('btn-scan-mac-native');
-    const status = document.getElementById('mac-native-scan-status');
-    btn.disabled = true;
-    window.api.onMacNativeScanProgress?.(p => {
-        if (status && p.total) status.textContent = `${p.label || ''} (${p.scanned}/${p.total})`;
-    });
-    if (status) status.textContent = 'Scanning…';
-    const r = await window.api.scanMacNative({ force: false });
-    btn.disabled = false;
-    if (!r.ok) { if (status) status.textContent = r.error === 'already_running' ? 'Already scanning…' : `Failed: ${r.error}`; return; }
-    if (status) status.textContent = `Done, ${r.macNative} Mac-native games found.`;
-    const res = await window.api.getGames();
-    allGames = (res.games || []).filter(g => g.Game && g.Game !== 'null');
-    applyFilters();
 });
 
 // ── HIDDEN GAMES (per-game hide; managed from the Control Panel) ────────────
@@ -3755,12 +3682,6 @@ window.api.getAppVersion?.().then(v => {
     const cp = document.getElementById('cp-app-version-num');
     if (cp) cp.textContent = `VERSION ${v}`;
 }).catch(() => {});
-// The macOS build is unsigned and doesn't get the same Linux-first testing yet, make that
-// visible in the two places anyone would look for the version, not just the docs.
-if (window.api.platform === 'darwin') {
-    document.getElementById('about-platform-badge')?.style.setProperty('display', '');
-    document.getElementById('cp-platform-badge')?.style.setProperty('display', '');
-}
 
 // Control Panel splash → releases page. There is no in-app updater by design:
 // the user reads the release notes on GitHub and grabs the AppImage themselves.
@@ -4546,6 +4467,7 @@ function loadGames() {
                     currentPlaylistGames = await window.api.getPlaylistGames(currentPlaylistId);
                 }
                 applyFilters();
+                try { _paintBatchScope(); } catch {}   // the counts move whenever the library does
             } catch (e) { console.error('[loadGames]', e); }
             finally { resolvers.forEach(r => { try { r(); } catch {} }); }
         }, 80);
@@ -4889,8 +4811,6 @@ function applyFilters() {
             if (f === 'playable'   && !game.LaunchCommand) return false;
             if (f === 'favs'       && game.FAV !== 'YES') return false;
             if (f === 'want'       && game.WANT_TO_PLAY !== 'YES') return false;
-            if (f === 'mac-native' && !isMacNative(game)) return false;
-            if (f === 'crossover'  && !isSteamCrossOver(game)) return false;
             if (f === 'installed') {
                 // ⚠️ The manual/emulation special case is gone: it accepted any row with a
                 // launch command, which is exactly how uninstalled emulator and RetroArch
@@ -5236,9 +5156,7 @@ function renderGallery(recent, regular) {
         const imgSrc = game.CoverArt ? getSafePath(game.CoverArt) : '';
         const imgHtml = imgSrc ? `<img src="${imgSrc}" class="gallery-cover" loading="lazy">` : `<div class="gallery-cover" style="display:flex; align-items:center; justify-content:center; color:#555; font-size:12px;">${t('game.no_cover')}</div>`;
         const _badges = (game.Store ? String(game.Store).split(',') : []).map(s => s.trim()).filter(Boolean).map(s => { const l = getStoreLogo(s); return l ? `<div class="gallery-store-badge" style="-webkit-mask-image:url('${l}');"></div>` : ''; }).join('');
-        const _macBadge = isMacNative(game) ? `<div class="gallery-store-badge gallery-mac-badge" style="-webkit-mask-image:url('assets/logos/apple.png');" title="Runs natively on macOS"></div>` : '';
-        const _cxBadge = isSteamCrossOver(game) ? `<div class="gallery-store-badge gallery-cx-badge" style="-webkit-mask-image:url('${CX_BOTTLE_MASK}');" title="Windows Steam game, runs through CrossOver"></div>` : '';
-        const badgeHtml = (_badges || _macBadge || _cxBadge) ? `<div class="gallery-store-badges">${_badges}${_macBadge}${_cxBadge}</div>` : '';
+        const badgeHtml = _badges ? `<div class="gallery-store-badges">${_badges}</div>` : '';
         const f2pHtml = isFreeToPlay(game) ? `<div class="f2p-pill gallery-f2p-pill" data-f2p-pill="1" title="Free-to-play, click to show/hide these">FREE</div>` : '';
         const installCmdG = getInstallCommand(game);
         const isInstalled = isGameInstalled(game);
@@ -7251,6 +7169,64 @@ document.getElementById('btn-sync-steam').addEventListener('click', async () => 
 });
 
 
+// ── Add a Steam game Steam's own API will not report ─────────────────────────
+// Mods (Enderal and friends) are type="mod" on the store and never appear in
+// GetOwnedGames, and an uninstalled one has no local appmanifest either, so the
+// library import cannot see it by any route. Name it here instead: a name searches
+// the store, an App ID or a store link goes straight in. main.js remembers the ID so
+// the next sync keeps the row rather than pruning it as "no longer owned".
+(function initSteamAdd() {
+    const input   = document.getElementById('steam-add-input');
+    const btn     = document.getElementById('btn-steam-add');
+    const results = document.getElementById('steam-add-results');
+    const status  = document.getElementById('steam-add-status');
+    if (!input || !btn) return;
+
+    const say = (msg, kind = '') => { status.className = 'steam-add-status' + (kind ? ' ' + kind : ''); status.innerHTML = msg; };
+    const busy = (on, label) => { btn.disabled = on; input.disabled = on; btn.innerText = label || t('html.btn_steam_add'); };
+    const clearPicks = () => { results.innerHTML = ''; results.classList.remove('active'); };
+
+    function showPicks(list) {
+        results.innerHTML = '';
+        list.forEach(res => {
+            const pick = document.createElement('button');
+            pick.className = 'steam-add-pick';
+            pick.innerHTML = `${res.image ? `<img src="${res.image}" alt="">` : ''}<span class="n">${res.name}<small>${t('steam_add.appid')} ${res.id}</small></span>`;
+            pick.addEventListener('click', () => { clearPicks(); submit(res.id); });
+            results.appendChild(pick);
+        });
+        results.classList.add('active');
+        say(t('steam_add.pick'));
+    }
+
+    async function submit(raw) {
+        clearPicks();
+        busy(true, t('status.searching'));
+        say(t('steam_add.asking'));
+        const res = await window.api.steamAddApp(raw);
+
+        if (!res || !res.success) { busy(false); say((res && res.message) || t('steam_add.failed'), 'bad'); return; }
+        if (res.needsPick) { busy(false); showPicks(res.results); return; }
+
+        // The row exists now; fill it with the same scrape every other game gets.
+        say(t('steam_add.fetching').replace('{name}', res.name));
+        busy(true, t('status.fetching_auto'));
+        await window.api.autoFetch(res.id, res.name, res.appid);
+        await loadGames();
+        busy(false);
+        input.value = '';
+
+        const lines = [];
+        lines.push((res.status === 'updated' ? t('steam_add.updated') : t('steam_add.added')).replace('{name}', res.name));
+        if (!res.installed) lines.push(t('steam_add.install_hint'));
+        if (res.free && _hideFreeGames) lines.push(t('steam_add.free_hidden'));
+        say(lines.join('<br>'), 'ok');
+    }
+
+    btn.addEventListener('click', () => { const raw = input.value.trim(); if (raw) submit(raw); });
+    input.addEventListener('keydown', e => { if (e.key === 'Enter') btn.click(); });
+})();
+
 document.getElementById('btn-tools-add-game')?.addEventListener('click', () => {
     closeTools();
     openAddGameDialog();
@@ -7553,7 +7529,7 @@ modalTools.addEventListener('click', e => { if (e.target === modalTools) closeTo
     // because `.cp-pane { display:none }` hides panes rather than the cards outside
     // them, an unlisted card renders on TOP of whichever page is showing, on all of
     // them. Seven cards were in that state (game updates, the display picker, Omarchy,
-    // source ports, DOSBox, genres and Mac-Native), which is why the panel still read
+    // source ports, DOSBox, genres and a since-removed macOS card), which is why the panel still read
     // as one flat list even though the panes were already built.
     const CARD_PANES = [
         ['btn-update-library', 'library'],
@@ -7561,6 +7537,7 @@ modalTools.addEventListener('click', e => { if (e.target === modalTools) closeTo
         ['btn-install-dir-change', 'library'],
         ['btn-tools-add-game', 'library'],
         ['btn-scan-updates', 'library'],
+        ['btn-open-report', 'report'],
         ['btn-scan-genres', 'library'],
         ['btn-theme-switch', 'appearance'],
         ['history-segmented-control', 'behavior'],
@@ -7573,7 +7550,6 @@ modalTools.addEventListener('click', e => { if (e.target === modalTools) closeTo
         ['dosbox-mode-control', 'ports'],
         ['display-card', 'desktop'],
         ['omarchy-card', 'desktop'],
-        ['mac-native-tool-card', 'desktop'],
         ['btn-backup-zip', 'system'],
         ['btn-clean-images', 'danger'],
     ];
@@ -7689,7 +7665,59 @@ async function runBatchScrape(gamesToFetch, label) {
 }
 
 // Standalone button: scrape every game missing data
-document.getElementById('btn-batch-fetch').addEventListener('click', () => runBatchScrape(gamesMissingData(allGames), 'Batch Scrape'));
+// ── Batch scrape: which games are even considered ────────────────────────────
+// Two separate questions, and only the first one is new here.
+//   1. WHICH games: all of them, or only what is installed. A library with hundreds of owned
+//      but uninstalled titles made "scrape what's missing" a long job before it reached the
+//      handful you can actually play. The same choice the macOS edition gained.
+//   2. Which of those need anything. That is gamesMissingData(), unchanged: it already skips
+//      every row that has all its art and text.
+// "Installed" is isGameInstalled(), the rule the library's Installed filter uses, so "Installed
+// Only" scrapes exactly the games that filter shows.
+let _batchScope = 'all';
+
+function _batchScopeList() {
+    return _batchScope === 'installed' ? allGames.filter(isGameInstalled) : allGames;
+}
+
+// The skip in (2) used to be invisible: a run that correctly passed over almost everything
+// looked the same as a run that failed. The count is shown before it starts.
+function _paintBatchScope() {
+    const ctl = document.getElementById('batch-scope-control');
+    if (!ctl) return;
+    ctl.querySelectorAll('.batch-scope-btn').forEach(b => b.classList.toggle('active', b.dataset.val === _batchScope));
+    const hint = document.getElementById('batch-scope-hint');
+    if (!hint) return;
+    const inScope = _batchScopeList();
+    const need = gamesMissingData(inScope).length;
+    const installed = _batchScope === 'installed';
+    const vars = { n: need, total: inScope.length };
+    const pick = (key, count) => (count === 1 && t(`html.${key}_one`) !== `html.${key}_one`) ? `html.${key}_one` : `html.${key}`;
+    hint.textContent =
+        !inScope.length ? t(installed ? 'html.batch_scope_none_installed' : 'html.batch_scope_none')
+      : need === 0      ? t(pick(installed ? 'batch_scope_complete_installed' : 'batch_scope_complete', inScope.length), vars)
+      :                   t(pick(installed ? 'batch_scope_missing_installed' : 'batch_scope_missing', inScope.length), vars);
+}
+
+document.querySelectorAll('.batch-scope-btn').forEach(btn =>
+    btn.addEventListener('click', () => {
+        _batchScope = btn.dataset.val;
+        _paintBatchScope();
+        window.api.setSetting('batch_scrape_scope', _batchScope);
+    }));
+
+(async () => {
+    try {
+        const saved = await window.api.getSetting('batch_scrape_scope');
+        if (saved === 'all' || saved === 'installed') _batchScope = saved;
+    } catch {}
+    _paintBatchScope();
+})();
+
+// Standalone button: scrape every game in scope that is missing data
+document.getElementById('btn-batch-fetch').addEventListener('click', () => runBatchScrape(
+    gamesMissingData(_batchScopeList()),
+    _batchScope === 'installed' ? 'Batch Scrape (installed only)' : 'Batch Scrape'));
 
 document.getElementById('btn-check-install').addEventListener('click', async () => {
     const btn = document.getElementById('btn-check-install');
@@ -8571,3 +8599,195 @@ _omarchyThemeReady.then(ok => window.api.getSetting('clarity_theme').then(saved 
     syncInstallerInstalled();
 });
 
+// ── LIBRARY REPORT ───────────────────────────────────────────────────────────
+// Settings, Library, Library Report. The main process gathers the stats and renders the report
+// (report/report-main.js); this side only picks what goes in, shows the preview and asks for a
+// file. The preview is the real report document in an iframe, scaled to fit, so what is shown
+// is exactly what gets saved.
+(() => {
+    const $ = id => document.getElementById(id);
+    const modal = $('modal-report');
+    if (!modal) return;
+    const frame = $('rp-frame'), stage = $('rp-stage'), status = $('rp-status');
+    const STYLE_SWATCH = {
+        clarity:   ['#07090a', 'linear-gradient(90deg,#2fe0d6,#ff5fa2)'],
+        afterglow: ['#1c1020', 'linear-gradient(90deg,#ff7a59,#ffc56b)'],
+        daylight:  ['#eef1f5', 'linear-gradient(90deg,#2344ff,#ff4d2e)'],
+    };
+    let prefs = null, sectionInfo = [], previewTimer = null, previewSeq = 0, busy = false;
+    const R = key => t(`report.ui.${key}`);
+    const sectionName = id => t(`report.r.${id}`);
+
+    const defaults = () => ({
+        title: R('title_default'), subtitle: '', sections: null, style: 'clarity',
+        layout: 'cards', size: 'portrait', recentDays: 30, includePico8: null,
+    });
+
+    // "My theme" is read off the live stylesheet, so it follows whatever theme is on screen,
+    // including the Omarchy palette, without a second copy of the theme table.
+    function themeTokens() {
+        const cs = getComputedStyle(document.documentElement);
+        const v = k => cs.getPropertyValue(`--${k}`).trim();
+        return { bg: v('bg'), bg_menu: v('bg_menu'), bg_panel: v('bg_panel'), accent: v('accent'), accent_menu: v('accent_menu'),
+                 text_main: v('text_main'), text_sec: v('text_sec'), text_dim: v('text_dim'), border: v('border'),
+                 font: (typeof THEMES !== 'undefined' && THEMES[activeTheme] && THEMES[activeTheme].font) || '' };
+    }
+    const payload = () => ({ ...prefs, lang: currentLang, theme: themeTokens() });
+    const save = () => { try { window.api.setSetting('report_prefs', JSON.stringify(prefs)); } catch {} };
+    const chosen = () => sectionInfo.filter(s => s.available && (prefs.sections ? prefs.sections.includes(s.id) : true)).map(s => s.id);
+
+    function setStatus(text, isError) { status.textContent = text || ''; status.classList.toggle('err', !!isError); }
+
+    function renderSections() {
+        const box = $('rp-sections');
+        const picked = new Set(chosen());
+        box.innerHTML = '';
+        for (const s of sectionInfo) {
+            const label = document.createElement('label');
+            label.className = `rp-sec${s.available ? (picked.has(s.id) ? ' on' : '') : ' off'}`;
+            if (!s.available) label.title = R('no_data');
+            const box2 = document.createElement('input');
+            box2.type = 'checkbox'; box2.id = `rp-sec-${s.id}`; box2.checked = s.available && picked.has(s.id); box2.disabled = !s.available;
+            box2.addEventListener('change', () => {
+                const next = new Set(chosen());
+                box2.checked ? next.add(s.id) : next.delete(s.id);
+                prefs.sections = sectionInfo.map(x => x.id).filter(id => next.has(id));
+                label.classList.toggle('on', box2.checked);
+                changed();
+            });
+            const span = document.createElement('span'); span.textContent = sectionName(s.id);
+            label.append(box2, span);
+            box.appendChild(label);
+        }
+    }
+
+    function renderStyles() {
+        const box = $('rp-styles');
+        box.innerHTML = '';
+        const tok = themeTokens();
+        for (const id of ['clarity', 'afterglow', 'daylight', 'theme']) {
+            const b = document.createElement('button');
+            b.type = 'button'; b.className = `rp-style${prefs.style === id ? ' active' : ''}`; b.dataset.val = id;
+            const [bg, bar] = STYLE_SWATCH[id] || [tok.bg || '#111', tok.accent || '#2fe0d6'];
+            b.innerHTML = `<span class="rp-swatch" style="background:${bg}"><i style="background:${bar}"></i></span><span></span>`;
+            b.lastChild.textContent = R(`style_${id}`);
+            b.addEventListener('click', () => { prefs.style = id; renderStyles(); changed(); });
+            box.appendChild(b);
+        }
+    }
+
+    function syncSegments() {
+        for (const [id, key] of [['rp-format', 'layout'], ['rp-size', 'size'], ['rp-recent', 'recentDays']]) {
+            $(id).querySelectorAll('.segmented-btn').forEach(b => b.classList.toggle('active', String(prefs[key]) === b.dataset.val));
+        }
+        $('rp-size-wrap').hidden = prefs.layout === 'document';
+        $('rp-format-hint').textContent = R(`format_${prefs.layout}_hint`);
+        $('rp-recent').querySelectorAll('.segmented-btn').forEach(b => { b.textContent = t('report.ui.days', { n: b.dataset.val }); });
+        renderActions();
+    }
+
+    function renderActions() {
+        const box = $('rp-actions');
+        const list = prefs.layout === 'document' ? [['html', 'save_html', true], ['pdf', 'save_pdf', false]]
+            : [['png', prefs.layout === 'poster' ? 'save_image' : 'save_images', true]];
+        box.innerHTML = '';
+        for (const [format, key, primary] of list) {
+            const b = document.createElement('button');
+            b.type = 'button'; b.id = `rp-save-${format}`; if (primary) b.className = 'primary';
+            b.textContent = R(key); b.disabled = busy || !chosen().length;
+            b.addEventListener('click', () => exportAs(format));
+            box.appendChild(b);
+        }
+    }
+
+    function fitPreview(size) {
+        const W = stage.clientWidth, Hh = stage.clientHeight;
+        if (prefs.layout === 'poster') {
+            const k = Math.min((W - 48) / size.w, (Hh - 48) / size.h);
+            frame.style.width = `${size.w}px`; frame.style.height = `${size.h}px`;
+            frame.style.transform = `scale(${k})`;
+            frame.style.left = `${(W - size.w * k) / 2}px`; frame.style.top = `${(Hh - size.h * k) / 2}px`;
+        } else {
+            // The document and the card strip scroll inside the frame; the document is shown at
+            // two-thirds size so a whole section fits, the strip scales itself.
+            const k = prefs.layout === 'document' ? 0.66 : 1;
+            frame.style.width = `${W / k}px`; frame.style.height = `${Hh / k}px`;
+            frame.style.transform = `scale(${k})`; frame.style.left = '0px'; frame.style.top = '0px';
+        }
+    }
+
+    async function refreshPreview() {
+        const seq = ++previewSeq;
+        const empty = $('rp-empty');
+        if (!chosen().length) { empty.hidden = false; empty.textContent = R('nothing_selected'); frame.hidden = true; return; }
+        empty.hidden = true; frame.hidden = false;
+        $('rp-busy').hidden = false; $('rp-busy').textContent = R('rendering');
+        const r = await window.api.reportPreview({ ...payload(), sections: chosen() });
+        if (seq !== previewSeq) return;                         // a newer toggle already asked again
+        $('rp-busy').hidden = true;
+        if (!r || !r.ok) { setStatus(t('report.ui.failed', { error: r ? r.error : '?' }), true); return; }
+        fitPreview(r.size);
+        frame.srcdoc = r.html;
+    }
+
+    function changed() {
+        save(); syncSegments();
+        clearTimeout(previewTimer);
+        previewTimer = setTimeout(refreshPreview, 220);
+    }
+
+    async function exportAs(format) {
+        if (busy) return;
+        busy = true; renderActions(); setStatus(R('rendering'));
+        let r;
+        try { r = await window.api.reportExport({ ...payload(), sections: chosen() }, format); }
+        catch (e) { r = { ok: false, error: e.message }; }
+        busy = false; renderActions();
+        if (!r || r.canceled) { setStatus(''); return; }
+        if (!r.ok) { setStatus(t('report.ui.failed', { error: r.error === 'nothing_selected' ? R('nothing_selected') : r.error }), true); return; }
+        setStatus(r.count ? t('report.ui.saved_many', { n: r.count, path: r.path }) : t('report.ui.saved', { path: r.path }));
+    }
+
+    async function open() {
+        try { prefs = { ...defaults(), ...JSON.parse((await window.api.getSetting('report_prefs')) || '{}') }; }
+        catch { prefs = defaults(); }
+        if (prefs.includePico8 == null) prefs.includePico8 = (await window.api.getSetting('hide_pico8')) !== '1';
+        $('rp-title').value = prefs.title; $('rp-subtitle').value = prefs.subtitle;
+        $('rp-pico8').checked = !!prefs.includePico8;
+        setStatus('');
+        modal.classList.add('active');
+        const r = await window.api.reportSections(payload());
+        sectionInfo = r && r.ok ? r.sections : [];
+        renderSections(); renderStyles(); syncSegments();
+        refreshPreview();
+    }
+
+    $('btn-open-report')?.addEventListener('click', () => {
+        document.getElementById('modal-tools')?.classList.remove('active');
+        open();
+    });
+    const close = () => { modal.classList.remove('active'); frame.srcdoc = ''; };
+    $('rp-close').addEventListener('click', close);
+    modal.addEventListener('click', e => { if (e.target === modal) close(); });
+    document.addEventListener('keydown', e => { if (e.key === 'Escape' && modal.classList.contains('active')) close(); });
+
+    for (const [id, key, cast] of [['rp-format', 'layout', String], ['rp-size', 'size', String], ['rp-recent', 'recentDays', Number]]) {
+        $(id).addEventListener('click', e => {
+            const b = e.target.closest('.segmented-btn'); if (!b) return;
+            prefs[key] = cast(b.dataset.val);
+            if (key === 'recentDays') { window.api.reportSections(payload()).then(r => { if (r && r.ok) { sectionInfo = r.sections; renderSections(); } }); }
+            changed();
+        });
+    }
+    let typing = null;
+    for (const [id, key] of [['rp-title', 'title'], ['rp-subtitle', 'subtitle']]) {
+        $(id).addEventListener('input', e => { prefs[key] = e.target.value; clearTimeout(typing); typing = setTimeout(changed, 350); });
+    }
+    $('rp-pico8').addEventListener('change', e => {
+        prefs.includePico8 = e.target.checked;
+        window.api.reportSections(payload()).then(r => { if (r && r.ok) { sectionInfo = r.sections; renderSections(); } changed(); });
+    });
+    $('rp-all').addEventListener('click', () => { prefs.sections = null; renderSections(); changed(); });
+    $('rp-none').addEventListener('click', () => { prefs.sections = []; renderSections(); changed(); });
+    window.addEventListener('resize', () => { if (modal.classList.contains('active')) { clearTimeout(previewTimer); previewTimer = setTimeout(refreshPreview, 200); } });
+})();
