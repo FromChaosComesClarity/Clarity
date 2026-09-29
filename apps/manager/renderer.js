@@ -810,6 +810,56 @@ function escHtml(s) {
     return String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }
 
+/*
+ * Steam's detailed_description, made safe to put in the page.
+ *
+ * ⚠️ This is remote HTML. It arrives from Steam's store API, it is written by
+ * whoever publishes the game, and it went straight into innerHTML. A <script>
+ * tag assigned that way never runs, which is probably why this looked fine,
+ * but <img onerror> runs perfectly well, and this window is created with
+ * webSecurity disabled and a preload bridge the page can call. So the pane
+ * that shows a game's blurb was the widest opening in the app.
+ *
+ * Escaping it outright would have been simpler and wrong: the whole point of
+ * this pane is Steam's own formatting, its paragraphs, headings and inline
+ * screenshots. So the markup is parsed and rebuilt from an allowlist instead.
+ * Anything not named here loses its tags but keeps its text, and src and href
+ * have to be http(s), which is what rules out javascript: as well.
+ *
+ * Parsed with DOMParser rather than matched with a regular expression, because
+ * HTML is not a regular language and a sanitiser that pretends otherwise is
+ * the kind that gets written about later.
+ */
+const DESC_TAGS = new Set(['P','BR','HR','B','STRONG','I','EM','U','S','SUP','SUB',
+    'H1','H2','H3','H4','H5','H6','UL','OL','LI','DL','DT','DD','IMG','A','DIV','SPAN',
+    'BLOCKQUOTE','PRE','CODE','TABLE','THEAD','TBODY','TFOOT','TR','TD','TH']);
+const DESC_ATTRS = { IMG: ['src','alt'], A: ['href','title'] };
+const DESC_ATTRS_ANY = ['class'];
+
+function sanitizeRemoteHtml(html) {
+    let doc;
+    try { doc = new DOMParser().parseFromString(String(html == null ? '' : html), 'text/html'); }
+    catch (e) { return ''; }            // unparseable is not worth rendering
+
+    // Gone entirely, contents and all: nothing here has a place in a blurb.
+    doc.body.querySelectorAll('script,style,iframe,object,embed,link,meta,form,input,button,svg,math,template')
+        .forEach(n => n.remove());
+
+    // A static list, so unwrapping as we go does not disturb the walk.
+    for (const el of Array.from(doc.body.querySelectorAll('*'))) {
+        if (!DESC_TAGS.has(el.tagName)) { el.replaceWith(...el.childNodes); continue; }
+        const allowed = (DESC_ATTRS[el.tagName] || []).concat(DESC_ATTRS_ANY);
+        for (const attr of Array.from(el.attributes)) {
+            if (!allowed.includes(attr.name.toLowerCase())) el.removeAttribute(attr.name);
+        }
+        for (const a of ['src','href']) {
+            const v = el.getAttribute(a);
+            if (v && !/^https?:\/\//i.test(v.trim())) el.removeAttribute(a);
+        }
+    }
+    return doc.body.innerHTML;
+}
+
 // Every store a row can be played or installed from, with each one's install state
 // (Steam appmanifest / GOG-Epic library.db). Main resolves this from the row's store
 // fields, not just LaunchCommands, so a mixed-store row that never got the plural column
@@ -6061,7 +6111,7 @@ function openGamepage(game) {
     const fallbackDescContainer = document.getElementById('gamepage-fallback-desc');
 
     if (game.SteamDesc && game.SteamDesc.trim() !== "") {
-        steamDescContainer.innerHTML = game.SteamDesc;
+        steamDescContainer.innerHTML = sanitizeRemoteHtml(game.SteamDesc);
         steamDescContainer.style.display = 'block';
         fallbackDescContainer.style.display = 'none';
     } else {
