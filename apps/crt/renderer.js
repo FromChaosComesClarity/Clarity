@@ -1,6 +1,6 @@
 'use strict';
 /*
- * Clarity, CRT face — navigation.
+ * Clarity, CRT face: navigation.
  *
  * A stack of menus and a cursor, which is the whole interaction model: Up and
  * Down move, A descends or acts, B goes back. That is deliberately the entire
@@ -70,7 +70,7 @@ function push(builder, arg) {
  * ⚠️ Rebuilt on the way back, not replayed.
  *
  * A screen's rows are a snapshot of the library at the moment it was built, and
- * coming back to one is exactly when that snapshot is most likely to be wrong —
+ * coming back to one is exactly when that snapshot is most likely to be wrong:
  * you went away to install, uninstall, scrape or mark something. Returning to a
  * game's page after installing it and being offered "Install" again is what
  * this fixes.
@@ -207,7 +207,7 @@ function render() {
  * without either bars or a crop that throws away the art.
  *
  * Hero art first (it is drawn to be a backdrop), then a screenshot, then the
- * cover as a last resort. Most rows have none of the three, and that is fine —
+ * cover as a last resort. Most rows have none of the three, and that is fine:
  * the menu is designed to work with no art at all.
  */
 function paintArt(details) {
@@ -249,8 +249,8 @@ function rootScreen() {
 /*
  * The filters, in one place.
  *
- * ⚠️ A row can front several stores at once — Store is free text like
- * "Steam, GOG" — so a store filter has to match a substring rather than compare
+ * ⚠️ A row can front several stores at once (Store is free text like
+ * "Steam, GOG"), so a store filter has to match a substring rather than compare
  * equal, or every multi-store game disappears from both of its stores.
  */
 function filtered() {
@@ -331,7 +331,7 @@ async function saveSetting(key, value) {
  * ⚠️ This exists because the input story changed. The face was built for a
  * D-pad, where typing is a torture device and a menu of rows is the only sane
  * shape. It is driven from a keyboard now, and with a keyboard the fastest path
- * to one game out of 523 is its name. The row grammar does not change — the
+ * to one game out of 523 is its name. The row grammar does not change: the
  * query is simply a row that shows what has been typed.
  */
 /*
@@ -339,7 +339,7 @@ async function saveSetting(key, value) {
  * both sides.
  *
  * A plain substring match cannot find "B.I.O.T.A." by typing "biota", and this
- * library is full of titles like it — S.T.A.L.K.E.R., DOOM + DOOM II, "Hack 'n
+ * library is full of titles like it: S.T.A.L.K.E.R., DOOM + DOOM II, "Hack 'n
  * Splash". Typing the punctuation of a title you are searching *for* is not a
  * thing anyone does, least of all on a TV.
  */
@@ -448,7 +448,7 @@ function gameScreen(game) {
     } else if (launchers.length === 1) {
         rows.push({ kind: 'action', label: 'Play', run: () => play(game, launchers[0]) });
     } else {
-        // A genuinely multi-store row — the same game owned on Steam and GOG,
+        // A genuinely multi-store row: the same game owned on Steam and GOG,
         // say. Which copy to start is the user's call, so it is asked rather
         // than guessed, and each says whether it is actually installed.
         for (const l of launchers) {
@@ -462,7 +462,7 @@ function gameScreen(game) {
     }
 
     // ⚠️ Only for a game the Installer owns. A Steam row installs through
-    // Steam — offering an Install button here that cannot install would be a
+    // Steam, and offering an Install button here that cannot install would be a
     // worse lie than offering nothing.
     const entry = entryCache.get(game.id);
     if (entry && !entry.installed) {
@@ -492,7 +492,7 @@ function gameScreen(game) {
         },
     });
 
-    // Scraping, per game. A row that already has art offers a re-scrape — the
+    // Scraping, per game. A row that already has art offers a re-scrape: the
     // scraper keeps local art it did not fetch, so this is safe to press.
     const scraped = !!(details && (details.cover || details.description));
     rows.push({
@@ -560,8 +560,8 @@ function ago(ms) {
  *
  * Favourites, want-to-play and playlists, which the library already had and
  * this face could not see. Favourites and Want to play sit alongside the
- * playlists rather than above them: they behave identically — a named set of
- * games — and giving them their own root rows would have said otherwise.
+ * playlists rather than above them: they behave identically, being a named set of
+ * games, and giving them their own root rows would have said otherwise.
  *
  * ⚠️ A smart playlist computes its members from a rule every time it is read,
  * so it can be browsed but not edited by hand. The game screen says so rather
@@ -659,7 +659,7 @@ function playlistsScreenFor(game) {
         },
     }));
 
-    if (!playlists.length) rows.push({ kind: 'info', label: 'No playlists yet — make one in Desktop Mode' });
+    if (!playlists.length) rows.push({ kind: 'info', label: 'No playlists yet, make one in Desktop Mode' });
 
     return { title: 'PLAYLISTS', rows, okLabel: 'CHANGE' };
 }
@@ -668,7 +668,7 @@ function playlistsScreenFor(game) {
 /*
  * Naming a new playlist.
  *
- * The same typing row the search screens use — the screen is the field, there
+ * The same typing row the search screens use: the screen is the field, there
  * is no caret to place. ⚠️ Only manual playlists: a smart one is a saved query
  * and building a query needs more than a list of rows, so that stays a desktop
  * job and the collections screen labels those SMART.
@@ -747,7 +747,7 @@ async function deletePlaylist(list) {
  * then does a window appear. Minutes. The face said "STARTING…" for six seconds
  * and then went quiet, so the only honest reading was that it had failed.
  *
- * The engine knew all of this the whole time — which phase, what percent,
+ * The engine knew all of this the whole time: which phase, what percent,
  * whether the game process came up, and a diagnosis when it did not. Nothing
  * here is new information; it is information that was being thrown away.
  */
@@ -804,7 +804,7 @@ async function showLaunchLog(title) {
     push(() => ({
         title: 'WHAT HAPPENED',
         rows: [],
-        prose: text || 'No log was written for this game.\n\nThat usually means it never started at all — a launch command that is wrong, or a store client that is not running.',
+        prose: text || 'No log was written for this game.\n\nThat usually means it never started at all: a launch command that is wrong, or a store client that is not running.',
         okLabel: 'CLOSE',
     }));
 }
@@ -820,7 +820,7 @@ window.crt.onLaunchProgress((info) => {
     if (!launchRun || !info) return;
     // ⚠️ Once it has failed, it has failed. The engine emits a final progress
     // event with an empty message *after* reporting the failure, and blindly
-    // applying it wiped the reason — which is exactly how "Could not start"
+    // applying it wiped the reason, which is exactly how "Could not start"
     // came to be followed by "no reason given".
     if (launchRun.state === 'failed') return;
     launchRun = {
@@ -862,7 +862,7 @@ window.crt.onGameSession((info) => {
  * closes.
  *
  * ⚠️ Signing in is not offered here. Both stores need an OAuth redirect
- * completed in a browser, which is hopeless at 720x480 across a room — so when
+ * completed in a browser, which is hopeless at 720x480 across a room, so when
  * the account is not connected the screen says exactly that and points at
  * Desktop Mode for the one-time step, rather than pretending.
  */
@@ -884,7 +884,7 @@ async function openStore() {
 }
 
 /*
- * The progress panel, pushed whenever an install starts — from the Install list
+ * The progress panel, pushed whenever an install starts, either from the Install list
  * or from a game's own page.
  *
  * ⚠️ It is a screen rather than a line in the footer because the first version
@@ -1050,8 +1050,8 @@ function scrapeScreen() {
 }
 
 /*
- * ⚠️ A batch is slow on purpose — four rate-limited services, one game at a
- * time — so "every game" over this library is tens of minutes. Saying so before
+ * ⚠️ A batch is slow on purpose: four rate-limited services, one game at a
+ * time, so "every game" over this library is tens of minutes. Saying so before
  * it starts is the difference between patience and a force-quit.
  */
 async function startScrape(scope) {
@@ -1100,7 +1100,7 @@ async function toggleFlag(game, field) {
  * ⚠️ The setting that makes a whole class of games work on this machine.
  *
  * Direct3D normally runs through DXVK, which needs Vulkan. Where Vulkan is
- * incomplete — this machine's Haswell graphics, for one — the game starts,
+ * incomplete, as on this machine's Haswell graphics, the game starts,
  * fails to create a device and exits in under a second, which looks exactly
  * like a launch that did nothing at all. OpenGL mode translates Direct3D
  * through WineD3D instead, and the same game runs.
@@ -1180,7 +1180,7 @@ async function scrapeGame(game, appId) {
  * Steam's own search is fuzzy, so an importer can attach the wrong appid and
  * every scrape after that faithfully fetches the wrong game's art. Typing the
  * real name here and choosing from the results pins the id, then scrapes with
- * it — the one flow that cannot be fixed by scraping harder.
+ * it, the one flow that cannot be fixed by scraping harder.
  */
 function matchScreen(game) {
     const rows = [{
@@ -1245,8 +1245,8 @@ function settingsScreen() {
  * Starting a game, without going anywhere.
  *
  * The face stays exactly where it is: the game takes the screen, and when it
- * exits this menu is still here, on the same row. What "play" means — which
- * engine, which store, whether a shell command or the Installer — belongs to
+ * exits this menu is still here, on the same row. What "play" means (which
+ * engine, which store, whether a shell command or the Installer) belongs to
  * packages/core/launch.js; this only picks the launcher and reports the answer.
  */
 async function play(game, launcher) {
@@ -1272,8 +1272,8 @@ async function play(game, launcher) {
 }
 
 // ⚠️ A failure has to be visible *here*. On a TV there is no console to check
-// and no notification area to glance at, and the usual cause — a Windows game
-// with no Proton — kills the process instantly and silently.
+// and no notification area to glance at, and the usual cause (a Windows game
+// with no Proton) kills the process instantly and silently.
 function fail(message) {
     $status.textContent = String(message || 'COULD NOT START').toUpperCase();
     setTimeout(() => { $status.textContent = ''; }, 8000);
@@ -1291,7 +1291,7 @@ window.crt.onLaunchFailed((info) => {
 });
 
 // Install progress, from the engine itself. Only redrawn while the install
-// screen is on top — a rebuild under a game screen would throw the cursor.
+// screen is on top, since a rebuild under a game screen would throw the cursor.
 window.crt.onInstallProgress((info) => {
     if (!installRun || !info) return;
     installRun = {
@@ -1302,15 +1302,15 @@ window.crt.onInstallProgress((info) => {
         // ⚠️ Kept, because this is where the *reason* lives. The engine reports
         // a failed install as a progress event with step 'error' and then
         // returns normally, so the caller's own answer knows only that it did
-        // not work — not why.
+        // not work, not why.
         error: info.step === 'error' ? (info.message || installRun.error) : installRun.error,
     };
     const here = screen();
     if (here && here.builder === installScreen) refresh(installScreen);
 });
 
-// Batch scrape progress. Only redrawn while that screen is the one on top —
-// a rebuild underneath a game screen would throw the cursor around.
+// Batch scrape progress. Only redrawn while that screen is the one on top,
+// since a rebuild underneath a game screen would throw the cursor around.
 window.crt.onScrapeProgress((p) => {
     if (!scrapeRun || !p) return;
     scrapeRun = { done: p.done, total: p.total, name: p.name };
@@ -1319,7 +1319,7 @@ window.crt.onScrapeProgress((p) => {
 });
 
 // ── Input ────────────────────────────────────────────────────────────────────
-// Arrow keys, Enter and Escape — a keyboard, which is what this is driven with.
+// Arrow keys, Enter and Escape: a keyboard, which is what this is driven with.
 
 function move(delta) {
     const here = screen();

@@ -2,7 +2,7 @@
 /*
  * Owning games that are not installed yet.
  *
- * Steam handles its own installs — a steam:// URL and the client does the rest.
+ * Steam handles its own installs: a steam:// URL and the client does the rest.
  * GOG and Epic have no client here, which is the whole reason the Installer
  * engine exists: it authenticates, downloads through gogdl or legendary, builds
  * a Wine prefix, and writes the result into its own library.db.
@@ -12,7 +12,7 @@
  * work; nothing here reimplements any of it.
  *
  * ⚠️ Two databases, and confusing them is the trap. `library.db` is the
- * Installer's own — everything the account owns on GOG and Epic, with the truth
+ * Installer's own, listing everything the account owns on GOG and Epic, with the truth
  * about what is downloaded. `games.db` is Clarity's library, where a row can
  * front several stores at once. A face shows games.db and installs through
  * library.db, and the link between them is games.InstallerGameId = '<store>_<app_id>'.
@@ -37,7 +37,7 @@ const DEFAULT_DIR = path.join(os.homedir(), 'Games', 'Clarity');
 /*
  * deps:
  *   baseDir       the portable install directory, used to find library.db
- *   ensureEngine  () => bool — prepare the Installer engine. ⚠️ Passed in
+ *   ensureEngine  () => bool, prepares the Installer engine. ⚠️ Passed in
  *                 rather than done here: installer-engine.js is a singleton
  *                 configured by init(), and a process that already runs it
  *                 (every face does, through packages/core/launch.js) must not
@@ -67,7 +67,7 @@ function create({ baseDir = '', ensureEngine = () => false } = {}) {
      * What the account owns.
      *
      * `installed` filters: true for what is on disk, false for what is not,
-     * undefined for everything. DLC is excluded — it is not a thing you install
+     * undefined for everything. DLC is excluded, since it is not a thing you install
      * from a list of games, and it made the list twice as long and half as
      * useful.
      */
@@ -196,7 +196,7 @@ function create({ baseDir = '', ensureEngine = () => false } = {}) {
      * ⚠️ Some machines cannot run DXVK at all. This one is a Haswell iGPU whose
      * Vulkan support Mesa itself calls incomplete, so a Windows game that wants
      * Direct3D through DXVK starts, fails to make a device, and exits in under
-     * a second — indistinguishable, from the outside, from a launch that did
+     * a second, which from the outside is indistinguishable from a launch that did
      * nothing. Forcing WineD3D translates Direct3D to OpenGL instead, which
      * that hardware does support, and the same game then runs.
      *

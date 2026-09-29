@@ -17,8 +17,8 @@
  *
  * Nothing here is a second implementation of something a face already does.
  * The library and settings come from registerSharedHandlers, the palette from
- * the shared omarchy-theme bridge, and what "Play" means — multi-store rows,
- * the Installer engine for GOG and Epic, itch's custom scheme — comes from
+ * the shared omarchy-theme bridge, and what "Play" means (multi-store rows,
+ * the Installer engine for GOG and Epic, itch's custom scheme) comes from
  * packages/core/launch.js, which every face shares.
  *
  * What this face does *not* do is hand you somewhere else. Starting a game
@@ -50,11 +50,11 @@ app.setName('clarity');
  * cares about that.
  *
  * Omarchy exports GDK_SCALE=2 for the desktop, and Chromium turns that into a
- * fractional device scale factor of its own choosing — on this machine 1.64,
+ * fractional device scale factor of its own choosing, on this machine 1.64,
  * which laid a 720x480 window out in a 439x293 viewport. Every measurement in
  * this face is a scanline count: a 4px rule is "two scanlines, so both fields
  * draw it". Multiplied by 1.64 it becomes 6.56 physical pixels, lands on a half
- * pixel, and strobes at 30Hz — precisely the artefact the stylesheet exists to
+ * pixel, and strobes at 30Hz, precisely the artefact the stylesheet exists to
  * avoid. Scaled text is worse: interlace punishes the resampled stems.
  *
  * So this face opts out of desktop scaling entirely. It is the only face that
@@ -79,7 +79,7 @@ const trailersDir  = path.join(configDir, 'videos');
 /*
  * ⚠️ Two places, because they differ between a packaged app and a checkout.
  * Packaged, the runner binaries sit in resources/assets/bin; in a checkout they
- * are at the repository root, not beside the face — so a dev run resolved a
+ * are at the repository root, not beside the face, so a dev run resolved a
  * path that does not exist and every GOG install failed with "gogdl not found".
  * Harmless for a release build, and completely confusing for anyone testing.
  */
@@ -220,7 +220,7 @@ function assetPath(p) {
  * started the Manager. That was wrong in the way that matters: this face is not
  * a menu that hands off to a desktop, it is the interface. You stay in it.
  *
- * What "play" means is still not decided here — packages/core/launch.js owns
+ * What "play" means is still not decided here. packages/core/launch.js owns
  * that, and Couch is being moved onto the same module, so there is one answer
  * to the multi-store question and one place that knows GOG and Epic must go
  * through the Installer engine rather than a shell command.
@@ -256,7 +256,7 @@ function send(channel, payload) {
 /*
  * Everything the game screen shows that the library list does not carry:
  * artwork and the blurb. Fetched per game, on the way in, rather than for all
- * 523 rows up front — each one costs several fs.existsSync calls to resolve,
+ * 523 rows up front: each one costs several fs.existsSync calls to resolve,
  * and a library screen needs none of it.
  *
  * ⚠️ Screenshot is a pipe-separated list, not a path. Description and SteamDesc
@@ -334,7 +334,7 @@ ipcMain.handle('crt-launch', (event, gameId, cmd) => {
  * ── Scraping ─────────────────────────────────────────────────────────────────
  *
  * Filling in art and details from here, because the point of this face is that
- * the desktop is optional. packages/core/scrape.js owns what a scrape means —
+ * the desktop is optional. packages/core/scrape.js owns what a scrape means:
  * finding the Steam appid by name, Steam, SteamGridDB, HowLongToBeat, ProtonDB
  * and IGDB, and never overwriting art the user already has. This decides which
  * rows to do it to, and says what happened.
@@ -345,7 +345,7 @@ function ensureScraper() {
     return scraper;
 }
 
-// Candidate Steam entries for a name — the answer to "the library matched the
+// Candidate Steam entries for a name, the answer to "the library matched the
 // wrong game". The chosen id is passed straight back into a scrape.
 ipcMain.handle('crt-steam-search', (event, name) => ensureScraper().searchSteam(String(name || '')));
 
@@ -439,8 +439,8 @@ ipcMain.handle('crt-scrape-counts', () => {
  *
  * GOG and Epic have no client on this machine; the Installer engine is what
  * downloads and sets them up. packages/core/installer-ops.js is the small
- * surface over it, and it shares this process's single engine — prepared by the
- * launcher — rather than configuring a second one.
+ * surface over it, and it shares this process's single engine, the one the
+ * launcher prepared, rather than configuring a second one.
  */
 let installer = null;
 function ensureInstaller() {
@@ -459,7 +459,7 @@ ipcMain.handle('crt-store-status', async () => {
     return { ...status, counts: status.available ? ops.counts() : { total: 0, installed: 0, available: 0 } };
 });
 
-// Owned but not on disk — the list worth showing on a screen called Install.
+// Owned but not on disk: the list worth showing on a screen called Install.
 ipcMain.handle('crt-store-available', () => ensureInstaller().owned({ installed: false }));
 
 ipcMain.handle('crt-store-refresh', () => ensureInstaller().refreshOwned());
@@ -505,7 +505,7 @@ ipcMain.handle('crt-installer-entry', (event, gameId) => {
 });
 
 /*
- * Everything currently on disk, wherever it came from — the list an Uninstall
+ * Everything currently on disk, wherever it came from: the list an Uninstall
  * screen needs.
  *
  * ⚠️ Two kinds of installed game, and only one of them is ours to remove. GOG
@@ -585,8 +585,8 @@ ipcMain.handle('crt-set-flag', (event, gameId, field, on) => {
  * Playlists, including the smart ones.
  *
  * ⚠️ Membership comes from packages/core/smart-playlists.js rather than a
- * straight read of playlist_games: a smart playlist has no rows there at all —
- * its members are computed from its rule every time, which is what keeps it
+ * straight read of playlist_games: a smart playlist has no rows there at all.
+ * Its members are computed from its rule every time, which is what keeps it
  * current as the library changes.
  */
 ipcMain.handle('crt-playlists', () => {
@@ -606,7 +606,7 @@ ipcMain.handle('crt-playlists', () => {
 /*
  * Making and removing a playlist, from the sofa.
  *
- * ⚠️ Manual playlists only — no rule. A smart playlist is a saved query, and
+ * ⚠️ Manual playlists only, with no rule. A smart playlist is a saved query, and
  * writing one needs a query builder, which is a desktop job. What a TV menu can
  * do well is "a list I put things in", and that is what this makes.
  */
@@ -675,7 +675,7 @@ ipcMain.handle('crt-playlist-toggle', (event, playlistId, gameId) => {
  *
  * ⚠️ Because "Could not start" on its own is useless on a television. The
  * engine writes every launch to ~/.config/clarity-installer/launch_logs/, and
- * that file is the only place the actual reason exists — a missing runtime, a
+ * that file is the only place the actual reason exists: a missing runtime, a
  * Proton error, a game that exited on its own. Reading the end of it is the
  * difference between a dead end and something a person can act on.
  */
@@ -712,7 +712,7 @@ ipcMain.handle('crt-launch-log', (event, gameName) => {
 });
 
 // Graphics compatibility for one installed GOG/Epic game. See installer-ops.js
-// for why this exists at all — on hardware whose Vulkan is incomplete, a
+// for why this exists at all. On hardware whose Vulkan is incomplete, a
 // Direct3D game dies in under a second unless it is pushed through OpenGL.
 ipcMain.handle('crt-compat-get', (event, installerGameId) => {
     try { return ensureInstaller().compatMode(installerGameId); } catch (e) { return 'auto'; }

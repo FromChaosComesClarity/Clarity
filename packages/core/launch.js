@@ -11,7 +11,7 @@
  * once (Store = "Steam, GOG"), and each store starts differently:
  *
  *   Steam            a steam:// URL handed to the Steam client
- *   GOG / Epic       the in-process Installer engine — never a shell command,
+ *   GOG / Epic       the in-process Installer engine, never a shell command,
  *                    because these need a prefix, a runner and an environment
  *                    that only the engine knows how to assemble
  *   itch.io          a custom scheme the desktop opener has to take, since
@@ -60,20 +60,20 @@ function firstUsefulLine(text) {
  *                 it is open (used for the PICO-8 path setting)
  *   baseDir       the portable install directory (library, Installer db, carts)
  *   binDir        where the bundled runner binaries live
- *   onLaunchIssue ({title, code, message}) — a launch that failed after we
+ *   onLaunchIssue ({title, code, message}) is a launch that failed after we
  *                 handed off. A Windows game with no Proton dies instantly and
  *                 invisibly; a face that does not show this just sits there.
- *   onProgress        ({...}) — install progress from the engine
- *   onLaunchProgress  ({phase, percent, message, done}) — what a game is doing
+ *   onProgress        ({...}) is install progress from the engine
+ *   onLaunchProgress  ({phase, percent, message, done}) is what a game is doing
  *                     between "pressed Play" and "on screen", which on a first
  *                     run means downloading a multi-gigabyte runtime and
  *                     building a Wine prefix
- *   onGameSession     (running, {gameId, title}) — the game appeared, or exited
+ *   onGameSession     (running, {gameId, title}) says the game appeared, or exited
  *
  * ⚠️ And three optional overrides, which exist for one specific reason: a face
  * that already runs the Installer engine must not end up with a second one.
  * installer-engine.js is a singleton configured by init(), so a face like Couch
- * — which also asks it for store login status, disk space and install info —
+ * (which also asks it for store login status, disk space and install info)
  * has to keep owning it, and hands its own accessors in here:
  *
  *   ensureEngine  () => bool          prepare the engine, or say it is absent
@@ -200,7 +200,7 @@ function create(deps = {}) {
     }
 
     // true / false / null, where null means "this kind of launcher does not
-    // report install state" — a custom command might be anything.
+    // report install state", since a custom command might be anything.
     function launcherInstalled(cmd, steamAppId) {
         const c = cmd || '';
         const sm = c.match(/steam:\/\/rungameid\/(\d+)/i);
@@ -256,8 +256,8 @@ function create(deps = {}) {
             db:          _engineDb,
             // ⚠️ All four, and it matters which is which. This wired onProgress
             // to a no-op and sent launch progress down the install channel, so
-            // an install reported nothing at all and a first launch — which
-            // downloads a Steam runtime and builds a prefix, minutes of work —
+            // an install reported nothing at all and a first launch, which
+            // downloads a Steam runtime and builds a prefix, minutes of work,
             // looked like a button that did nothing.
             onProgress:       (info) => onProgress(info),
             onLaunchProgress: (info) => onLaunchProgress(info),
@@ -322,7 +322,7 @@ function create(deps = {}) {
     const pico8Bin     = pico8BinOverride     || pico8BinInternal;
 
     // ── Start it ─────────────────────────────────────────────────────────────
-    // Returns { ok } or { ok: false, error } — a face that cannot start a game
+    // Returns { ok } or { ok: false, error }, since a face that cannot start a game
     // has to be able to say why, since on a TV there is no console to look at.
 
     function run(cmd) {

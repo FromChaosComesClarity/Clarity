@@ -1,5 +1,5 @@
 /*
- * Clarity, CRT face — the look.
+ * Clarity, CRT face: the look.
  *
  * Written for 720x480 interlaced over composite, which is a set of hard
  * constraints rather than a style:
@@ -286,7 +286,7 @@ html, body {
 }
 
 /* The scrim. Without it a light patch in the picture lands under a row of text
-   and takes it with it — the failure is local, so it survives any single
+   and takes it with it. The failure is local, so it survives any single
    brightness setting that looks fine on average. */
 .art::after {
     content: "";
@@ -300,7 +300,7 @@ html, body {
 body[data-prose="1"] .art { filter: brightness(0.20) saturate(0.7); }
 
 /* ⚠️ Not the selected row. This rule exists so an unselected row keeps its
-   panel against a bright backdrop — applied to the cursor as well it overrode
+   panel against a bright backdrop. Applied to the cursor as well it overrode
    the accent fill, and the label, drawn in the background colour, disappeared
    into it. The row looked empty apart from its pill. */
 body[data-art="1"] .row:not([data-on="1"]):not([data-kind="info"]) {

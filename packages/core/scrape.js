@@ -3,12 +3,12 @@
  * Filling in what a library row does not know about itself.
  *
  * A row arrives from an importer with a name and a launch command. Everything
- * that makes it worth looking at — cover, hero, logo, screenshots, genre, year,
+ * that makes it worth looking at (cover, hero, logo, screenshots, genre, year,
  * developer, the blurb, how long it takes to beat, how well it runs under
- * Proton — comes from somewhere else, and "somewhere else" is four services
+ * Proton) comes from somewhere else, and "somewhere else" is four services
  * with four different failure modes:
  *
- *   Steam appdetails   the primary source, keyed by appid — which the row
+ *   Steam appdetails   the primary source, keyed by appid, which the row
  *                      often does not have, so it is searched for by name
  *   SteamGridDB        better hero and logo art, and the only source of a logo
  *                      for most games. Needs the user's own API key
@@ -18,14 +18,14 @@
  *                      only source at all for a GOG-only game. Needs Twitch
  *                      credentials
  *
- * ⚠️ Every one of them is optional and every one fails routinely — rate limits,
+ * ⚠️ Every one of them is optional and every one fails routinely: rate limits,
  * missing keys, a game that is not on Steam. So nothing here throws on a failed
  * source: each contributes what it can, and a scrape that got a cover but no
  * HLTB time is a success. The only true failure is "neither Steam nor IGDB knew
  * anything about this".
  *
  * Extracted verbatim in behaviour from apps/manager/main.js's `auto-fetch`,
- * which is the complete implementation — Couch has a thinner one that requires
+ * which is the complete implementation. Couch has a thinner one that requires
  * an appid up front, and following that one would have quietly dropped
  * appid-discovery, local-art preservation, the SGDB fallbacks and everything
  * IGDB contributes. Same move, and the same reasoning, as packages/core/launch.js.
@@ -38,7 +38,7 @@ const https = require('https');
 const STEAM_LANG_MAP = { en: 'english', pt_BR: 'brazilian' };
 
 // How alike two titles are, 0..1, by shared words. Used to reject a search hit
-// that happens to come back first but is a different game — "DOOM" against
+// that happens to come back first but is a different game: "DOOM" against
 // "DOOM Eternal" against "Doom 3", which Steam's own search mixes freely.
 function titleSimilarity(a, b) {
     const tokens = s => new Set(String(s).toLowerCase().replace(/[^a-z0-9\s]/g, '').split(/\s+/).filter(Boolean));
@@ -51,7 +51,7 @@ function titleSimilarity(a, b) {
 
 /*
  * deps:
- *   db         the face's open games.db — settings holds the API keys, games is
+ *   db         the face's open games.db, where settings holds the API keys and games is
  *              what gets written
  *   imagesDir  where downloaded art lands
  *
@@ -148,7 +148,7 @@ function create({ db = null, imagesDir = '' } = {}) {
         return true;
     }
 
-    // First asset of a kind, downloaded and stored — the hero and logo fallback
+    // First asset of a kind, downloaded and stored: the hero and logo fallback
     // for everything Steam's CDN does not have.
     async function sgdbFirst(gameName, apiKey, appId, assetType) {
         try {
@@ -293,7 +293,7 @@ function create({ db = null, imagesDir = '' } = {}) {
     /*
      * Everything known about one game, written to its row.
      *
-     * specificAppId forces a Steam entry — that is what the "this is the wrong
+     * specificAppId forces a Steam entry, which is what the "this is the wrong
      * game" flow passes once the user has picked from a name search. Without
      * it, the appid is searched for by title and accepted only above a
      * similarity threshold.

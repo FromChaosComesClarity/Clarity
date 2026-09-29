@@ -24,7 +24,7 @@ contextBridge.exposeInMainWorld('crt', {
     scrapeCounts: () => ipcRenderer.invoke('crt-scrape-counts'),
     onScrapeProgress: (fn) => ipcRenderer.on('crt-scrape-progress', (_e, p) => fn(p)),
 
-    // Installing. GOG and Epic have no client here — the Installer engine does
+    // Installing. GOG and Epic have no client here, so the Installer engine does
     // the work, and `storeStatus` says whether it can (a library on disk, and
     // an account signed in) before the face offers anything.
     storeStatus: () => ipcRenderer.invoke('crt-store-status'),
@@ -40,7 +40,7 @@ contextBridge.exposeInMainWorld('crt', {
     steamUninstall: (appId) => ipcRenderer.invoke('crt-steam-uninstall', appId),
     onInstallProgress: (fn) => ipcRenderer.on('crt-install-progress', (_e, info) => fn(info)),
 
-    // Marks and collections — the same FAV / WANT_TO_PLAY / playlists the
+    // Marks and collections: the same FAV / WANT_TO_PLAY / playlists the
     // desktop face writes.
     setFlag: (gameId, field, on) => ipcRenderer.invoke('crt-set-flag', gameId, field, on),
     playlists: () => ipcRenderer.invoke('crt-playlists'),
@@ -59,16 +59,16 @@ contextBridge.exposeInMainWorld('crt', {
     theme: () => ipcRenderer.invoke('omarchy-theme'),
     onThemeChanged: (fn) => ipcRenderer.on('omarchy-theme-changed', (_e, description) => fn(description)),
 
-    // Starting a game. `launchers` is every way this row can be started —
-    // usually one, sometimes one per store — and `launch` runs the chosen one
+    // Starting a game. `launchers` is every way this row can be started,
+    // usually one, sometimes one per store. `launch` runs the chosen one
     // here, in this process, without leaving the face.
     launchers: (gameId) => ipcRenderer.invoke('crt-launchers', gameId),
     launch: (gameId, cmd) => ipcRenderer.invoke('crt-launch', gameId, cmd),
-    // What a game is doing between Play and a picture — on a first run that is
+    // What a game is doing between Play and a picture. On a first run that is
     // a runtime download and a prefix build, which is minutes.
     onLaunchProgress: (fn) => ipcRenderer.on('crt-launch-progress', (_e, info) => fn(info)),
     onGameSession: (fn) => ipcRenderer.on('crt-game-session', (_e, info) => fn(info)),
-    // The end of the engine's own launch log — the only place the real reason
+    // The end of the engine's own launch log, the only place the real reason
     // for a failed start is written down.
     launchLog: (gameName) => ipcRenderer.invoke('crt-launch-log', gameName),
     onLaunchFailed: (fn) => ipcRenderer.on('crt-launch-failed', (_e, info) => fn(info)),

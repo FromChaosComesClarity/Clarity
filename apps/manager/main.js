@@ -4872,7 +4872,7 @@ async function downloadImage(url, destPath) {
  * The scrape, which now lives in packages/core/scrape.js.
  *
  * This handler was the complete implementation and the module was lifted from
- * it, so that the CRT face could scrape without a second copy — the same move,
+ * it, so that the CRT face could scrape without a second copy: the same move,
  * and the same reasoning, as packages/core/launch.js. Leaving both in place
  * would mean the two faces drifting apart the first time a source changed.
  *
