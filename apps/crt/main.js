@@ -469,9 +469,18 @@ ipcMain.handle('crt-install', async (event, installerGameId) => {
     // ⚠️ Clarity's own row has to learn about this too, or the library goes on
     // calling an installed game "GET" until something else reconciles it.
     if (result.ok && db) {
+        /*
+         * ⚠️ Same shape as crt-uninstall: the game is on disk by now, so a
+         * failed write is not a failed install. It is a library that still
+         * says GET for something already installed, which used to be thrown
+         * away here. Numeric 1, as the Manager writes it.
+         */
         try {
-            db.prepare("UPDATE games SET Installed='1' WHERE InstallerGameId=?").run(String(installerGameId));
-        } catch (e) { /* the install still happened */ }
+            db.prepare('UPDATE games SET Installed=1 WHERE InstallerGameId=?').run(String(installerGameId));
+        } catch (e) {
+            console.error('[crt-install] the library was not updated:', e.message);
+            result.warning = 'Installed, library not updated';
+        }
         ensureLauncher().invalidateInstallerMap();
     }
     return result;

@@ -945,6 +945,9 @@ function installScreen() {
         rows.push({ kind: 'action', label: 'Back', run: () => { installRun = null; pop(); } });
     } else if (run.state === 'done') {
         rows.push({ kind: 'info', label: 'Installed' });
+        // It is on disk, but the library did not record it, so the row you go
+        // back to will still offer to install it.
+        if (run.warning) rows.push({ kind: 'info', label: run.warning });
         rows.push({ kind: 'action', label: 'Back', run: () => { installRun = null; pop(); } });
     } else {
         rows.push({ kind: 'info', label: [step, pct].filter(Boolean).join('  ·  ').toUpperCase() });
@@ -1034,6 +1037,7 @@ async function startInstall({ id, title }) {
             ...installRun,
             state: result && result.ok ? 'done' : 'failed',
             error: (installRun.error) || (result && result.error) || '',
+            warning: (result && result.warning) || '',
         };
 
         try { storeStatus = await window.crt.storeStatus(); } catch (e) {}
