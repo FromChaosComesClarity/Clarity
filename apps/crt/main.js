@@ -480,9 +480,23 @@ ipcMain.handle('crt-install', async (event, installerGameId) => {
 ipcMain.handle('crt-uninstall', async (event, installerGameId) => {
     const result = await ensureInstaller().uninstall(installerGameId);
     if (result.ok && db) {
+        /*
+         * ⚠️ The disk and the library can disagree here, and used to do it
+         * silently. The files are gone by this point, so a failed write is not
+         * a failed uninstall: it is a library that still says Installed and a
+         * screen that still offers Play. Reported as a warning on a result that
+         * is still ok, because the uninstall itself did happen.
+         *
+         * Numeric 0, as the Manager writes it. The column is INTEGER, so '0'
+         * landed as 0 anyway, but two faces writing one column two ways is how
+         * the next person loses an afternoon.
+         */
         try {
-            db.prepare("UPDATE games SET Installed='0' WHERE InstallerGameId=?").run(String(installerGameId));
-        } catch (e) {}
+            db.prepare('UPDATE games SET Installed=0 WHERE InstallerGameId=?').run(String(installerGameId));
+        } catch (e) {
+            console.error('[crt-uninstall] the library was not updated:', e.message);
+            result.warning = 'Removed, library not updated';
+        }
         ensureLauncher().invalidateInstallerMap();
     }
     return result;
@@ -725,10 +739,17 @@ ipcMain.handle('crt-compat-set', (event, installerGameId, mode) => {
 
 // Leaving for another face. The CRT menu is an entry point, not a prison.
 ipcMain.on('crt-open-face', (event, face) => {
-    const faceArgs = face === 'couch' ? ['--couch']
-                   : face === 'manager' ? []
-                   : Array.isArray(face) ? face : [];
-    openFace(faceArgs);
+    /*
+     * ⚠️ Two faces, by name, and nothing else.
+     *
+     * This also accepted an array and passed it through as argv to this very
+     * executable. Nothing ever sent one: the face offers exactly two rows,
+     * Couch Mode and Desktop Mode. What it did offer was a way to hand Chromium
+     * its own switches, some of which run a command of their own, so the branch
+     * was a hole with no purpose behind it.
+     */
+    if (face !== 'couch' && face !== 'manager') return;
+    openFace(face === 'couch' ? ['--couch'] : []);
 });
 
 function openFace(faceArgs) {

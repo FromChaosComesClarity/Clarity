@@ -1148,7 +1148,11 @@ async function uninstallFromGame(game, entry) {
         launcherCache.set(game.id, await window.crt.launchers(game.id) || []);
     } catch (e) {}
 
-    $status.textContent = result && result.ok ? 'REMOVED' : ((result && result.error) || 'COULD NOT REMOVE').toUpperCase();
+    // A warning means it was removed but the library did not follow, which is
+    // worth saying: the row on screen is about to disagree with the disk.
+    $status.textContent = result && result.ok
+        ? ((result.warning || 'Removed')).toUpperCase()
+        : ((result && result.error) || 'COULD NOT REMOVE').toUpperCase();
     setTimeout(() => { $status.textContent = ''; }, 8000);
     refresh(gameScreen, game);
 }
