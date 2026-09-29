@@ -41,6 +41,11 @@ const installerEngine = require('./installer-engine.js');
 // face is not left saying "starting" over a game that is plainly running.
 const EARLY_EXIT_MS = 8000;
 
+// Below this, a nonzero exit means the command never really ran. Above it, a
+// bare nonzero with nothing to show is usually a launcher handing off and
+// returning a code of its own, which is not worth putting on screen.
+const INSTANT_FAIL_MS = 3000;
+
 // Console output is mostly noise; the first line that looks like a complaint is
 // what a person actually needs to read.
 function firstUsefulLine(text) {
@@ -336,50 +341,89 @@ function create(deps = {}) {
         }
 
         /*
-         * ⚠️ Watched, not fired and forgotten.
+         * Watched, not fired and forgotten, and watched through a file rather
+         * than a pipe.
          *
          * A shell launch used to be spawned with stdio ignored, which meant a
-         * command that died immediately — a missing binary, a Steam that is not
-         * running, a bad path — was indistinguishable from a game that started
+         * command that died on the spot (a missing binary, a Steam that is not
+         * running, a bad path) was indistinguishable from a game that started
          * fine. On a TV there is no terminal to check, so the face has to be
          * told.
          *
-         * The process is still detached and still unref'd: the game outlives
-         * this one. The only difference is that we keep its output for a few
-         * seconds and report if it falls over in that window, which is what
-         * "it did not work" nearly always looks like.
+         * ⚠️ But that output must not go through a pipe. A pipe's read end
+         * belongs to this process, so quitting a face while a game is running
+         * closes it, and the game dies of EPIPE on its next write to stdout,
+         * which native games do constantly. Measured on this machine: piped,
+         * the game stopped one write after the parent exited; through a file it
+         * ran on untouched.
+         *
+         * So the child writes to a temp file that is unlinked the moment it is
+         * open. The descriptor stays valid, the name is already gone, so
+         * nothing has to clean it up and no second run can collide with it, and
+         * the space returns to the filesystem when the game exits. If the temp
+         * file cannot be opened at all we fall back to ignoring output: losing
+         * the diagnostic is a far smaller failure than losing the game.
          */
+        let logFd = null;
         try {
-            const child = spawn(cmd, [], { shell: true, detached: true, stdio: ['ignore', 'pipe', 'pipe'] });
-            let err = '';
-            const keep = (chunk) => { if (err.length < 2000) err += String(chunk); };
-            child.stdout?.on('data', keep);
-            child.stderr?.on('data', keep);
+            const logPath = path.join(os.tmpdir(), `clarity-launch-${process.pid}-${Date.now()}.log`);
+            logFd = fs.openSync(logPath, 'w+');
+            try { fs.unlinkSync(logPath); } catch {}
+        } catch { logFd = null; }
+
+        // The tail, not the head: whatever killed it is the last thing it said.
+        const captured = () => {
+            if (logFd === null) return '';
+            try {
+                const size = fs.fstatSync(logFd).size;
+                if (!size) return '';
+                const len = Math.min(size, 4000);
+                const buf = Buffer.alloc(len);
+                fs.readSync(logFd, buf, 0, len, size - len);
+                return buf.toString('utf8');
+            } catch { return ''; }
+        };
+        const closeLog = () => {
+            if (logFd === null) return;
+            try { fs.closeSync(logFd); } catch {}
+            logFd = null;
+        };
+
+        try {
+            const sink = logFd === null ? 'ignore' : logFd;
+            const child = spawn(cmd, [], { shell: true, detached: true, stdio: ['ignore', sink, sink] });
+            const startedAt = Date.now();
 
             const settled = setTimeout(() => {
-                // Past this point the game owns itself; stop listening so a
-                // long session does not accumulate its own console output.
-                child.stdout?.removeAllListeners('data');
-                child.stderr?.removeAllListeners('data');
+                // Past this point the game owns itself. Let go of the log: the
+                // game keeps its own copy of the descriptor and writes on.
                 child.removeAllListeners('exit');
+                closeLog();
                 onGameSession(true, { title: '' });
             }, EARLY_EXIT_MS);
 
             child.once('exit', (code) => {
                 clearTimeout(settled);
+                const lived  = Date.now() - startedAt;
+                const detail = firstUsefulLine(captured());
+                closeLog();
                 if (code === 0 || code === null) return;   // a launcher that hands off and returns
+                // Something to read, or it died too fast to have run at all.
+                if (!detail && lived >= INSTANT_FAIL_MS) return;
                 onLaunchIssue({
                     title: '',
                     code: 'EXIT_' + code,
-                    message: firstUsefulLine(err) || `The game exited immediately (code ${code}).`,
+                    message: detail || `The game did not start (exited with code ${code}).`,
                 });
             });
             child.once('error', (e) => {
                 clearTimeout(settled);
+                closeLog();
                 onLaunchIssue({ title: '', code: 'SPAWN_FAILED', message: e.message || 'Could not start that command.' });
             });
             child.unref();
         } catch (e) {
+            closeLog();
             return { ok: false, error: e.message || 'Could not start that command.' };
         }
         return { ok: true };
