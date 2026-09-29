@@ -325,7 +325,7 @@ function filtersScreen() {
     const rows = [{
         kind: 'action', label: 'All stores',
         pill: prefs.store ? '' : 'ON',
-        run: async () => { prefs.store = ''; await saveSetting('crt_store', ''); refresh(filtersScreen); },
+        run: async () => { const frame = screen(); prefs.store = ''; await saveSetting('crt_store', ''); refreshAt(frame, filtersScreen); },
     }];
 
     for (const store of storeList()) {
@@ -335,9 +335,10 @@ function filtersScreen() {
             meta: String(store.count),
             pill: prefs.store === store.key ? 'ON' : '',
             run: async () => {
+                const frame = screen();
                 prefs.store = prefs.store === store.key ? '' : store.key;
                 await saveSetting('crt_store', prefs.store);
-                refresh(filtersScreen);
+                refreshAt(frame, filtersScreen);
             },
         });
     }
@@ -346,9 +347,10 @@ function filtersScreen() {
         kind: 'toggle', label: 'Show only installed',
         pill: prefs.onlyInstalled ? 'ON' : 'OFF',
         run: async () => {
+            const frame = screen();
             prefs.onlyInstalled = !prefs.onlyInstalled;
             await saveSetting('crt_only_installed', prefs.onlyInstalled ? '1' : '0');
-            refresh(filtersScreen);
+            refreshAt(frame, filtersScreen);
         },
     });
 
@@ -522,8 +524,9 @@ function gameScreen(game) {
         kind: 'nav', label: 'Playlists',
         meta: String((gamePlaylistCache.get(game.id) || []).length || ''),
         run: async () => {
+            const frame = screen();
             if (!playlists.length) { try { playlists = await window.crt.playlists() || []; } catch (e) {} }
-            push(playlistsScreenFor, game);
+            pushAt(frame, playlistsScreenFor, game);
         },
     });
 
@@ -686,13 +689,14 @@ function playlistsScreenFor(game) {
         label: list.name,
         pill: list.smart ? 'SMART' : (mine.has(list.id) ? 'IN' : ''),
         run: list.smart ? undefined : async () => {
+            const frame = screen();
             const r = await window.crt.playlistToggle(list.id, game.id);
             if (!r || !r.ok) { fail((r && r.error) || 'Could not change that playlist.'); return; }
             const next = new Set(gamePlaylistCache.get(game.id) || []);
             if (r.member) next.add(list.id); else next.delete(list.id);
             gamePlaylistCache.set(game.id, [...next]);
             try { playlists = await window.crt.playlists() || playlists; } catch (e) {}
-            refresh(playlistsScreenFor, game);
+            refreshAt(frame, playlistsScreenFor, game);
         },
     }));
 
@@ -989,12 +993,13 @@ function storeScreen() {
         kind: 'action', label: 'Refresh owned games',
         // The only way a purchase made anywhere else ever appears here.
         run: async () => {
+            const frame = screen();
             $status.textContent = 'REFRESHING…';
             const r = await window.crt.storeRefresh();
             $status.textContent = r && r.ok ? '' : 'COULD NOT REFRESH';
             try { storeStatus = await window.crt.storeStatus(); } catch (e) {}
             try { ownedGames = await window.crt.storeAvailable() || []; } catch (e) {}
-            refresh(storeScreen);
+            refreshAt(frame, storeScreen);
         },
     });
 
@@ -1295,9 +1300,10 @@ function settingsScreen() {
             label: 'Sort library by',
             pill: prefs.sort === 'name' ? 'NAME' : 'RECENT',
             run: async () => {
+                const frame = screen();
                 prefs.sort = prefs.sort === 'name' ? 'recent' : 'name';
                 await saveSetting('crt_sort', prefs.sort);
-                refresh(settingsScreen);
+                refreshAt(frame, settingsScreen);
             },
         },
     ];
