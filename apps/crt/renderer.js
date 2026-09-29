@@ -1513,12 +1513,18 @@ window.addEventListener('keydown', (e) => {
     try { games = await window.crt.library(); } catch (e) { games = []; }
     try { scrapeCounts = await window.crt.scrapeCounts(); } catch (e) {}
 
+    /*
+     * ⚠️ Pushed like any other screen, not assembled by hand.
+     *
+     * This used to build the root frame inline and leave out `builder`, and
+     * pop() only rebuilds a screen that has one. The root was therefore the
+     * single screen in the face that never refreshed on the way back, while
+     * being the one that shows the most state that moves: Continue names the
+     * last game played, Library carries the filtered count, and Filters and
+     * Install both carry summaries. Change a filter, press Escape, and the
+     * counts underneath still described the library before the change.
+     */
     stack.length = 0;
-    const built = rootScreen();
-    stack.push({
-        title: built.title, rows: built.rows, index: firstSelectable(built.rows),
-        okLabel: built.okLabel, emptyText: built.emptyText,
-    });
-    render();
+    push(rootScreen);
 })();
 
