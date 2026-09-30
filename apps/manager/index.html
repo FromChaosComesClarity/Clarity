@@ -1264,9 +1264,6 @@
         <button class="rail-btn" id="btn-open-tools" title="Tools">
           <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
         </button>
-        <button class="rail-btn" id="btn-rail-crt" title="Launch the CRT face, for a tube TV">
-          <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="13" rx="2"/><path d="M8 21l1.5-4M16 21l-1.5-4"/><path d="M6 8h12M6 11h12M6 14h8" opacity=".45"/></svg>
-        </button>
         <button class="rail-btn" id="btn-rail-emulatte" title="Launch EmuLatte" style="display:none;">
           <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="2"/><path d="M6 10h4M8 8v4"/><circle cx="15" cy="13" r="1" fill="currentColor"/><circle cx="18" cy="11" r="1" fill="currentColor"/></svg>
         </button>
@@ -2488,6 +2485,9 @@
           <button class="cp-rail-item" data-pane="desktop">
             <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg><span>Desktop</span>
           </button>
+          <button class="cp-rail-item" data-pane="crt">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="13" rx="2"/><path d="M8 21l1.5-4M16 21l-1.5-4"/><path d="M6 8h12M6 11h12" opacity=".45"/></svg><span>CRT Mode</span>
+          </button>
           <span class="cp-rail-spacer"></span>
           <button class="cp-rail-item cp-rail-danger" data-pane="danger">
             <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg><span>Cleanup</span>
@@ -2522,6 +2522,7 @@
           <section class="cp-pane" data-pane="connections"><div class="cp-pane-title">Connections</div></section>
           <section class="cp-pane" data-pane="ports"><div class="cp-pane-title">Ports &amp; Mods</div></section>
           <section class="cp-pane" data-pane="desktop"><div class="cp-pane-title">Desktop</div></section>
+          <section class="cp-pane" data-pane="crt"><div class="cp-pane-title">CRT Mode</div></section>
           <section class="cp-pane" data-pane="system"><div class="cp-pane-title">System</div></section>
           <section class="cp-pane" data-pane="danger"><div class="cp-pane-title">Danger Zone</div></section>
 
@@ -2758,6 +2759,14 @@
           <button id="btn-tools-add-game" style="width:100%; font-size:12px; padding:10px; letter-spacing:1px;" class="primary"><svg class="cp-bico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg><span>Add Custom Game</span></button>
         </div>
 
+        <div class="tool-card tools-section" id="crt-card" data-search="crt tube tv television composite retro d-pad gamepad 480 interlaced menu face couch living room">
+          <div class="tool-card-title"><svg class="cp-tico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="13" rx="2"/><path d="M8 21l1.5-4M16 21l-1.5-4"/></svg>CRT Mode</div>
+          <p style="font-size: 10px; color: var(--text_dim); margin: 0 0 8px; line-height: 1.5;">A third face, for an actual tube TV. Couch Mode is built around cover art and a CRT has nowhere to put any, so this one is a menu you drive with a D-pad: up and down move, one button goes in, one goes back. Installing, scraping, playlists and playing all happen there.</p>
+          <button id="btn-launch-crt" class="primary" style="width: 100%; font-size: 11px;"><svg class="cp-bico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg><span>Launch CRT Mode</span></button>
+          <button id="btn-install-crt-menu" style="width: 100%; font-size: 11px; margin-top: 6px;"><svg class="cp-bico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="13" rx="2"/><path d="M8 21l1.5-4M16 21l-1.5-4"/></svg><span>Add CRT Mode to Menu</span></button>
+          <div id="install-crt-menu-status" style="font-size: 11px; text-align: center; font-weight: bold; min-height: 5px;"></div>
+        </div>
+
         <div class="tool-card tools-section" data-search="system backup restore zip menu install desktop application welcome setup guide">
           <div class="tool-card-title"><svg class="cp-tico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="8" rx="2" ry="2"/><rect x="2" y="14" width="20" height="8" rx="2" ry="2"/><line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/></svg><span data-i18n="html.card_system">System</span></div>
           <p style="font-size: 10px; color: var(--text_dim); margin: 0 0 8px; line-height: 1.5;">Clarity and Couch are fully backupable from the <code>GameManagerConfig</code> folder. Installer is system-specific and must be reconfigured on each machine.</p>
@@ -2767,8 +2776,6 @@
           </div>
           <button id="btn-install-menu" style="width: 100%; font-size: 11px; margin-top: 4px;"><svg class="cp-bico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg><span data-i18n="status.add_to_menu">Add to Application Menu</span></button>
           <div id="install-menu-status" style="font-size: 11px; text-align: center; font-weight: bold; min-height: 5px;"></div>
-          <button id="btn-install-crt-menu" style="width: 100%; font-size: 11px; margin-top: 4px;"><svg class="cp-bico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="13" rx="2"/><path d="M8 21l1.5-4M16 21l-1.5-4"/></svg><span>Add CRT Mode to Menu</span></button>
-          <div id="install-crt-menu-status" style="font-size: 11px; text-align: center; font-weight: bold; min-height: 5px;"></div>
           <label style="display:flex; align-items:flex-start; gap:9px; font-size:11px; color:var(--text_sec); margin-top:8px; cursor:pointer; line-height:1.4;">
             <input type="checkbox" id="chk-couch-autostart" style="accent-color:var(--accent); width:15px; height:15px; margin-top:1px; cursor:pointer; flex-shrink:0;">
             <span>Start in <b>Couch</b> (fullscreen) on login &mdash; for living-room / TV setups</span>

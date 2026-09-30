@@ -1935,7 +1935,6 @@ document.querySelectorAll('.support-copy').forEach(btn => {
         setTimeout(() => { btn.textContent = was; }, 1400);
     });
 });
-document.getElementById('btn-rail-crt')?.addEventListener('click', () => window.api.launchCrt());
 document.getElementById('btn-rail-emulatte')?.addEventListener('click', () => window.api.launchEmuLatte());
 
 
@@ -3916,7 +3915,7 @@ const _PAL_ACTIONS = [
     { id: 'view-list',            name: 'List View',                run: () => switchView('view-list') },
     { id: 'view-home',            name: 'Home Dashboard',           run: () => switchView('view-home') },
     { id: 'couch',                name: 'Go Fullscreen', run: () => document.getElementById('couch-cta')?.click() },
-    { id: 'crt',                  name: 'Launch CRT Mode',          run: () => document.getElementById('btn-rail-crt')?.click() },
+    { id: 'crt',                  name: 'Launch CRT Mode',          run: () => window.api.launchCrt() },
     { id: 'emulatte',             name: 'Launch EmuLatte',          run: () => document.getElementById('btn-rail-emulatte')?.click() },
 ];
 
@@ -7618,6 +7617,8 @@ document.getElementById('btn-install-menu').addEventListener('click', async () =
     status.innerText = result.message;
 });
 
+document.getElementById('btn-launch-crt')?.addEventListener('click', () => window.api.launchCrt());
+
 document.getElementById('btn-install-crt-menu')?.addEventListener('click', async () => {
     const btn = document.getElementById('btn-install-crt-menu');
     const status = document.getElementById('install-crt-menu-status');
@@ -7751,6 +7752,7 @@ modalTools.addEventListener('click', e => { if (e.target === modalTools) closeTo
         ['dosbox-mode-control', 'ports'],
         ['display-card', 'desktop'],
         ['omarchy-card', 'desktop'],
+        ['crt-card', 'crt'],
         ['btn-backup-zip', 'system'],
         ['btn-clean-images', 'danger'],
     ];
