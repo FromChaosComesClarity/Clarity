@@ -260,6 +260,13 @@ const RECIPES = [
         archive: /^road[\s_-]*rash(?!.*setup).*\.(7z|zip|rar|iso)$/i,
         samples: ['Road_Rash_Win_ISO_EN.7z', 'ROADRASH.iso'],
         dirName: 'Road Rash',
+        /*
+         * ⚠️ The whole disc is installed, SETUP/ included, and that is not tidiness
+         * left undone. SETUP/ looks like installer leftovers worth pruning and it is
+         * carrying AWEMAN32.DLL, which the game imports and cannot start without. The
+         * launch fix copies it from there. Drop the folder to save 19MB and Road Rash
+         * stops working, with nothing on screen to say why.
+         */
         entry: { exe: /^roadrash\.exe$/i, platform: 'windows' },
         data: null,
     },

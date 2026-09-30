@@ -1893,19 +1893,6 @@ async function applyRoadRashFix(installPath, prefix, proton) {
         }
     }
 
-    // 2. A drive the game can see as a CD. The whole disc is in installPath, so point at it.
-    //    ⚠️ The symlink alone is not enough and neither is the registry alone: Wine rebuilds
-    //    its drive list from both, and a letter with no Type is a fixed disk, which is what
-    //    "Could not find any CD-ROM drive" means.
-    try {
-        const devices = path.join(prefix, 'dosdevices');
-        fs.mkdirSync(devices, { recursive: true });
-        const letter = path.join(devices, 'd:');
-        try { fs.unlinkSync(letter); } catch {}
-        try { fs.unlinkSync(path.join(devices, 'd::')); } catch {}   // a real device here wins over ours
-        fs.symlinkSync(installPath, letter, 'dir');
-    } catch (e) { console.error('[launch] Road Rash: could not map the CD drive:', e.message); }
-
     /*
      * 3. The registry the installer writes, so nobody has to run it.
      *
@@ -1954,12 +1941,52 @@ async function applyRoadRashFix(installPath, prefix, proton) {
     const regFile = path.join(os.tmpdir(), 'roadrash_fix.reg');
     try { fs.writeFileSync(regFile, regContent, 'utf8'); } catch { return; }
 
+    /*
+     * ⚠️ Build the prefix first, as its own step.
+     *
+     * This game is installed from a disc, so nothing has ever built its prefix: a store
+     * install does that at install time and this never came through there. Handing regedit
+     * an empty directory does not build one and merge, it hangs, and the first attempt at
+     * this was killed by its own timeout with the prefix at 8KB and not one value written.
+     * wineboot on the same directory takes seven seconds. Both measured here.
+     */
+    if (!prefixBuilt && host.runtime.winebootCommand) {
+        const boot = host.runtime.winebootCommand({ prefix, runtimePath: proton });
+        await new Promise(resolve => {
+            const proc = spawn(boot.cmd, boot.args, { env: boot.env, stdio: 'ignore' });
+            const timer = setTimeout(() => { try { proc.kill('SIGKILL'); } catch {} resolve(); }, 120000);
+            proc.on('close', () => { clearTimeout(timer); resolve(); });
+            proc.on('error', () => { clearTimeout(timer); resolve(); });
+        });
+    }
+
+    /*
+     * The CD drive, mapped only now that the prefix exists.
+     *
+     * ⚠️ Order matters, and getting it wrong cost an evening. wineboot against a
+     * directory that does not exist builds a 633MB prefix in seven seconds. wineboot
+     * against a directory that exists and holds nothing but a dosdevices folder makes no
+     * progress at all: 4KB and still nothing after ninety seconds. Creating the drive
+     * first is precisely what put it in that state, so the drive goes second.
+     *
+     * Rewritten every launch rather than once, because Proton clears dosdevices when it
+     * upgrades a prefix and the mapping does not survive it.
+     */
+    try {
+        const devices = path.join(prefix, 'dosdevices');
+        fs.mkdirSync(devices, { recursive: true });
+        const letter = path.join(devices, 'd:');
+        try { fs.unlinkSync(letter); } catch {}
+        try { fs.unlinkSync(path.join(devices, 'd::')); } catch {}   // a real device here wins over ours
+        fs.symlinkSync(installPath, letter, 'dir');
+    } catch (e) { console.error('[launch] Road Rash: could not map the CD drive:', e.message); }
+
     const reg = await host.runtime.regeditCommand({ prefix, runtimePath: proton, regFile });
     await new Promise(resolve => {
         const finish = () => { try { fs.unlinkSync(regFile); } catch {} resolve(); };
         const proc = spawn(reg.cmd, reg.args, { env: reg.env, stdio: 'ignore' });
-        const timer = setTimeout(() => { try { proc.kill('SIGKILL'); } catch {} finish(); },
-                                 prefixBuilt ? 30000 : 180000);
+        // 60s either way now: the prefix exists by this point, built above if it had to be.
+        const timer = setTimeout(() => { try { proc.kill('SIGKILL'); } catch {} finish(); }, 60000);
         proc.on('close', () => { clearTimeout(timer); finish(); });
         proc.on('error', () => { clearTimeout(timer); finish(); });
     });

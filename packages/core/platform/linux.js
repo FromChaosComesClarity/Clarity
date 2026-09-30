@@ -927,6 +927,24 @@ const REDIST_UNAVAILABLE_MESSAGE =
 
 // Merge a .reg file into a prefix. Proton's own wine is preferred; it runs outside umu's
 // container, which is what lets regedit read a file from the host's /tmp at all.
+/*
+ * Build a prefix, for a fix that has to write into one before the game has ever run.
+ *
+ * ⚠️ Measured, after getting it wrong: `wine regedit /S` against a prefix that does
+ * not exist yet does not build one and return, it hangs, and a fix that waited on it was
+ * killed by its own timeout with the prefix left at 8KB and nothing merged. `wineboot
+ * --init` on the same empty directory finishes in seven seconds and leaves a working
+ * 633MB prefix. So the two are done in order rather than hoped to be one step.
+ *
+ * Games installed through a store build their prefix at install time and never come
+ * through here. A game installed from a folder or a disc has no such step, which is why
+ * this exists at all.
+ */
+function winebootCommand({ prefix, runtimePath }) {
+    const reg = regeditCommand({ prefix, runtimePath, regFile: '' });
+    return { cmd: reg.cmd, args: ['wineboot', '--init'], env: reg.env };
+}
+
 function regeditCommand({ prefix, runtimePath, regFile }) {
     let wineBin = 'wine';
     if (runtimePath) {
@@ -1152,7 +1170,7 @@ const runtime = {
     resolve: resolveRuntime,
     isRuntimeDir: isProtonDir,
     inUse, canRun, assertAvailable,
-    compatEnv, buildLaunch, buildRedistLaunch, wrapScaled, regeditCommand,
+    compatEnv, buildLaunch, buildRedistLaunch, wrapScaled, regeditCommand, winebootCommand,
     toWindowsPath, diagnose, unavailableError,
     findAntiCheatRuntime,
     startupSteps: () => STARTUP_STEPS,
