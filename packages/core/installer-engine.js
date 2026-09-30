@@ -1098,8 +1098,14 @@ async function launchGame(gameId, opts = {}) {
     const spec = host.runtime.buildLaunch({
         game, gameId, launchExe, isBat, userArgs, allArgs, runtimePath: proton, prefix,
     });
-    spawnGame(spec.cmd, spec.args, { cwd: launchCwd, env: baseEnv(spec.env), detached: true, stdio: 'ignore' });
-    return { ok: true, method: spec.method };
+    // A game pinned to one small resolution is handed to gamescope, which gives it that
+    // display and scales the picture up to fill the screen. A no-op for everything else.
+    const scaled = host.runtime.wrapScaled
+        ? host.runtime.wrapScaled(spec, gameFixes.scaleFor(launchExe))
+        : spec;
+
+    spawnGame(scaled.cmd, scaled.args, { cwd: launchCwd, env: baseEnv(scaled.env), detached: true, stdio: 'ignore' });
+    return { ok: true, method: scaled.method };
 }
 
 function runLegendary(args) {

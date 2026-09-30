@@ -16,6 +16,12 @@
 //                own. The engine normally hands a game the wrapper it shipped with, which
 //                is right nearly every time; a game listed here is one where that wrapper
 //                cannot survive the runtime, so the exception has to be named.
+//   • scale  , the fixed resolution a game of a certain age insists on. Games from the
+//                mid-nineties ask the display to become 640x480 and draw into the corner
+//                of anything larger. Named here, the launch is handed to gamescope, which
+//                gives the game the small display it wants and scales the result up to
+//                fill the screen. Ignored where gamescope is not installed: the game still
+//                runs, just small.
 //
 // ⚠️ Nothing here fires on a guess. Each entry matches on the executable's own name, so a
 // fix cannot land on a game that merely shares a folder or a title.
@@ -84,6 +90,29 @@ const FIXES = [
         // and this says out loud which library the game is meant to run on.
         env: { WINEDLLOVERRIDES: 'ddraw=b' },
         settings: [],
+    },
+    {
+        id: 'roadrash',
+        title: 'Road Rash (1996, PC)',
+        exe: 'roadrash.exe',
+        symptom: 'Nothing happens at all, then a Fatal Error box, then it asks you to run Setup.',
+        why:
+            "Four faults in a row, each one hiding the next, and all of them come from " +
+            "installing off the disc rather than through the disc's installer. The game " +
+            "imports AWEMAN32.DLL, which lives in SETUP/ and which the Windows installer " +
+            "copied into place; without it the import fails before a window exists. Then it " +
+            "asks the display to become 640x480, which a modern multi-head setup refuses and " +
+            "the game treats as fatal. Then it looks for a CD-ROM drive and finds none, " +
+            "because the disc is now a folder. Then it looks for the install record the " +
+            "setup program writes, one string under Electronic Arts\\RoadRash 95, and gives " +
+            "up without it. All four are settled at launch, so the disc is all anyone needs.",
+        env: {},
+        settings: [],
+        // 640x480 was the whole point in 1996 and it is not negotiable now, so the game gets
+        // exactly that and gamescope makes it fill the screen. 1440 is three times 480, which
+        // is why the pixels stay square on the display this was found on.
+        scale: { w: 640, h: 480 },
+        handledBy: 'AWEMAN32.DLL, a CD-ROM drive, the install registry value, and a 640x480 desktop',
     },
     {
         id: 'witcher1ee',
@@ -166,4 +195,11 @@ function wrapperExceptions(resolvedExe, installPath) {
     return new Set((fix && fix.wrapperExceptions ? fix.wrapperExceptions : []).map(n => n.toLowerCase()));
 }
 
-module.exports = { listFixes, fixFor, envFor, applySettings, wrapperExceptions, FIXES };
+// The resolution a game is pinned to, for the launcher to scale up. Null for everything
+// that can size itself, which is almost everything.
+function scaleFor(resolvedExe) {
+    const fix = fixFor(resolvedExe);
+    return fix && fix.scale ? { ...fix.scale } : null;
+}
+
+module.exports = { listFixes, fixFor, envFor, applySettings, wrapperExceptions, scaleFor, FIXES };

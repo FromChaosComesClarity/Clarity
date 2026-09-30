@@ -877,6 +877,36 @@ function buildLaunch({ game, gameId, launchExe, isBat, userArgs, allArgs, runtim
     return { cmd: wine, args: [launchExe, ...allArgs], env: { WINEPREFIX: prefix }, method: 'wine' };
 }
 
+/*
+ * Hand a launch to gamescope, so a game pinned to one small resolution fills the screen.
+ *
+ * Games of a certain age ask the display to become 640x480 and draw into the corner of
+ * anything bigger. gamescope gives them exactly the display they asked for and scales the
+ * result up, which is also why the mode change stops failing: the display it is changing
+ * is gamescope's, and gamescope says yes.
+ *
+ * ⚠️ Nearest-neighbour and integer scaling, not a smooth filter. 1440 is three times
+ * 480, so the pixels stay square and sharp instead of turning to soup. Where the maths is
+ * not exact gamescope pillarboxes rather than stretching, which is the right call for a
+ * 4:3 game on a 21:9 display.
+ *
+ * Returns the spec untouched where gamescope is not installed. The game still runs, it is
+ * just small, and that is a much better failure than not launching.
+ */
+function wrapScaled(spec, scale) {
+    if (!spec || !scale || !scale.w || !scale.h) return spec;
+    const gs = which('gamescope');
+    if (!gs) return spec;
+    return {
+        cmd: gs,
+        args: ['-w', String(scale.w), '-h', String(scale.h),
+               '-f', '-S', 'integer', '-F', 'nearest',
+               '--', spec.cmd, ...spec.args],
+        env: spec.env,
+        method: `${spec.method}+gamescope`,
+    };
+}
+
 // The spawn spec for one redistributable installer. Unlike buildLaunch this returns the
 // COMPLETE env, because redists are run standalone rather than under a game's own base.
 function buildRedistLaunch({ exePath, exeArgs, prefix, runtimePath }) {
@@ -1122,7 +1152,7 @@ const runtime = {
     resolve: resolveRuntime,
     isRuntimeDir: isProtonDir,
     inUse, canRun, assertAvailable,
-    compatEnv, buildLaunch, buildRedistLaunch, regeditCommand,
+    compatEnv, buildLaunch, buildRedistLaunch, wrapScaled, regeditCommand,
     toWindowsPath, diagnose, unavailableError,
     findAntiCheatRuntime,
     startupSteps: () => STARTUP_STEPS,
