@@ -1089,6 +1089,12 @@ async function launchGame(gameId, opts = {}) {
         catch (e) { console.error('[launch] The Witcher EE fix failed:', e.message); }
     }
 
+    // Same place, same reason: both faults have to be settled before the game looks.
+    if (isRoadRash(game) && installPath) {
+        try { await applyRoadRashFix(installPath, prefix, proton); }
+        catch (e) { console.error('[launch] Road Rash fix failed:', e.message); }
+    }
+
     const spec = host.runtime.buildLaunch({
         game, gameId, launchExe, isBat, userArgs, allArgs, runtimePath: proton, prefix,
     });
@@ -1842,6 +1848,117 @@ const TW1_LANGUAGES = {
     italian: 13, russian: 14, czech: 15, hungarian: 16, chinese: 21,
 };
 
+/*
+ * Road Rash (1996, Windows), installed off its own disc.
+ *
+ * Two faults, both of them the disc's fault rather than the game's.
+ *
+ * ⚠️ AWEMAN32.DLL. The game imports it, and it does not sit beside the game: it is
+ * in SETUP/ on the disc, and the Windows installer put it in place. Copy the disc and the
+ * import fails before a window exists, which Wine reports as status c0000135 and the
+ * player sees as nothing at all. Measured here: without the file, "Importing dlls for
+ * ROADRASH.EXE failed"; with it, zero import failures and the game reaches its own code.
+ *
+ * ⚠️ And then it asks the display to become 640x480, which on a modern multi-head
+ * setup fails ("Changing DISPLAY2 display settings returned -2") and the game gives up
+ * with a Fatal Error box. A virtual desktop is the answer rather than a fight: the game
+ * gets its 640x480, drawn into a window, and the real display is never touched. It is a
+ * 1996 game, so a small window is the correct outcome, not a compromise.
+ *
+ * The desktop is set per prefix, and every game here gets a prefix of its own, so this
+ * cannot follow anything else around.
+ */
+function isRoadRash(game) {
+    return (game?.store || '').toLowerCase() === 'custom' && /^cn_roadrash$/i.test(String(game?.id || ''));
+}
+
+async function applyRoadRashFix(installPath, prefix, proton) {
+    // The game's own executable, not the folder name, for the same reason as The Witcher.
+    const exe = resolvePathCaseInsensitive(path.join(installPath, 'ROADRASH', 'ROADRASH.EXE'));
+    if (!fs.existsSync(exe)) return;
+    const gameDir = path.dirname(exe);
+
+    // 1. The DLL the installer would have placed. Nothing else can start without it.
+    if (!fs.existsSync(resolvePathCaseInsensitive(path.join(gameDir, 'AWEMAN32.DLL')))) {
+        const src = resolvePathCaseInsensitive(path.join(installPath, 'SETUP', 'AWEMAN32.DLL'));
+        if (fs.existsSync(src)) {
+            try { fs.copyFileSync(src, path.join(gameDir, 'AWEMAN32.DLL')); }
+            catch (e) { console.error('[launch] Road Rash: could not place AWEMAN32.DLL:', e.message); }
+        }
+    }
+
+    // 2. A drive the game can see as a CD. The whole disc is in installPath, so point at it.
+    //    ⚠️ The symlink alone is not enough and neither is the registry alone: Wine rebuilds
+    //    its drive list from both, and a letter with no Type is a fixed disk, which is what
+    //    "Could not find any CD-ROM drive" means.
+    try {
+        const devices = path.join(prefix, 'dosdevices');
+        fs.mkdirSync(devices, { recursive: true });
+        const letter = path.join(devices, 'd:');
+        try { fs.unlinkSync(letter); } catch {}
+        try { fs.unlinkSync(path.join(devices, 'd::')); } catch {}   // a real device here wins over ours
+        fs.symlinkSync(installPath, letter, 'dir');
+    } catch (e) { console.error('[launch] Road Rash: could not map the CD drive:', e.message); }
+
+    /*
+     * 3. The registry the installer writes, so nobody has to run it.
+     *
+     * Without this the game says "You need to install RoadRash before you can run it.
+     * Please run the Setup program." The disc does carry an InstallShield setup, and it
+     * works, but it is a wizard: a destination page, a Windows 95 warning, several Next
+     * clicks. All it leaves behind that the game reads is one string. Confirmed by running
+     * it here and reading the prefix afterwards: Path, under Electronic Arts\RoadRash 95.
+     *
+     * Pointed at the folder the game actually runs from rather than the installer's
+     * C:\ElectronicArts\RoadRash, because that is where the data is.
+     */
+    const winGameDir = host.runtime.toWindowsPath(gameDir);
+    const pathLine = `"Path"="${winGameDir.replace(/\\/g, '\\\\')}"`;
+
+    const read = (f) => { try { return fs.readFileSync(path.join(prefix, f), 'utf8'); } catch { return null; } };
+    const systemReg = read('system.reg');
+    const userReg   = read('user.reg');
+    const prefixBuilt = systemReg !== null;
+
+    const needPath    = !prefixBuilt || !systemReg.includes(pathLine);
+    const needDrive   = !prefixBuilt || !/^"d:"="cdrom"$/m.test(systemReg || '');
+    const needDesktop = !prefixBuilt || !/^"RoadRash"="640x480"$/m.test(userReg || '');
+    if (!needPath && !needDrive && !needDesktop) return;
+
+    let regContent = 'Windows Registry Editor Version 5.00\r\n\r\n';
+    if (needPath) {
+        regContent +=
+            '[HKEY_LOCAL_MACHINE\\SOFTWARE\\Electronic Arts\\RoadRash 95]\r\n' +
+            `${pathLine}\r\n\r\n` +
+            '[HKEY_LOCAL_MACHINE\\SOFTWARE\\WOW6432Node\\Electronic Arts\\RoadRash 95]\r\n' +
+            `${pathLine}\r\n\r\n`;
+    }
+    if (needDrive) {
+        regContent += '[HKEY_LOCAL_MACHINE\\Software\\Wine\\Drives]\r\n"d:"="cdrom"\r\n\r\n';
+    }
+    if (needDesktop) {
+        // 4. 640x480, drawn into a window. The game asks the real display to change mode and
+        //    a modern multi-head setup refuses, which it treats as fatal. It is a 1996 game,
+        //    so a small window is the right answer rather than a fight.
+        regContent +=
+            '[HKEY_CURRENT_USER\\Software\\Wine\\Explorer]\r\n"Desktop"="RoadRash"\r\n\r\n' +
+            '[HKEY_CURRENT_USER\\Software\\Wine\\Explorer\\Desktops]\r\n"RoadRash"="640x480"\r\n\r\n';
+    }
+
+    const regFile = path.join(os.tmpdir(), 'roadrash_fix.reg');
+    try { fs.writeFileSync(regFile, regContent, 'utf8'); } catch { return; }
+
+    const reg = await host.runtime.regeditCommand({ prefix, runtimePath: proton, regFile });
+    await new Promise(resolve => {
+        const finish = () => { try { fs.unlinkSync(regFile); } catch {} resolve(); };
+        const proc = spawn(reg.cmd, reg.args, { env: reg.env, stdio: 'ignore' });
+        const timer = setTimeout(() => { try { proc.kill('SIGKILL'); } catch {} finish(); },
+                                 prefixBuilt ? 30000 : 180000);
+        proc.on('close', () => { clearTimeout(timer); finish(); });
+        proc.on('error', () => { clearTimeout(timer); finish(); });
+    });
+}
+
 function isWitcher1EnhancedEdition(game) {
     return (game?.store || '').toLowerCase() === 'gog' && String(game?.app_id) === TW1_APP_ID;
 }
@@ -2346,6 +2463,7 @@ module.exports = {
     gogExchangeCode, gogStatus, gogLogout, epicAuthCode, epicStatus,
     isFalloutLondon, applyFalloutLondonFix,
     isWitcher1EnhancedEdition, applyWitcher1EnhancedEditionFix,
+    isRoadRash, applyRoadRashFix,
     findNativeDosbox, dosboxInstallHint, isGogDosGame, applyGogSupportFiles, engineSetting,
     findShippedWrappers,
     gogPlayTasks, setGogLaunchTarget,
