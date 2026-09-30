@@ -171,6 +171,26 @@ function createWindow () {
     win.on('focus', () => { try { win.webContents.send('window-refocused'); } catch {} });
 
     // Save window size/position when closing
+    /*
+     * ⚠️ Closing this window quits Clarity, rather than leaving it to
+     * window-all-closed.
+     *
+     * That event only fires once every window is gone, and this app opens plenty that
+     * outlive their usefulness: a manual, a store login, the PICO-8 browser, an export
+     * surface. Any one of them still alive and the process keeps running with nothing on
+     * screen, which the person who just closed the window has no way to know. Worse, the
+     * next launch then meets the single-instance lock and appears to do nothing at all.
+     *
+     * Reported by the one person who could not have been guessing: his window was shut and
+     * the process had been up for eight hours.
+     */
+    win.on('closed', () => {
+        for (const w of BrowserWindow.getAllWindows()) {
+            try { if (!w.isDestroyed()) w.destroy(); } catch {}
+        }
+        app.quit();
+    });
+
     win.on('close', () => {
         if (!win.isMaximized() && !win.isMinimized()) {
             const b = win.getBounds();
@@ -3600,7 +3620,18 @@ ipcMain.on('window-maximize', () => {
     const win = BrowserWindow.getFocusedWindow();
     if(win) { if(win.isMaximized()) win.unmaximize(); else win.maximize(); }
 });
-ipcMain.on('window-close', () => { const win = BrowserWindow.getFocusedWindow(); if(win) win.close(); });
+/*
+ * ⚠️ The window that asked, not the focused one.
+ *
+ * getFocusedWindow() answers about this moment, and the moment an IPC message arrives is
+ * not the moment the button was pressed. Focus can have moved to a manual, a store login
+ * or another application, and then pressing this window's own close button either shut
+ * the wrong window or, when the answer was null, did nothing at all.
+ */
+ipcMain.on('window-close', (event) => {
+    const win = BrowserWindow.fromWebContents(event.sender);
+    if (win && !win.isDestroyed()) win.close();
+});
 
 const STEAM_LANG_MAP = { en: 'english', pt_BR: 'brazilian' };
 async function fetchDescI18n(appId, enDesc) {
