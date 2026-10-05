@@ -573,17 +573,23 @@ const DATA_SPECS = {
     // is what lets one spec survive all of those layouts.
     doom: {
         label: 'Doom or Doom II',
-        // The DOOM + DOOM II re-release ships each IWAD twice: the KEX build sits at the
-        // top of the folder, and the original DOS WAD is tucked under dosdoom/base/. They
-        // have the same filename, so the shallowest-wins rule below would always take the
+        // The DOOM + DOOM II re-release ships each IWAD twice, the KEX build and the
+        // original DOS WAD, under the same filename. Shallowest-wins would always take the
         // KEX one, and some mods refuse it outright. DOOM CE is the honest example: handed
         // the KEX doom2.wad it does not complain, it silently loads plain Doom II instead
         // and you never see PSX Doom at all. The original is what mods are built against,
         // so when both are there, it wins.
+        //
+        // ⚠️ Where the original sits depends on who sold it, which is why this matches a
+        // "base" segment with an optional "dosdoom" parent rather than one fixed path. GOG
+        // keeps the KEX copy at the top of the folder and the original under
+        // dosdoom/base/doom2/. Steam keeps the original under base/doom2/ and the KEX one
+        // under rerelease/, so a rule written for GOG's layout alone takes the wrong file
+        // from Steam, which is exactly what it did.
         files: [{
             find: /^(doom|doom2|doomu|tnt|plutonia)\.wad$/i,
             into: '',
-            prefer: /(^|[\\/])dosdoom[\\/]base[\\/]/i,
+            prefer: /(^|[\\/])(dosdoom[\\/])?base[\\/]/i,
         }],
         requireAny: true,
         titles: [/^(the ultimate )?doom$/i, /^doom \+ doom ii/i, /^doom ii/i, /^final doom$/i, /^doom (i|ii) enhanced$/i, /^doom$/i],

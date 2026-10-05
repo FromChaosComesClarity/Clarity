@@ -8,6 +8,7 @@ const host = require('../../packages/core/platform/index.js');
 const scrapeCore = require('../../packages/core/scrape.js');
 const desktopDescriptor = require('../../packages/core/desktop-descriptor.js');
 const nativePlatform = require('../../packages/core/native-platform.js');
+const gameFixes = require('../../packages/core/game-fixes.js');
 const fs = require('fs');
 const { exec, execFile, spawn } = require('child_process');
 
@@ -317,6 +318,10 @@ app.whenReady().then(() => {
         // 'linux' | 'windows' | '' (not worked out yet). Cached because answering it
         // means walking the install folder, and the gallery asks for every card.
         try { db.prepare("ALTER TABLE games ADD COLUMN LinuxNative TEXT DEFAULT ''").run(); } catch(e) {}
+        // The Recipe that applies to this game, if one does. Cached beside LinuxNative and
+        // filled by the same pass, because both are answers about an install rather than
+        // about a title, and both go stale the same way.
+        try { db.prepare("ALTER TABLE games ADD COLUMN RecipeId TEXT DEFAULT ''").run(); } catch(e) {}
         try { db.prepare("ALTER TABLE games ADD COLUMN HeroArt TEXT").run(); } catch(e) {}
         try { db.prepare("ALTER TABLE games ADD COLUMN Logo TEXT").run(); } catch(e) {}
         try { db.prepare("ALTER TABLE games ADD COLUMN Icon TEXT").run(); } catch(e) {}
@@ -1136,10 +1141,36 @@ function _reservedPaths(exceptId) {
     } catch { return []; }
 }
 
+/*
+ * Everything a recipe may take game data from: the installer's own library, and Steam.
+ *
+ * ⚠️ Steam was missing, and it was not a small gap. The installer database only knows
+ * what the installer put there, so any recipe needing a file out of a game you own would
+ * decide you did not own it the moment that game came from Steam. DOOM 64 CE is how it
+ * surfaced: it wants DOOM 64's WAD, Doom 64 is a Steam title, and the recipe told
+ * somebody with it installed to go and install it.
+ *
+ * Steam rows are shaped like the installer's own, so resolveGameData never has to care
+ * which half of the library a row came from: a title, a path, and whether it is on disk.
+ */
 const _installerRowsForData = () => {
-    if (!ensureInstallerEngine()) return [];
-    try { return _installerEngineDb.prepare('SELECT title, install_path, installed FROM games').all(); }
-    catch { return []; }
+    const rows = [];
+    if (ensureInstallerEngine()) {
+        try { rows.push(..._installerEngineDb.prepare('SELECT title, install_path, installed FROM games').all()); }
+        catch {}
+    }
+    if (db) {
+        try {
+            const steam = db.prepare(
+                "SELECT Game, SteamAppID FROM games WHERE Installed=1 " +
+                "AND SteamAppID IS NOT NULL AND SteamAppID NOT IN ('', 'None')").all();
+            for (const g of steam) {
+                const dir = resolveGameFolder({ SteamAppID: g.SteamAppID });
+                if (dir) rows.push({ title: g.Game, install_path: dir, installed: 1 });
+            }
+        } catch {}
+    }
+    return rows;
 };
 
 // The first engine from an accepted group that is actually installed. Mods declare a group
@@ -1888,6 +1919,23 @@ function gamePlatformKind(game) {
     return folder ? nativePlatform.detectPlatform(folder) : '';
 }
 
+// The Recipe that applies to a library game, asked of the installer engine so the badge
+// and the launcher can never disagree. Only installer-managed games can carry one: a
+// Recipe is applied by launchGame, and a Steam title never goes through it.
+function gameRecipeId(game) {
+    if (!game.InstallerGameId) return '';
+    const gpath = installerDbPath();
+    if (!gpath) return '';
+    try {
+        const gdb = new Database(gpath, { readonly: true, timeout: 5000 });
+        const row = gdb.prepare("SELECT id, store, app_id, executable, launch_target FROM games WHERE id=?")
+                       .get(String(game.InstallerGameId));
+        gdb.close();
+        const hit = row ? installerEngine.recipeFor(row) : null;
+        return hit ? hit.id : '';
+    } catch { return ''; }
+}
+
 /*
  * Fill in whatever has no answer yet, in one pass, and forget the answer for
  * anything no longer installed so a reinstall is looked at afresh (the same game
@@ -1896,27 +1944,46 @@ function gamePlatformKind(game) {
  * A blank result is left blank rather than written as "unknown": the folder may
  * simply not be mounted yet, and a later scan should get another go at it.
  */
-ipcMain.handle('scan-native-platforms', (_, opts) => {
+// Every Recipe the suite knows, and which of them are sitting in this library. The
+// "yours" half is what makes the pane worth opening: a list of fixes for games you do
+// not own is a changelog, not a tool.
+ipcMain.handle('list-recipes', () => {
+    let mine = new Map();
+    try {
+        for (const r of db.prepare("SELECT RecipeId, Game FROM games WHERE RecipeId IS NOT NULL AND RecipeId<>''").all()) {
+            if (!mine.has(r.RecipeId)) mine.set(r.RecipeId, []);
+            mine.get(r.RecipeId).push(r.Game);
+        }
+    } catch {}
+    return gameFixes.listFixes().map(f => ({ ...f, inLibrary: mine.get(f.id) || [] }));
+});
+
+ipcMain.handle('scan-cover-marks', (_, opts) => {
     if (!db) return { ok: false, scanned: 0 };
     const force = !!(opts && opts.force);
-    try { db.prepare("UPDATE games SET LinuxNative='' WHERE Installed=0 AND LinuxNative<>''").run(); } catch {}
+    try { db.prepare("UPDATE games SET LinuxNative='', RecipeId='' WHERE Installed=0 AND (LinuxNative<>'' OR RecipeId<>'')").run(); } catch {}
     let rows = [];
     try {
         rows = db.prepare(
-            "SELECT id, Store, SteamAppID, InstallerGameId, LaunchCommand, LaunchCommands FROM games " +
-            "WHERE Installed=1" + (force ? '' : " AND (LinuxNative IS NULL OR LinuxNative='')")).all();
+            "SELECT id, Store, SteamAppID, InstallerGameId, LaunchCommand, LaunchCommands, LinuxNative, RecipeId FROM games " +
+            "WHERE Installed=1" + (force ? '' : " AND (LinuxNative IS NULL OR LinuxNative='' OR RecipeId IS NULL OR RecipeId='')")).all();
     } catch { return { ok: false, scanned: 0 }; }
     if (!rows.length) return { ok: true, scanned: 0 };
 
-    const upd = db.prepare("UPDATE games SET LinuxNative=? WHERE id=?");
+    const updPlat   = db.prepare("UPDATE games SET LinuxNative=? WHERE id=?");
+    const updRecipe = db.prepare("UPDATE games SET RecipeId=? WHERE id=?");
     let n = 0;
     try {
         db.transaction(() => {
             for (const g of rows) {
-                const kind = gamePlatformKind(g);
-                if (!kind) continue;
-                upd.run(kind, g.id);
-                n++;
+                // The Recipe answer is a lookup rather than a walk, so it is always
+                // rewritten: it costs nothing and it keeps up when a Recipe is added.
+                const rid = gameRecipeId(g);
+                if (rid !== (g.RecipeId || '')) { updRecipe.run(rid, g.id); n++; }
+                if (force || !g.LinuxNative) {
+                    const kind = gamePlatformKind(g);
+                    if (kind) { updPlat.run(kind, g.id); n++; }
+                }
             }
         })();
     } catch {}

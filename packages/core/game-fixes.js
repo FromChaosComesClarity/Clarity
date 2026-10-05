@@ -134,6 +134,42 @@ const FIXES = [
         settings: [],
         handledBy: 'GOG install-folder and language registry values',
     },
+
+    /*
+     * The two below carry no `exe`, so they never match at launch. They are repairs big
+     * enough to live in the engine rather than in a table of environment variables, and
+     * each one is recognised there by its GOG application id, in isFalloutLondon and
+     * isFalloutNewCalifornia. They are written down here because this list is what the
+     * Control Panel shows, and a Recipe missing from it is a Recipe nobody knows exists.
+     */
+    {
+        id: 'falloutnewcalifornia',
+        title: 'Fallout: New California',
+        exe: null,
+        symptom: 'Every file downloads perfectly and the mod is simply not there when you play.',
+        why:
+            "GOG's installer is not only a copy: it runs finishing steps once the files have "
+            + "landed, and nothing on Linux performed them. The download is complete and correct "
+            + "and the game loads none of it. Those steps are now carried out at launch, against "
+            + "the install you already have, so nothing needs downloading again.",
+        env: {},
+        settings: [],
+        handledBy: "the finishing steps GOG's installer performs after the copy",
+    },
+    {
+        id: 'falloutlondon',
+        title: 'Fallout: London (One-click Edition)',
+        exe: null,
+        symptom: 'It installs, it starts, and none of London is in it.',
+        why:
+            "The same shape as New California, one game later. GOG's installer has finishing "
+            + "steps and nothing on Linux ran them, so the plugin list was never written and the "
+            + "game loaded the base game instead. Applied at launch now, repairing the install "
+            + "in place.",
+        env: {},
+        settings: [],
+        handledBy: "the finishing steps GOG's installer performs after the copy",
+    },
 ];
 
 // Everything the suite knows how to fix, for the Control Panel and the manual.

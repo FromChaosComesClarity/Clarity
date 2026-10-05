@@ -117,6 +117,15 @@
     /* Native-vs-Windows mark. Rides in the store row and borrows its look, set apart
        by a hair of space so it reads as a different kind of fact about the game. */
     .gallery-plat-badge { margin-left: 3px; opacity: 0.9; }
+    .gallery-recipe-badge { margin-left: 3px; opacity: 0.9; }
+    /* Recipes pane */
+    .rcp { border: 1px solid var(--border); border-radius: 8px; padding: 9px 10px; margin-bottom: 7px; background: rgba(0,0,0,0.18); }
+    .rcp-head { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+    .rcp-title { font-weight: 700; font-size: 12px; color: var(--text_main); }
+    .rcp-have { font-size: 8px; font-weight: 900; letter-spacing: 1px; text-transform: uppercase; padding: 2px 5px; border-radius: 4px; color: #5be27a; border: 1px solid rgba(91,226,122,0.55); white-space: nowrap; }
+    .rcp-sym { font-size: 10px; color: var(--accent); margin-top: 4px; line-height: 1.45; }
+    .rcp-why { font-size: 10px; color: var(--text_dim); margin-top: 5px; line-height: 1.55; }
+    .rcp-handled { font-size: 9px; color: var(--text_dim); margin-top: 6px; opacity: 0.75; }
     .install-dot { position: absolute; top: 8px; left: 8px; width: 10px; height: 10px; border-radius: 50%; border: 1.5px solid rgba(0,0,0,0.5); pointer-events: none; z-index: 2; }
     .install-dot.is-installed { background: #66bb6a; }
     .install-dot.not-installed { background: #ff9800; }
@@ -2485,6 +2494,9 @@
           <button class="cp-rail-item" data-pane="ports">
             <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><polyline points="9 15 11 17 15 13"/></svg><span>Ports &amp; Mods</span>
           </button>
+          <button class="cp-rail-item" data-pane="recipes">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="3.6" r="1"/><rect x="4" y="5.6" width="16" height="2.6" rx="1.3"/><path d="M5 10h14l-1.2 8.6a2.5 2.5 0 0 1-2.5 2.1H8.7a2.5 2.5 0 0 1-2.5-2.1z"/><path d="M4.6 11.6H2.4M19.4 11.6h2.2"/></svg><span>Recipes</span>
+          </button>
           <button class="cp-rail-item" data-pane="desktop">
             <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg><span>Desktop</span>
           </button>
@@ -2524,6 +2536,7 @@
           <section class="cp-pane" data-pane="behavior"><div class="cp-pane-title">Behavior</div></section>
           <section class="cp-pane" data-pane="connections"><div class="cp-pane-title">Connections</div></section>
           <section class="cp-pane" data-pane="ports"><div class="cp-pane-title">Ports &amp; Mods</div></section>
+          <section class="cp-pane" data-pane="recipes"><div class="cp-pane-title">Recipes</div></section>
           <section class="cp-pane" data-pane="desktop"><div class="cp-pane-title">Desktop</div></section>
           <section class="cp-pane" data-pane="crt"><div class="cp-pane-title">CRT Mode</div></section>
           <section class="cp-pane" data-pane="system"><div class="cp-pane-title">System</div></section>
@@ -2760,6 +2773,12 @@
           <div class="tool-card-title"><svg class="cp-tico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>Add Custom Game</div>
           <p style="font-size:10px; color:var(--text_dim); margin:0 0 8px; line-height:1.5;">Manually add any game, app, or emulator to your library.</p>
           <button id="btn-tools-add-game" style="width:100%; font-size:12px; padding:10px; letter-spacing:1px;" class="primary"><svg class="cp-bico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg><span>Add Custom Game</span></button>
+        </div>
+
+        <div class="tool-card tools-section" id="recipes-card" data-search="recipes fixes game fix per-game named fault road rash witcher arcanum outrun biohazard fallout london new california">
+          <div class="tool-card-title"><svg class="cp-tico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="3.6" r="1"/><rect x="4" y="5.6" width="16" height="2.6" rx="1.3"/><path d="M5 10h14l-1.2 8.6a2.5 2.5 0 0 1-2.5 2.1H8.7a2.5 2.5 0 0 1-2.5-2.1z"/><path d="M4.6 11.6H2.4M19.4 11.6h2.2"/></svg>Recipes</div>
+          <p style="font-size: 10px; color: var(--text_dim); margin: 0 0 10px; line-height: 1.5;">A recipe is Clarity&rsquo;s fix for one named game: the exact fault, written down, put on when the game launches. Nothing to configure. Games in your library that have one carry a pot on their cover.</p>
+          <div id="recipes-list"></div>
         </div>
 
         <div class="tool-card tools-section" id="crt-card" data-search="crt tube tv television composite retro d-pad gamepad 480 interlaced menu face couch living room">

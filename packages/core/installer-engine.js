@@ -2481,8 +2481,35 @@ async function epicInstallInfo(appName) {
     });
 }
 
+/*
+ * ── Which Recipe applies to this game, if any ────────────────────────────────
+ *
+ * One answer, shared. The cover badge and the launcher must never disagree about
+ * whether a game has a Recipe, so this asks the same questions launchGame asks and
+ * in the same order: the per-game predicates that recognise a title by its GOG
+ * application id or its catalogue id, then the filename match in game-fixes.
+ *
+ * ⚠️ Entries with no `exe` are not matched here either, and that is deliberate.
+ * Biohazard 2 is recognised by the engine's shipped-wrapper handling rather than by
+ * name, and the only thing to match it on would be ddraw.dll, which half the library
+ * ships. Better an unbadged cover than a badge on the wrong game.
+ */
+function recipeFor(game) {
+    if (!game) return null;
+    const byId = (id) => {
+        const f = gameFixes.FIXES.find(x => x.id === id);
+        return f ? { id: f.id, title: f.title, handledBy: f.handledBy || 'per-game fix' } : null;
+    };
+    if (isFalloutLondon(game))           return byId('falloutlondon');
+    if (isFalloutNewCalifornia(game))    return byId('falloutnewcalifornia');
+    if (isWitcher1EnhancedEdition(game)) return byId('witcher1ee');
+    if (isRoadRash(game))                return byId('roadrash');
+    const named = gameFixes.fixFor(game.executable || game.launch_target || '');
+    return named ? byId(named.id) : null;
+}
+
 module.exports = {
-    init, setDb, ensureSchema, writeProgress,
+    init, setDb, ensureSchema, writeProgress, recipeFor,
     sanitizeLogName, expandTilde, resolvePathCaseInsensitive,
     quoteArg, commandLine,
     which, findLegendary, findGogdl, findComet, findUmu, findWineCached, findRuntime,

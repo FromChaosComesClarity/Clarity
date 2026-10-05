@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24">
+  <!-- A pot with its lid on. Drawn as a CSS mask like the marks beside it, so the
+       shape is all there is: the lid sits clear of the body with a gap, and the
+       handles break the outline, which is what keeps it legible at 22px. -->
+  <g fill="#000">
+    <circle cx="12" cy="3.4" r="1.5"/>
+    <rect x="3.6" y="5.4" width="16.8" height="2.9" rx="1.45"/>
+    <rect x="1.2" y="11.1" width="3.1" height="3.1" rx="1"/>
+    <rect x="19.7" y="11.1" width="3.1" height="3.1" rx="1"/>
+    <path d="M4.6 9.8h14.8l-1.3 9.2a2.6 2.6 0 0 1-2.6 2.2H8.5a2.6 2.6 0 0 1-2.6-2.2z"/>
+  </g>
+</svg>

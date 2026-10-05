@@ -4638,12 +4638,50 @@ let _lgResolvers = [];   // resolvers of every loadGames() coalesced into the pe
 // it walks install folders, so it is not something to repeat on every refresh, and a
 // second pass would find nothing anyway. Only re-renders if it actually learned
 // something, so the common case (everything already known) costs one idle call.
+// The Recipes pane, and the titles the cover badge puts in its tooltip. One fetch feeds
+// both: the catalogue is a handful of entries and it cannot change while the app is open.
+let _recipesLoaded = false;
+async function _loadRecipes() {
+    if (_recipesLoaded) return;
+    _recipesLoaded = true;
+    let list = [];
+    try { list = await window.api.listRecipes() || []; } catch { return; }
+
+    window._recipeTitles = {};
+    for (const r of list) window._recipeTitles[r.id] = r.title;
+
+    // The grid has already painted by now, so any pot on a cover is carrying the generic
+    // tooltip. Repaint once, and only if there is actually a pot out there to relabel.
+    if (allGames.some(g => g.RecipeId)) { try { applyFilters(); } catch {} }
+
+    const host = document.getElementById('recipes-list');
+    if (!host) return;
+    const esc = (v) => String(v == null ? '' : v)
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+
+    // Yours first. A list of fixes for games you do not own is a changelog; the ones
+    // sitting in your library are the reason to open this at all.
+    const sorted = [...list].sort((a, b) =>
+        (b.inLibrary.length > 0) - (a.inLibrary.length > 0) || a.title.localeCompare(b.title));
+
+    host.innerHTML = sorted.map(r => `
+        <div class="rcp">
+          <div class="rcp-head">
+            <span class="rcp-title">${esc(r.title)}</span>
+            ${r.inLibrary.length ? '<span class="rcp-have">in your library</span>' : ''}
+          </div>
+          <div class="rcp-sym">${esc(r.symptom)}</div>
+          <div class="rcp-why">${esc(r.why)}</div>
+          <div class="rcp-handled">Handled: ${esc(r.handledBy)}</div>
+        </div>`).join('');
+}
+
 let _nativeScanStarted = false;
-function _scanNativePlatformsOnce() {
+function _scanCoverMarksOnce() {
     if (_nativeScanStarted) return;
     _nativeScanStarted = true;
     setTimeout(() => {
-        window.api.scanNativePlatforms()
+        window.api.scanCoverMarks()
             .then(r => { if (r && r.scanned) loadGames(); })
             .catch(() => {});
     }, 1200);   // let the grid paint first; this is never urgent
@@ -4671,7 +4709,8 @@ function loadGames() {
                 }
                 applyFilters();
                 try { _paintBatchScope(); } catch {}   // the counts move whenever the library does
-                _scanNativePlatformsOnce();
+                _scanCoverMarksOnce();
+                _loadRecipes();
             } catch (e) { console.error('[loadGames]', e); }
             finally { resolvers.forEach(r => { try { r(); } catch {} }); }
         }, 80);
@@ -5337,6 +5376,15 @@ function getPlatformLogo(game) {
     return null;
 }
 
+// A pot means Clarity has a Recipe for this game: a named fault with a known fix, put on
+// at launch with nothing to configure. The title carries which one, so hovering a cover
+// says what is being handled rather than only that something is.
+function getRecipeLogo(game) {
+    if (!game || !game.RecipeId) return null;
+    const known = (window._recipeTitles || {})[game.RecipeId];
+    return { src: 'assets/logos/recipe.svg', title: known ? `Clarity recipe: ${known}` : 'Clarity has a recipe for this game' };
+}
+
 function getStoreLogo(store) {
     if (!store) return null;
     const s = store.toLowerCase();
@@ -5370,11 +5418,13 @@ function renderGallery(recent, regular) {
         const imgSrc = game.CoverArt ? getSafePath(game.CoverArt) : '';
         const imgHtml = imgSrc ? `<img src="${imgSrc}" class="gallery-cover" loading="lazy">` : `<div class="gallery-cover" style="display:flex; align-items:center; justify-content:center; color:#555; font-size:12px;">${t('game.no_cover')}</div>`;
         const _badges = (game.Store ? String(game.Store).split(',') : []).map(s => s.trim()).filter(Boolean).map(s => { const l = getStoreLogo(s); return l ? `<div class="gallery-store-badge" style="-webkit-mask-image:url('${l}');"></div>` : ''; }).join('');
-        const _plat = getPlatformLogo(game);
-        const _platMark = _plat
-            ? `<div class="gallery-store-badge gallery-plat-badge" style="-webkit-mask-image:url('${_plat.src}');" title="${_plat.title}"></div>`
+        const _mark = (logo, cls) => logo
+            ? `<div class="gallery-store-badge ${cls}" style="-webkit-mask-image:url('${logo.src}');" title="${String(logo.title).replace(/"/g, '&quot;')}"></div>`
             : '';
-        const badgeHtml = (_badges || _platMark) ? `<div class="gallery-store-badges">${_badges}${_platMark}</div>` : '';
+        const _platMark   = _mark(getPlatformLogo(game), 'gallery-plat-badge');
+        const _recipeMark = _mark(getRecipeLogo(game),   'gallery-recipe-badge');
+        const badgeHtml = (_badges || _platMark || _recipeMark)
+            ? `<div class="gallery-store-badges">${_badges}${_platMark}${_recipeMark}</div>` : '';
         const f2pHtml = isFreeToPlay(game) ? `<div class="f2p-pill gallery-f2p-pill" data-f2p-pill="1" title="Free-to-play, click to show/hide these">FREE</div>` : '';
         const installCmdG = getInstallCommand(game);
         const isInstalled = isGameInstalled(game);
@@ -7782,6 +7832,7 @@ modalTools.addEventListener('click', e => { if (e.target === modalTools) closeTo
         ['dosbox-mode-control', 'ports'],
         ['display-card', 'desktop'],
         ['omarchy-card', 'desktop'],
+        ['recipes-card', 'recipes'],
         ['crt-card', 'crt'],
         ['btn-backup-zip', 'system'],
         ['btn-clean-images', 'danger'],
