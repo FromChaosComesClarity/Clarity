@@ -1530,6 +1530,197 @@ ipcMain.handle('installer-install-cancel', () => {
     return { ok: installerEngine.cancelActiveInstall() };
 });
 
+/*
+ * ── Uninstalling a recipe install ────────────────────────────────────────────
+ *
+ * Source ports, mods and the games installed from the catalogue never had an
+ * uninstall: installer-uninstall below only answers to GOG and Epic ids, so a
+ * cn_ row fell through to "not a GOG/Epic title" and the only way out was to go
+ * and delete the folder by hand.
+ *
+ * ⚠️ The dangerous part is that install_path does not mean the same thing for
+ * every one of them. A port owns its folder. A mod does not: it is registered
+ * against the *engine* it loads into, so cn_brutaldoom and cn_gzdoom both say
+ * /Games/Clarity/GZDoom, and deleting that for the mod would take the engine and
+ * the other mod with it. A row can also be stale, which is not hypothetical:
+ * cn_doom-ce still pointed at the shared UZDoom folder after DOOM CE stopped
+ * being a mod, so the obvious implementation would have deleted UZDoom while
+ * uninstalling something that no longer lives there.
+ *
+ * Hence the rule that decides everything below: a folder claimed by any other
+ * registered row is never deleted. Worst case the registration goes and the
+ * files stay, which is recoverable. The other way round is not.
+ */
+function _customUninstallPlan(installerGameId) {
+    if (!ensureInstallerEngine()) return { ok: false, error: 'Installer data not found.' };
+    const gid = String(installerGameId || '');
+    if (!/^cn_/i.test(gid)) return { ok: false, error: 'That is not a recipe install.' };
+
+    let row;
+    try { row = _installerEngineDb.prepare("SELECT * FROM games WHERE id=? AND store='custom'").get(gid); }
+    catch { return { ok: false, error: 'Installer data could not be read.' }; }
+
+    /*
+     * No registration left, only a library row pointing at one. That used to be a dead
+     * end: the plan refused, and the button was hidden anyway because the row said it
+     * was not installed, so the entry could not be removed from anywhere in the app.
+     *
+     * There is nothing on disk we can safely identify without a registration, so this
+     * removes the entry and nothing else, which is the only honest thing it can do.
+     */
+    if (!row) {
+        return { ok: true, gid, title: '', paths: [], orphans: [], isMod: false, entryOnly: true,
+                 notes: ['It is not installed. This removes the library entry and nothing on disk.'] };
+    }
+
+    const recipe = customInstallers.getRecipe(gid.replace(/^cn_/i, ''));
+    const root = path.resolve(expandTilde(row.install_path || ''));
+    const paths = [];
+    const notes = [];
+
+    // Everything else that is registered and still installed, so we can tell a
+    // folder this row owns from one it merely borrows.
+    let others = [];
+    try {
+        others = _installerEngineDb.prepare(
+            "SELECT id, title, install_path FROM games WHERE id<>? AND installed=1 AND install_path IS NOT NULL").all(gid);
+    } catch {}
+    const sameDir = (a, b) => {
+        try { return a && b && path.resolve(expandTilde(a)) === path.resolve(expandTilde(b)); } catch { return false; }
+    };
+
+    if (recipe && recipe.modFile && recipe.dirName) {
+        // A mod: only ever its own folder under the engine's mods/.
+        const modDir = path.join(root, 'mods', recipe.dirName);
+        if (fs.existsSync(modDir)) paths.push(modDir);
+        else notes.push('Its files are already gone.');
+    } else {
+        const shared = others.filter(o => sameDir(o.install_path, root));
+        if (shared.length) {
+            notes.push(`The folder is shared with ${shared.map(o => o.title).join(', ')}, so it is left alone. Only the entry is removed.`);
+        } else if (root && fs.existsSync(root)) {
+            paths.push(root);
+        } else {
+            notes.push('Its files are already gone.');
+        }
+    }
+
+    // The prefix, when nothing else resolves to the same one.
+    try {
+        const pfx = installerEngine.prefixPathForGame(row, { requireExplicitExists: true });
+        if (pfx && fs.existsSync(pfx)) {
+            const taken = others.some(o => {
+                try { return path.resolve(installerEngine.prefixPathForGame(o)) === path.resolve(pfx); } catch { return false; }
+            });
+            if (!taken) paths.push(pfx);
+        }
+    } catch {}
+
+    /*
+     * Last line of defence before an rm -rf. Every path has to sit inside a place
+     * this app installs into, and be deep enough that a truncated or empty value
+     * cannot name a home directory or a drive root.
+     */
+    const allowed = [installerDefaultDir(), path.join(os.homedir(), 'Games'), prefixesRootDir()]
+        .filter(Boolean).map(d => path.resolve(expandTilde(d)));
+    const safe = paths.filter(target => {
+        const t = path.resolve(target);
+        if (t.split(path.sep).filter(Boolean).length < 3) return false;
+        if (t === path.resolve(os.homedir())) return false;
+        return allowed.some(a => t === a || t.startsWith(a + path.sep)) || sameDir(t, root) || t.startsWith(root + path.sep);
+    });
+
+    /*
+     * An engine nothing is left using goes with it.
+     *
+     * Mods do not bring their own engine, they are registered against a shared one that
+     * Clarity installs on their behalf, so removing the last mod leaves a GZDoom or
+     * UZDoom sitting in the library that nothing can use and nobody asked for. That is
+     * how a bare UZDoom entry outlived DOOM CE.
+     *
+     * Only ever the engine *this* row was registered against, only when no other row is
+     * registered against it once this one is gone, and only when its mods folder is
+     * empty. An engine somebody installed deliberately and plays on its own keeps all
+     * three of those false, so it stays.
+     */
+    const orphans = [];
+    for (const o of others) {
+        if (!sameDir(o.install_path, root)) continue;
+        const oRecipe = customInstallers.getRecipe(String(o.id).replace(/^cn_/i, ''));
+        if (!oRecipe || oRecipe.kind !== 'Source port') continue;
+        const stillUsed = others.some(x => x.id !== o.id && sameDir(x.install_path, root));
+        if (stillUsed) continue;
+        let modsLeft = [];
+        try { modsLeft = fs.readdirSync(path.join(root, 'mods')); } catch {}
+        if (modsLeft.filter(n => !/^\./.test(n)).length) continue;
+        orphans.push({ gid: o.id, title: o.title, path: path.resolve(expandTilde(o.install_path)) });
+    }
+    if (orphans.length) {
+        notes.length = 0;   // the "shared with" note described exactly what is now going too
+        notes.push(`${orphans.map(o => o.title).join(', ')} came with it and nothing else uses it, so it goes too.`);
+        for (const o of orphans) if (fs.existsSync(o.path) && !safe.includes(o.path)) safe.push(o.path);
+    }
+
+    return { ok: true, gid, title: row.title, paths: safe, notes,
+             isMod: !!(recipe && recipe.modFile), orphans: orphans.map(o => o.gid) };
+}
+
+function prefixesRootDir() {
+    try { return path.join(path.dirname(host.findInstallerDb(baseDir) || ''), 'prefixes'); } catch { return ''; }
+}
+
+ipcMain.handle('custom-uninstall-plan', (_, installerGameId) => _customUninstallPlan(installerGameId));
+
+ipcMain.handle('custom-uninstall', (_, { gameId, installerGameId } = {}) => {
+    const plan = _customUninstallPlan(installerGameId);
+    if (!plan.ok) return plan;
+    const removed = [];
+    for (const target of plan.paths) {
+        try { fs.rmSync(target, { recursive: true, force: true }); removed.push(target); }
+        catch (e) { return { ok: false, error: `Could not remove ${target}: ${e.message}` }; }
+    }
+    // The registration goes whether or not there was anything on disk to delete:
+    // a row pointing at files that are not there is how this got confusing before.
+    for (const g of [plan.gid, ...(plan.orphans || [])]) {
+        try { _installerEngineDb.prepare("DELETE FROM games WHERE id=?").run(g); } catch {}
+    }
+    invalidateInstallerInstalledCache();
+
+    /*
+     * The library entry goes with it, rather than being marked not-installed.
+     *
+     * A recipe install is not a game you own that happens to be absent, the way a GOG
+     * purchase is: it only exists because it was installed from a file you pointed at.
+     * Left behind as Installed=0 it is a row for something that is not anywhere, and
+     * reinstalling makes a second one beside it. Removing it means a reinstall starts
+     * clean, which is the whole reason anyone uninstalls one of these.
+     *
+     * The dependent rows go first so nothing is left pointing at an id that is gone.
+     * Artwork files are deliberately left where they are: Cleanup in the Danger Zone
+     * already sweeps orphaned images, and a reinstall is usually minutes away.
+     */
+    const libIds = [];
+    if (gameId) libIds.push(gameId);
+    for (const g of (plan.orphans || [])) {
+        try {
+            const r = db && db.prepare("SELECT id FROM games WHERE InstallerGameId=?").get(g);
+            if (r) libIds.push(r.id);
+        } catch {}
+    }
+    for (const gid2 of libIds) if (db) {
+        for (const sql of [
+            "DELETE FROM game_genres    WHERE game_id=?",
+            "DELETE FROM playlist_games WHERE game_id=?",
+            "DELETE FROM game_manuals   WHERE game_id=?",
+            "DELETE FROM save_backups   WHERE game_id=?",
+        ]) {
+            try { db.prepare(sql).run(gid2); } catch {}
+        }
+        try { db.prepare("DELETE FROM games WHERE id=?").run(gid2); } catch {}
+    }
+    return { ok: true, removed, notes: plan.notes, entryRemoved: true };
+});
+
 ipcMain.handle('installer-uninstall', async (event, { gameId, installerGameId } = {}) => {
     if (_installerBusy) return { ok: false, error: 'Another install/uninstall is in progress.' };
     if (!ensureInstallerEngine()) return { ok: false, error: 'Installer data not found.' };

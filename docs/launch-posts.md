@@ -177,8 +177,10 @@ Short and factual, they get a lot of these.
 
 - [ ] **Fix the README first**, the post sends everyone there. Badge says 1.6.0, the ASCII block
       says 1.3, `package.json` says 1.7.0.
-- [ ] **Get more screenshots.** `docs/screenshots/` has two. Want six to eight: Manager library,
-      Couch on the TV, a gamepage, the dashboard, two or three contrasting themes.
+- [x] **Screenshots.** They live on the site, under `assets/gallery/`. The four the AppImage
+        advertises through AppStream are named in
+        `build/io.github.fromchaoscomesclarity.clarity.metainfo.xml`. The two that used to sit
+        in `docs/screenshots/` were from before the rename and have been removed.
 - [ ] Read each community's self-promotion rules; some want a flair or a specific day.
 - [ ] Post images natively, not as links.
 - [ ] Be around for the first few hours to answer replies, that's most of what drives reach.

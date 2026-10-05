@@ -1626,6 +1626,50 @@ window.api.onProtonInstallProgress(d => {
 window.api.onGameLaunchFailed(info => showLaunchFailure(info || {}));
 
 // In-process GOG/Epic uninstall (reuses the install modal in progress-only mode).
+/*
+ * Uninstalling a recipe install. The confirm names every folder that will go,
+ * because what gets removed is not obvious from the outside: a mod only loses its
+ * own folder under the engine, and a port whose folder is shared with something
+ * else loses nothing but its entry. Saying so beforehand is the difference between
+ * a delete you agreed to and one you discovered afterwards.
+ */
+async function openCustomUninstall(game) {
+    const gid = game.InstallerGameId || '';
+    if (!/^cn_/i.test(gid)) return;
+
+    const plan = await window.api.customUninstallPlan(gid);
+    if (!plan || !plan.ok) {
+        await showAlert((plan && plan.error) || 'This install could not be read.');
+        return;
+    }
+    const lines = [];
+    if (plan.paths.length) {
+        lines.push('This removes:');
+        for (const p of plan.paths) lines.push('  ' + p);
+    }
+    for (const n of plan.notes || []) lines.push(n);
+    if (!plan.paths.length && !(plan.notes || []).length) lines.push('Nothing is left on disk.');
+    // Worth saying out loud: this is not a "mark it as not installed", the row goes.
+    if (!plan.entryOnly) {
+        lines.push('');
+        lines.push('It also leaves your library. Installing it again makes a fresh entry.');
+    }
+
+    const verb = plan.entryOnly ? 'Remove' : 'Uninstall';
+    const ok = await showConfirm(`${verb} "${game.Game}"?\n\n${lines.join('\n')}`, verb, true);
+    if (!ok) return;
+
+    const res = await window.api.customUninstall({ gameId: game.id, installerGameId: gid });
+    if (res && res.ok) {
+        await loadGames();
+        // Reopen the page on the refreshed row so the buttons reflect what is now true.
+        const fresh = allGames.find(g => String(g.id) === String(game.id));
+        if (fresh) openGamepage(fresh); else switchView('view-gallery');
+    } else {
+        await showAlert((res && res.error) || 'Uninstall failed.');
+    }
+}
+
 async function openInstallerUninstall(game) {
     const gid = game.InstallerGameId || '';
     if (!/^(gog|epic)_/i.test(gid)) return;
@@ -5925,14 +5969,24 @@ function openGamepage(game) {
     const uninstallBtn = document.getElementById('btn-gamepage-uninstall');
     if (uninstallBtn) {
         const installerCan = /^(gog|epic)_/i.test(game.InstallerGameId || '') && (game.Installed == 1);
+        // Source ports, mods and catalogue games. They had no uninstall at all, so the
+        // only way to remove one was to go and delete the folder yourself.
+        // Not gated on Installed: a recipe row whose files and registration are already
+        // gone is exactly the one you most need to be able to remove, and gating it on
+        // "installed" is what left an unremovable entry sitting in the library.
+        const customCan = /^cn_/i.test(game.InstallerGameId || '');
         // Same gate: uninstalling "through Steam" a game Steam does not own would open
         // the client on a title the user never bought there.
         const sAppId = _isOnSteam(game) ? _steamAppId(game) : '';
-        const steamCan = !installerCan && sAppId && (game.Installed == 1);
+        const steamCan = !installerCan && !customCan && sAppId && (game.Installed == 1);
         if (installerCan) {
             uninstallBtn.style.display = 'block';
             uninstallBtn.title = 'Uninstall';
             uninstallBtn.onclick = () => openInstallerUninstall(game);
+        } else if (customCan) {
+            uninstallBtn.style.display = 'block';
+            uninstallBtn.title = (game.Installed == 1) ? 'Uninstall' : 'Remove from library';
+            uninstallBtn.onclick = () => openCustomUninstall(game);
         } else if (steamCan) {
             uninstallBtn.style.display = 'block';
             uninstallBtn.title = 'Uninstall via Steam';

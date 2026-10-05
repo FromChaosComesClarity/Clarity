@@ -1,6 +1,6 @@
 {
   "name": "clarity",
-  "version": "1.21.0",
+  "version": "1.22.0",
   "description": "Clarity, unified suite (Manager + Installer + Couch in one AppImage)",
   "main": "main.js",
   "desktopName": "clarity.desktop",
@@ -17,7 +17,7 @@
     "pack": "electron-builder --dir",
     "predist": "node scripts/fetch-binaries.mjs",
     "dist": "electron-builder --linux AppImage",
-    "postdist": "node scripts/deploy-appimage.mjs"
+    "postdist": "node scripts/appimage-update-info.mjs && node scripts/deploy-appimage.mjs"
   },
   "author": "J.R.A.",
   "license": "GPL-3.0-or-later",
@@ -56,6 +56,12 @@
             "**/*"
           ]
         }
+      ],
+      "extraFiles": [
+        {
+          "from": "build/io.github.fromchaoscomesclarity.clarity.metainfo.xml",
+          "to": "usr/share/metainfo/io.github.fromchaoscomesclarity.clarity.metainfo.xml"
+        }
       ]
     },
     "appImage": {
@@ -73,6 +79,9 @@
       "!**/GameManagerConfig",
       "!**/GameManagerConfig/**",
       "!**/InstallerConfig/**"
-    ]
+    ],
+    "toolsets": {
+      "appimage": "1.0.3"
+    }
   }
 }
