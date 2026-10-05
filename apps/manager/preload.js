@@ -14,6 +14,7 @@ contextBridge.exposeInMainWorld('api', {
     isOmarchy: _isOmarchy,
     getBaseDir: () => ipcRenderer.invoke('get-basedir'),
                                 getGames: () => ipcRenderer.invoke('get-games'),
+                                scanNativePlatforms: (o) => ipcRenderer.invoke('scan-native-platforms', o),
                                 genreList: () => ipcRenderer.invoke('genre-list'),
                                 dosboxStatus: () => ipcRenderer.invoke('dosbox-status'),
                                 setDosboxMode: (m) => ipcRenderer.invoke('set-dosbox-mode', m),

@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24">
+  <!-- Tux as a silhouette. The badge is drawn as a CSS mask, so only the outline
+       carries: no belly, no eyes. What makes it read at 22px is the head being
+       clearly smaller than the body, the beak breaking the outline, and the feet
+       splaying out past it. -->
+  <g fill="#000">
+    <ellipse cx="6.6" cy="20.8" rx="3.4" ry="1.5" transform="rotate(-28 6.6 20.8)"/>
+    <ellipse cx="17.4" cy="20.8" rx="3.4" ry="1.5" transform="rotate(28 17.4 20.8)"/>
+    <ellipse cx="12" cy="14.6" rx="5.6" ry="6.4"/>
+    <ellipse cx="12" cy="6.2" rx="3.7" ry="4"/>
+    <path d="M12 7.3c1.9 0 3.1.7 3.1 1.5S13.9 10.4 12 10.4 8.9 9.6 8.9 8.8 10.1 7.3 12 7.3z"/>
+  </g>
+</svg>

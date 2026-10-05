@@ -4634,6 +4634,21 @@ function _debouncedApplyFilters() {
 // into a single DB fetch 80ms after the last call, invisible to the user.
 let _lgTimer = null;
 let _lgResolvers = [];   // resolvers of every loadGames() coalesced into the pending timer
+// Work out native-vs-Windows for anything that has no answer yet. Once per session:
+// it walks install folders, so it is not something to repeat on every refresh, and a
+// second pass would find nothing anyway. Only re-renders if it actually learned
+// something, so the common case (everything already known) costs one idle call.
+let _nativeScanStarted = false;
+function _scanNativePlatformsOnce() {
+    if (_nativeScanStarted) return;
+    _nativeScanStarted = true;
+    setTimeout(() => {
+        window.api.scanNativePlatforms()
+            .then(r => { if (r && r.scanned) loadGames(); })
+            .catch(() => {});
+    }, 1200);   // let the grid paint first; this is never urgent
+}
+
 function loadGames() {
     clearTimeout(_lgTimer);
     return new Promise(resolve => {
@@ -4656,6 +4671,7 @@ function loadGames() {
                 }
                 applyFilters();
                 try { _paintBatchScope(); } catch {}   // the counts move whenever the library does
+                _scanNativePlatformsOnce();
             } catch (e) { console.error('[loadGames]', e); }
             finally { resolvers.forEach(r => { try { r(); } catch {} }); }
         }, 80);
@@ -5311,6 +5327,16 @@ function _flatpakDrawHero([r,g,b]) {
 
 // ─────────────────────────────────────────────────────────────────────────────
 
+// Native Linux build or a Windows one, as a mark for the store row. Blank when
+// nothing has been worked out yet, which is honest: an empty corner means "not
+// looked at", and inventing a default would make every unscanned game a lie.
+function getPlatformLogo(game) {
+    if (!game) return null;
+    if (game.LinuxNative === 'linux')   return { src: 'assets/logos/linux.svg',   title: 'Native Linux build' };
+    if (game.LinuxNative === 'windows') return { src: 'assets/logos/windows.svg', title: 'Windows build, run through Proton' };
+    return null;
+}
+
 function getStoreLogo(store) {
     if (!store) return null;
     const s = store.toLowerCase();
@@ -5344,7 +5370,11 @@ function renderGallery(recent, regular) {
         const imgSrc = game.CoverArt ? getSafePath(game.CoverArt) : '';
         const imgHtml = imgSrc ? `<img src="${imgSrc}" class="gallery-cover" loading="lazy">` : `<div class="gallery-cover" style="display:flex; align-items:center; justify-content:center; color:#555; font-size:12px;">${t('game.no_cover')}</div>`;
         const _badges = (game.Store ? String(game.Store).split(',') : []).map(s => s.trim()).filter(Boolean).map(s => { const l = getStoreLogo(s); return l ? `<div class="gallery-store-badge" style="-webkit-mask-image:url('${l}');"></div>` : ''; }).join('');
-        const badgeHtml = _badges ? `<div class="gallery-store-badges">${_badges}</div>` : '';
+        const _plat = getPlatformLogo(game);
+        const _platMark = _plat
+            ? `<div class="gallery-store-badge gallery-plat-badge" style="-webkit-mask-image:url('${_plat.src}');" title="${_plat.title}"></div>`
+            : '';
+        const badgeHtml = (_badges || _platMark) ? `<div class="gallery-store-badges">${_badges}${_platMark}</div>` : '';
         const f2pHtml = isFreeToPlay(game) ? `<div class="f2p-pill gallery-f2p-pill" data-f2p-pill="1" title="Free-to-play, click to show/hide these">FREE</div>` : '';
         const installCmdG = getInstallCommand(game);
         const isInstalled = isGameInstalled(game);

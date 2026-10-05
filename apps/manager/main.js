@@ -7,6 +7,7 @@ const { registerSharedHandlers } = require('../../packages/core/shared-ipc.js');
 const host = require('../../packages/core/platform/index.js');
 const scrapeCore = require('../../packages/core/scrape.js');
 const desktopDescriptor = require('../../packages/core/desktop-descriptor.js');
+const nativePlatform = require('../../packages/core/native-platform.js');
 const fs = require('fs');
 const { exec, execFile, spawn } = require('child_process');
 
@@ -313,6 +314,9 @@ app.whenReady().then(() => {
         try { db.prepare("ALTER TABLE games ADD COLUMN AchUnlocked INTEGER DEFAULT 0").run(); } catch(e) {}
         try { db.prepare("ALTER TABLE games ADD COLUMN AchTotal INTEGER DEFAULT 0").run(); } catch(e) {}
 
+        // 'linux' | 'windows' | '' (not worked out yet). Cached because answering it
+        // means walking the install folder, and the gallery asks for every card.
+        try { db.prepare("ALTER TABLE games ADD COLUMN LinuxNative TEXT DEFAULT ''").run(); } catch(e) {}
         try { db.prepare("ALTER TABLE games ADD COLUMN HeroArt TEXT").run(); } catch(e) {}
         try { db.prepare("ALTER TABLE games ADD COLUMN Logo TEXT").run(); } catch(e) {}
         try { db.prepare("ALTER TABLE games ADD COLUMN Icon TEXT").run(); } catch(e) {}
@@ -1859,6 +1863,65 @@ function resolveGameFolder(game) {
     for (const c of cmds) { const d = folderFromLaunchCommand(c); if (d) return d; }
     return null;
 }
+
+// ── Native Linux build, or a Windows one under Proton? ───────────────────────
+// What the gallery badge reports. The question is deliberately about this disk,
+// not about the catalogue: "has a Linux version" and "the Linux version is what
+// you installed" are different claims, and only the second one is useful when you
+// are looking at your own shelf.
+function gamePlatformKind(game) {
+    // A GOG or Epic install wrote the answer down at download time, when the user
+    // picked a depot. Nothing read off the files afterwards beats that.
+    if (game.InstallerGameId) {
+        const gpath = installerDbPath();
+        if (gpath) {
+            try {
+                const gdb = new Database(gpath, { readonly: true, timeout: 5000 });
+                const row = gdb.prepare("SELECT platform FROM games WHERE id=?").get(String(game.InstallerGameId));
+                gdb.close();
+                if (row && row.platform) return row.platform === host.nativeOsKey ? 'linux' : 'windows';
+            } catch {}
+        }
+    }
+    // Steam keeps no such record, so the files answer it.
+    const folder = resolveGameFolder(game);
+    return folder ? nativePlatform.detectPlatform(folder) : '';
+}
+
+/*
+ * Fill in whatever has no answer yet, in one pass, and forget the answer for
+ * anything no longer installed so a reinstall is looked at afresh (the same game
+ * can come back as the other build).
+ *
+ * A blank result is left blank rather than written as "unknown": the folder may
+ * simply not be mounted yet, and a later scan should get another go at it.
+ */
+ipcMain.handle('scan-native-platforms', (_, opts) => {
+    if (!db) return { ok: false, scanned: 0 };
+    const force = !!(opts && opts.force);
+    try { db.prepare("UPDATE games SET LinuxNative='' WHERE Installed=0 AND LinuxNative<>''").run(); } catch {}
+    let rows = [];
+    try {
+        rows = db.prepare(
+            "SELECT id, Store, SteamAppID, InstallerGameId, LaunchCommand, LaunchCommands FROM games " +
+            "WHERE Installed=1" + (force ? '' : " AND (LinuxNative IS NULL OR LinuxNative='')")).all();
+    } catch { return { ok: false, scanned: 0 }; }
+    if (!rows.length) return { ok: true, scanned: 0 };
+
+    const upd = db.prepare("UPDATE games SET LinuxNative=? WHERE id=?");
+    let n = 0;
+    try {
+        db.transaction(() => {
+            for (const g of rows) {
+                const kind = gamePlatformKind(g);
+                if (!kind) continue;
+                upd.run(kind, g.id);
+                n++;
+            }
+        })();
+    } catch {}
+    return { ok: true, scanned: n };
+});
 // Renderer asks whether a browsable folder exists (to show/hide the hero button).
 ipcMain.handle('resolve-game-folder', (e, gameId) => {
     if (!db) return null;

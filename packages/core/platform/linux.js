@@ -575,7 +575,8 @@ function isProtonDir(dir) {
     catch { return false; }
 }
 
-// All Proton builds on the machine, best first: GE-Proton, then Steam's, then anything else;
+// All Proton builds on the machine, best first: GE-Proton, then Steam's, then UMU's, then
+// anything else;
 // newest within each group. Named folders are matched loosely on purpose, the *contents*
 // decide what counts, not the folder name (that is exactly what umu gets wrong).
 function scanRuntimes() {
@@ -595,9 +596,26 @@ function scanRuntimes() {
             if (seen.has(realPath) || !isProtonDir(realPath)) continue;
             seen.add(realPath);
             const name = entry.name;
+            /*
+             * ⚠️ UMU-Proton gets a tier of its own, and it is not the GE one.
+             *
+             * It used to share it, and because the tie inside a tier is broken by name
+             * descending, "UMU-Proton-10.0-4" sorted above "GE-Proton11-5" on the letter
+             * U alone. Nothing intended that, and it is not a harmless reshuffle: that
+             * build ships winegstreamer's libgstlibav.so and none of the FFmpeg
+             * libraries it links against, so it cannot load the plugin:
+             *
+             *     libgstlibav.so: libavfilter.so.7: cannot open shared object file
+             *
+             * Every cutscene in every game under it then decodes to nothing and the
+             * engine draws an undefined buffer, which is why Star Renegades and Weird
+             * West opened on colour bars and static instead of their intros. GE-Proton
+             * carries its own FFmpeg and plays them.
+             */
             let type = 'other';
-            if (/GE-Proton|Proton-GE|UMU-Proton/i.test(name)) type = 'ge';
-            else if (/^Proton/i.test(name))                   type = 'steam';
+            if (/GE-Proton|Proton-GE/i.test(name))  type = 'ge';
+            else if (/UMU-Proton/i.test(name))      type = 'umu';
+            else if (/^Proton/i.test(name))         type = 'steam';
             // A folder called "Proton-GE Latest" says nothing about which build it holds;
             // GE ships the real version in `version` ("<epoch> GE-Proton11-3"), so prefer that
             // for ordering and for anything we show the user.
@@ -606,7 +624,7 @@ function scanRuntimes() {
             found.push({ name, path: realPath, type, version, label: version || name, managed: isManagedDir(realPath) });
         }
     }
-    const order = { ge: 0, steam: 1, other: 2 };
+    const order = { ge: 0, steam: 1, umu: 2, other: 3 };
     return found.sort((a, b) => {
         const to = (order[a.type] ?? 2) - (order[b.type] ?? 2);
         if (to !== 0) return to;

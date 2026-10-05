@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24">
+  <!-- Four panes. Drawn as a CSS mask, same as the store marks beside it. -->
+  <g fill="#000">
+    <rect x="2.5" y="2.5" width="8.6" height="8.6" rx="0.6"/>
+    <rect x="12.9" y="2.5" width="8.6" height="8.6" rx="0.6"/>
+    <rect x="2.5" y="12.9" width="8.6" height="8.6" rx="0.6"/>
+    <rect x="12.9" y="12.9" width="8.6" height="8.6" rx="0.6"/>
+  </g>
+</svg>
