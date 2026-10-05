@@ -118,6 +118,14 @@
        by a hair of space so it reads as a different kind of fact about the game. */
     .gallery-plat-badge { margin-left: 3px; opacity: 0.9; }
     .gallery-recipe-badge { margin-left: 3px; opacity: 0.9; }
+    /* Missing-games rows: the Hidden Games row with a checkbox and the dead path. */
+    .orphan-row { display: flex; align-items: center; gap: 10px; padding: 8px; background: rgba(0,0,0,0.18); border: 1px solid var(--border); border-radius: 8px; }
+    .orphan-row input[type=checkbox] { flex-shrink: 0; }
+    .orphan-meta { flex: 1; min-width: 0; }
+    .orphan-title { font-weight: 700; font-size: 12px; color: var(--text_main); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .orphan-path { font-size: 10px; color: var(--text_dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .orphan-store { font-size: 9px; font-weight: 900; letter-spacing: 1px; text-transform: uppercase; color: var(--text_dim); flex-shrink: 0; }
+    .orphan-group { font-size: 10px; color: var(--text_dim); margin: 6px 0 2px; letter-spacing: 1px; text-transform: uppercase; }
     /* Recipes pane */
     .rcp { border: 1px solid var(--border); border-radius: 8px; padding: 9px 10px; margin-bottom: 7px; background: rgba(0,0,0,0.18); }
     .rcp-head { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
@@ -2643,6 +2651,12 @@
           <div id="install-dir-status" style="font-size: 11px; text-align: center; font-weight: bold; min-height: 14px;"></div>
         </div>
 
+        <div class="tool-card tools-section" data-search="orphan orphaned missing gone deleted not installed cleanup backup restore another machine tidy library">
+          <div class="tool-card-title"><svg class="cp-tico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M10 11v6M14 11v6"/></svg>Missing games</div>
+          <div style="font-size: 11px; color: var(--text_dim); line-height: 1.5; margin-bottom: 6px;">Finds games the library still calls installed whose files are not on this machine. Restoring a backup onto another computer is the usual cause.</div>
+          <button id="btn-scan-orphans" style="width: 100%; font-size: 12px; padding: 10px; letter-spacing: 1px;">Scan for missing games</button>
+        </div>
+
         <div class="tool-card tools-section" data-search="update updates check scan game patch version new gog epic steam upgrade outdated">
           <div class="tool-card-title"><svg class="cp-tico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg><span data-i18n="html.card_updates">Game Updates</span></div>
           <div style="font-size: 11px; color: var(--text_dim); line-height: 1.5; margin-bottom: 2px;" data-i18n="html.updates_hint">Check installed GOG &amp; Epic games for new versions (Steam updates are flagged and handled by Steam). Updating is always your choice.</div>
@@ -3197,6 +3211,21 @@
         <div id="rp-empty" class="rp-empty" hidden></div>
         <span id="rp-busy" class="rp-busy" hidden></span>
       </div>
+    </div>
+  </div>
+
+  <div id="modal-orphans" class="modal-overlay">
+    <div class="modal-box" style="max-width: 640px; width: 640px; max-height: 84vh;">
+      <h3 style="margin: 0; color: var(--accent); text-transform: uppercase; letter-spacing: 2px;">Missing Games <span id="orphans-count" style="opacity:0.6; font-weight:400;"></span></h3>
+      <p style="font-size: 12px; color: var(--text_sec); line-height: 1.5; margin: 0;">The library calls these installed, but their files are not on this machine.</p>
+      <div id="orphans-warn" style="display:none; font-size:12px; line-height:1.5; border:1px solid #f57c00; color:#f57c00; border-radius:8px; padding:9px 11px;"></div>
+      <div id="orphans-empty" style="display:none; font-size:13px; color:var(--text_dim); padding:24px 0; text-align:center;">Nothing is missing. Every installed game's files are where the library expects them.</div>
+      <div id="orphans-list" style="display:flex; flex-direction:column; gap:8px; overflow-y:auto; padding-right:4px; min-height:40px;"></div>
+      <div class="row" id="orphans-actions" style="display:none; gap:8px;">
+        <button id="btn-orphans-uninstall" style="flex:1; font-size:11px;">Mark not installed</button>
+        <button id="btn-orphans-remove" style="flex:1; font-size:11px; background-color: transparent; border: 1px solid #d32f2f; color: #d32f2f;">Remove from library</button>
+      </div>
+      <button id="btn-close-orphans" style="margin-top: 4px; width: 100%;" data-i18n="html.close">Close</button>
     </div>
   </div>
 

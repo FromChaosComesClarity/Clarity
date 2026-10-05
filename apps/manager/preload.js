@@ -18,6 +18,8 @@ contextBridge.exposeInMainWorld('api', {
                                 listRecipes: () => ipcRenderer.invoke('list-recipes'),
                                 customUninstallPlan: (gid) => ipcRenderer.invoke('custom-uninstall-plan', gid),
                                 customUninstall: (o) => ipcRenderer.invoke('custom-uninstall', o),
+                                scanOrphans: () => ipcRenderer.invoke('scan-orphans'),
+                                resolveOrphans: (o) => ipcRenderer.invoke('resolve-orphans', o),
                                 genreList: () => ipcRenderer.invoke('genre-list'),
                                 dosboxStatus: () => ipcRenderer.invoke('dosbox-status'),
                                 setDosboxMode: (m) => ipcRenderer.invoke('set-dosbox-mode', m),

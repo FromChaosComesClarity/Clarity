@@ -2347,6 +2347,102 @@ function renderHiddenGamesList() {
         list.appendChild(row);
     }
 }
+/*
+ * Missing games: rows the library calls installed whose files are not here.
+ *
+ * Everything is listed grouped by the directory that went missing, and nothing is
+ * ticked to begin with. That is deliberate. With a drive unplugged every game on
+ * it looks deleted, so the one thing this must never do is invite a careless
+ * "select all, remove" that throws away a hundred rows because a USB disk is out.
+ * A missing mount point is called out in its own warning and its games are left
+ * unticked even by the select-all.
+ */
+let _orphanScan = null;
+
+function _renderOrphans() {
+    const list = document.getElementById('orphans-list');
+    const warn = document.getElementById('orphans-warn');
+    const empty = document.getElementById('orphans-empty');
+    const actions = document.getElementById('orphans-actions');
+    const count = document.getElementById('orphans-count');
+    if (!list || !_orphanScan) return;
+
+    const { orphans, groups } = _orphanScan;
+    if (count) count.textContent = orphans.length ? `(${orphans.length})` : '';
+    if (empty) empty.style.display = orphans.length ? 'none' : 'block';
+    if (actions) actions.style.display = orphans.length ? 'flex' : 'none';
+
+    const drives = groups.filter(g => g.unmountedDrive);
+    if (warn) {
+        if (drives.length) {
+            warn.style.display = 'block';
+            warn.innerHTML = '<strong>A drive is not mounted.</strong><br>' +
+                drives.map(d => `${d.count} ${d.count === 1 ? 'game lives' : 'games live'} on <code>${d.root}</code>, which is not here right now.`).join('<br>') +
+                '<br>Plug it in and scan again rather than removing them.';
+        } else {
+            warn.style.display = 'none';
+        }
+    }
+
+    const esc = (v) => String(v == null ? '' : v)
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    list.innerHTML = '';
+    for (const g of groups) {
+        const head = document.createElement('div');
+        head.className = 'orphan-group';
+        head.textContent = `${g.count} under ${g.root}` + (g.unmountedDrive ? '  ·  drive not mounted' : '');
+        list.appendChild(head);
+        for (const o of orphans.filter(x => x.missingRoot === g.root)) {
+            const row = document.createElement('div');
+            row.className = 'orphan-row';
+            row.innerHTML =
+                `<input type="checkbox" data-orphan="${esc(o.id)}"${g.unmountedDrive ? ' data-risky="1"' : ''}>` +
+                `<div class="orphan-meta"><div class="orphan-title">${esc(o.game)}</div>` +
+                `<div class="orphan-path">${esc(o.path)}</div></div>` +
+                `<div class="orphan-store">${esc(o.store)}</div>`;
+            list.appendChild(row);
+        }
+    }
+}
+
+function _orphanSelection() {
+    return [...document.querySelectorAll('#orphans-list input[data-orphan]:checked')].map(i => i.dataset.orphan);
+}
+
+async function _applyToOrphans(action, verb) {
+    const ids = _orphanSelection();
+    if (!ids.length) { await showAlert('Tick the games you want to deal with first.'); return; }
+    const danger = action === 'remove';
+    const body = danger
+        ? `Remove ${ids.length} ${ids.length === 1 ? 'game' : 'games'} from the library?\n\nTheir artwork, playtime and playlist membership go with them. Nothing on disk is touched, because there is nothing there.`
+        : `Mark ${ids.length} ${ids.length === 1 ? 'game' : 'games'} as not installed?\n\nThey stay in the library and can be installed again.`;
+    if (!await showConfirm(body, verb, danger)) return;
+    const res = await window.api.resolveOrphans({ ids, action });
+    if (!res || !res.ok) { await showAlert((res && res.error) || 'Could not update those games.'); return; }
+    await loadGames();
+    _orphanScan = await window.api.scanOrphans();
+    _renderOrphans();
+}
+
+async function openOrphansModal() {
+    const btn = document.getElementById('btn-scan-orphans');
+    if (btn) { btn.disabled = true; btn.textContent = 'Scanning…'; }
+    try { _orphanScan = await window.api.scanOrphans(); }
+    finally { if (btn) { btn.disabled = false; btn.textContent = 'Scan for missing games'; } }
+    if (!_orphanScan || !_orphanScan.ok) { await showAlert('The library could not be scanned.'); return; }
+    _renderOrphans();
+    document.getElementById('modal-orphans')?.classList.add('active');
+}
+
+document.getElementById('btn-scan-orphans')?.addEventListener('click', openOrphansModal);
+document.getElementById('btn-close-orphans')?.addEventListener('click', () =>
+    document.getElementById('modal-orphans')?.classList.remove('active'));
+document.getElementById('modal-orphans')?.addEventListener('click', (e) => {
+    if (e.target.id === 'modal-orphans') e.currentTarget.classList.remove('active');
+});
+document.getElementById('btn-orphans-uninstall')?.addEventListener('click', () => _applyToOrphans('uninstall', 'Mark not installed'));
+document.getElementById('btn-orphans-remove')?.addEventListener('click', () => _applyToOrphans('remove', 'Remove'));
+
 function openHiddenGamesModal() {
     renderHiddenGamesList();
     document.getElementById('modal-hidden-games')?.classList.add('active');
@@ -7873,6 +7969,7 @@ modalTools.addEventListener('click', e => { if (e.target === modalTools) closeTo
         ['btn-install-dir-change', 'library'],
         ['btn-tools-add-game', 'library'],
         ['btn-scan-updates', 'library'],
+        ['btn-scan-orphans', 'library'],
         ['btn-open-report', 'report'],
         ['btn-scan-genres', 'library'],
         ['btn-theme-switch', 'appearance'],

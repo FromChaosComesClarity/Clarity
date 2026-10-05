@@ -2980,6 +2980,146 @@ ipcMain.handle('launcher-states', (e, gameId) => {
     return game ? launcherStatesForGame(game) : [];
 });
 
+/*
+ * ── Games whose files are not on this machine ────────────────────────────────
+ *
+ * resolveInstallState above only speaks for rows that front Steam; for anything
+ * else it returns null and the Installed flag is left alone. That is the right
+ * caution at launch time, but it means nothing ever notices when a game's files
+ * stop existing, and the gap shows up the moment a library is backed up and
+ * restored onto a second machine: paths that were right on the first one are
+ * wrong on the second, every row still says Installed, and the gallery offers to
+ * play games that are not there. Manually added games suffer worst, having
+ * nothing but a path to their name.
+ *
+ * ⚠️ The danger here is an unplugged drive. Half this library lives on removable
+ * disks, and with one unmounted every game on it looks exactly like a game that
+ * was deleted. So this never decides anything by itself: it reports, grouped by
+ * the directory that has gone missing, and says plainly when that directory is a
+ * mount point rather than a folder. One absent drive then reads as one line
+ * about a drive instead of two hundred lines about games.
+ */
+const ORPHAN_MOUNTISH = /^\/(run\/media(\/[^/]+)?|media(\/[^/]+)?|mnt)$/;
+
+// The shallowest ancestor that does not exist. For a missing game inside a mounted
+// disk that is the game's own folder; for an unplugged disk it is the mount point.
+function shallowestMissing(target) {
+    let cur = path.resolve(target);
+    let last = cur;
+    while (cur !== path.dirname(cur) && !fs.existsSync(cur)) { last = cur; cur = path.dirname(cur); }
+    return fs.existsSync(cur) ? last : cur;
+}
+
+/*
+ * The one local path a launch command cannot run without, or null when the command
+ * cannot say. A URL scheme carries no path we can check (steam://, installer://),
+ * and a bare command name is resolved from PATH, so neither can be judged. A
+ * pico8-cart: URL is the exception: the cart file is right there after the colon.
+ */
+function requiredPathOf(cmd) {
+    if (!cmd) return null;
+    const cart = String(cmd).match(/^pico8-cart:(.+)$/i);
+    if (cart) return expandTilde(cart[1].trim());
+    if (/^[a-z][a-z0-9+.-]*:\/\//i.test(cmd)) return null;
+    const tokens = String(cmd).match(/"[^"]+"|'[^']+'|\S+/g) || [];
+    let best = null;
+    for (let t of tokens) {
+        t = t.replace(/^["']|["']$/g, '');
+        if (!(t.startsWith('/') || t.startsWith('~'))) continue;
+        best = expandTilde(t);
+    }
+    return best;
+}
+
+function scanOrphans() {
+    if (!db) return { ok: false, orphans: [], groups: [] };
+    let rows = [];
+    try {
+        rows = db.prepare(
+            "SELECT id, Game, Store, CoverArt, SteamAppID, InstallerGameId, LaunchCommand, LaunchCommands " +
+            "FROM games WHERE Installed=1").all();
+    } catch { return { ok: false, orphans: [], groups: [] }; }
+
+    // One read of the installer database, rather than one per game.
+    const installPaths = new Map();
+    try {
+        const gpath = installerDbPath();
+        if (gpath) {
+            const gdb = new Database(gpath, { readonly: true, timeout: 5000 });
+            for (const r of gdb.prepare("SELECT id, install_path FROM games").all()) {
+                if (r.install_path) installPaths.set(String(r.id), expandTilde(r.install_path));
+            }
+            gdb.close();
+        }
+    } catch {}
+
+    const orphans = [];
+    let skipped = 0;
+    for (const g of rows) {
+        const cmds = launchCmdsOf(g);
+        // Steam rows are reconciled on their own, continuously, and a Steam library
+        // that is merely unmounted already resolves to not-installed there.
+        if (cmds.some(c => /steam:\/\/rungameid/i.test(c))) { skipped++; continue; }
+
+        let target = g.InstallerGameId ? installPaths.get(String(g.InstallerGameId)) || null : null;
+        if (!target) {
+            const paths = cmds.map(requiredPathOf);
+            // Every launcher has to name a path. If even one cannot be judged, the row
+            // might still be playable through that one, so it is left alone.
+            if (paths.length && paths.every(Boolean)) target = paths[0];
+        }
+        if (!target) { skipped++; continue; }
+        if (fs.existsSync(target)) continue;
+
+        const missingRoot = shallowestMissing(target);
+        orphans.push({
+            id: g.id, game: g.Game, store: g.Store || '', cover: g.CoverArt || '',
+            path: target, missingRoot,
+            unmountedDrive: ORPHAN_MOUNTISH.test(path.dirname(missingRoot)),
+        });
+    }
+
+    const byRoot = new Map();
+    for (const o of orphans) {
+        if (!byRoot.has(o.missingRoot)) byRoot.set(o.missingRoot, { root: o.missingRoot, unmountedDrive: o.unmountedDrive, count: 0 });
+        byRoot.get(o.missingRoot).count++;
+    }
+    const groups = [...byRoot.values()].sort((a, b) => b.count - a.count);
+    return { ok: true, scanned: rows.length, skipped, orphans, groups };
+}
+
+ipcMain.handle('scan-orphans', () => scanOrphans());
+
+/*
+ * 'uninstall' just clears the flag, which is right for anything you own and could
+ * install again. 'remove' takes the row out, which is what a manually added game
+ * wants: it was never more than a path, and the path is gone.
+ */
+ipcMain.handle('resolve-orphans', (_, { ids, action } = {}) => {
+    if (!db || !Array.isArray(ids) || !ids.length) return { ok: false, changed: 0 };
+    let changed = 0;
+    try {
+        db.transaction(() => {
+            for (const id of ids) {
+                if (action === 'remove') {
+                    for (const sql of [
+                        "DELETE FROM game_genres    WHERE game_id=?",
+                        "DELETE FROM playlist_games WHERE game_id=?",
+                        "DELETE FROM game_manuals   WHERE game_id=?",
+                        "DELETE FROM save_backups   WHERE game_id=?",
+                    ]) { try { db.prepare(sql).run(id); } catch {} }
+                    db.prepare("DELETE FROM games WHERE id=?").run(id);
+                } else {
+                    db.prepare("UPDATE games SET Installed=0 WHERE id=?").run(id);
+                }
+                changed++;
+            }
+        })();
+    } catch (e) { return { ok: false, changed, error: e.message }; }
+    invalidateInstallerInstalledCache();
+    return { ok: true, changed };
+});
+
 ipcMain.handle('verify-install-status', (e, gameId) => {
     if (!db) return { installed: 1 };
     const game = db.prepare("SELECT id, Store, SteamAppID, InstallerGameId, LaunchCommand, LaunchCommands, Installed FROM games WHERE id=?").get(gameId);
