@@ -2434,6 +2434,25 @@ async function openOrphansModal() {
     document.getElementById('modal-orphans')?.classList.add('active');
 }
 
+document.getElementById('btn-compat-get-proton')?.addEventListener('click', async (e) => {
+    const btn = e.currentTarget;
+    const txt = document.getElementById('compat-proton-note-text');
+    btn.disabled = true; btn.textContent = 'Downloading GE-Proton…';
+    try {
+        const r = await window.api.protonInstallLatest();
+        if (r && r.ok) {
+            if (txt) txt.innerHTML = '<strong>' + escHtml((r.proton && r.proton.label) || 'GE-Proton') + ' installed.</strong> Cutscenes will play now. Reopen this window to pick it.';
+            btn.textContent = 'Installed';
+        } else {
+            btn.disabled = false; btn.textContent = 'Install GE-Proton';
+            await showAlert((r && r.error) || 'The download did not finish.');
+        }
+    } catch (err) {
+        btn.disabled = false; btn.textContent = 'Install GE-Proton';
+        await showAlert(String(err && err.message || err));
+    }
+});
+
 document.getElementById('btn-scan-orphans')?.addEventListener('click', openOrphansModal);
 document.getElementById('btn-close-orphans')?.addEventListener('click', () =>
     document.getElementById('modal-orphans')?.classList.remove('active'));
@@ -2503,8 +2522,29 @@ async function openCompatModal(installerGameId, title = '') {
         const val = pv.path || pv;
         const name = pv.label || pv.name || val;
         if (seen.has(val)) return; seen.add(val);
-        psel.insertAdjacentHTML('beforeend', `<option value="${escHtml(val)}">${escHtml(name)}</option>`);
+        // Say which ones cannot play a cutscene, because nothing else about the name
+        // tells you, and the symptom is a screen of colour bars rather than an error.
+        const tag = (pv && pv.media === false) ? '  ·  no video' : '';
+        psel.insertAdjacentHTML('beforeend', `<option value="${escHtml(val)}">${escHtml(name)}${tag}</option>`);
     });
+
+    /*
+     * Nothing installed can decode video. Worth saying plainly: every game with a
+     * cutscene will show colour bars, and no amount of picking between the runtimes
+     * on offer will change it. Clarity can already fetch GE-Proton, so point at that.
+     */
+    const pnote = document.getElementById('compat-proton-note');
+    const ptext = document.getElementById('compat-proton-note-text');
+    const anyMedia = (res.protons || []).some(pv => pv && pv.media);
+    if (pnote && ptext) {
+        if ((res.protons || []).length && !anyMedia) {
+            ptext.innerHTML = '<strong>No runtime here can decode video.</strong> Games with cutscenes will show colour bars or static. '
+                + 'The runtimes installed carry the video plugin without the libraries it needs, which only a recent GE-Proton bundles.';
+            pnote.style.display = 'block';
+        } else {
+            pnote.style.display = 'none';
+        }
+    }
     if (g.proton_path && !seen.has(g.proton_path)) {
         psel.insertAdjacentHTML('beforeend', `<option value="${escHtml(g.proton_path)}">${escHtml(g.proton_path)} (not installed)</option>`);
     }

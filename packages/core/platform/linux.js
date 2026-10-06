@@ -575,6 +575,34 @@ function isProtonDir(dir) {
     catch { return false; }
 }
 
+/*
+ * Can this build actually decode a cutscene?
+ *
+ * Proton plays video through FFmpeg, either directly (winedmo) or through
+ * winegstreamer's libgstlibav plugin. Either way the FFmpeg libraries have to be
+ * reachable at runtime, and under umu they are reachable only if the build carries
+ * its own: the pressure-vessel runtimes ship no FFmpeg whatsoever. The libav* files
+ * inside them are libavahi, which is Avahi and nothing to do with video.
+ *
+ * ⚠️ This is the colour bars. Nearly every build ships libgstlibav.so linked against
+ * FFmpeg 4 and bundles none of it, so the plugin cannot load:
+ *
+ *     libgstlibav.so: libavfilter.so.7: cannot open shared object file
+ *
+ * The game is then handed no frames and draws whatever was left in the buffer.
+ * Confirmed on Valve's own Proton 10.0 as well as UMU-Proton, so it is not about who
+ * built it, and preferring GE-Proton by name only ever fixed it on a machine that
+ * already had one.
+ */
+function canDecodeVideo(dir) {
+    for (const rel of ['files/lib/x86_64-linux-gnu', 'files/lib64', 'files/lib']) {
+        let names = [];
+        try { names = fs.readdirSync(path.join(dir, rel)); } catch { continue; }
+        if (names.some(n => /^libavcodec\.so\.\d/.test(n))) return true;
+    }
+    return false;
+}
+
 // All Proton builds on the machine, best first: GE-Proton, then Steam's, then UMU's, then
 // anything else;
 // newest within each group. Named folders are matched loosely on purpose, the *contents*
@@ -621,12 +649,17 @@ function scanRuntimes() {
             // for ordering and for anything we show the user.
             let version = '';
             try { version = (fs.readFileSync(path.join(realPath, 'version'), 'utf8').trim().split(/\s+/).pop() || ''); } catch {}
-            found.push({ name, path: realPath, type, version, label: version || name, managed: isManagedDir(realPath) });
+            found.push({ name, path: realPath, type, version, label: version || name,
+                         managed: isManagedDir(realPath), media: canDecodeVideo(realPath) });
         }
     }
     const order = { ge: 0, steam: 1, umu: 2, other: 3 };
     return found.sort((a, b) => {
-        const to = (order[a.type] ?? 2) - (order[b.type] ?? 2);
+        // Whether it can play a cutscene comes before who built it and how new it is.
+        // A build that cannot is not a reasonable default for a game manager, however
+        // current it happens to be.
+        if (a.media !== b.media) return a.media ? -1 : 1;
+        const to = (order[a.type] ?? 3) - (order[b.type] ?? 3);
         if (to !== 0) return to;
         return b.label.localeCompare(a.label, undefined, { numeric: true, sensitivity: 'base' });
     });
