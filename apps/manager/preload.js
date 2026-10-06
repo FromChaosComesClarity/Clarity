@@ -252,6 +252,7 @@ contextBridge.exposeInMainWorld('api', {
                                 protonList:          ()  => ipcRenderer.invoke('proton-list'),
                                 protonSetDefault:    (p) => ipcRenderer.invoke('proton-set-default', p),
                                 protonInstallLatest: ()  => ipcRenderer.invoke('proton-install-latest'),
+                                videoProtonCheck:    ()  => ipcRenderer.invoke('video-proton-check'),
                                 protonInstallCancel: ()  => ipcRenderer.invoke('proton-install-cancel'),
                                 onProtonInstallProgress: (cb) => ipcRenderer.on('proton-install-progress', (e, d) => cb(d)),
                                 onGameLaunchFailed:  (cb) => ipcRenderer.on('game-launch-failed', (e, d) => cb(d)),

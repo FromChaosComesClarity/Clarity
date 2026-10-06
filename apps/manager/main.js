@@ -703,6 +703,39 @@ ipcMain.handle('proton-list', () => {
     } catch (e) { return { ok: false, error: e.message, protons: [], current: '' }; }
 });
 
+/*
+ * Is there anything installed that can play a cutscene?
+ *
+ * Asked at startup, because the answer is almost always no and the symptom gives
+ * nothing away: the game opens, the intro plays as colour bars, and nobody thinks
+ * to go looking in a per-game compatibility dialog for the reason. umu downloads
+ * UMU-Proton by itself and that build, like Valve's own, ships the video plugin
+ * without the FFmpeg it links against.
+ *
+ * Only raised when Proton is going to be used at all. A library of native Linux
+ * games has no business being told about this.
+ */
+ipcMain.handle('video-proton-check', () => {
+    let runtimes = [];
+    try { runtimes = installerEngine.scanProtonVersions() || []; } catch {}
+    const capable = runtimes.filter(r => r && r.media);
+
+    let windowsGames = 0;
+    try {
+        if (ensureInstallerEngine()) {
+            windowsGames = _installerEngineDb
+                .prepare("SELECT COUNT(*) AS n FROM games WHERE installed=1 AND platform='windows'").get()?.n || 0;
+        }
+    } catch {}
+
+    return {
+        needed: windowsGames > 0 && capable.length === 0,
+        runtimes: runtimes.map(r => ({ label: r.label || r.name, media: !!r.media })),
+        capable: capable.length,
+        windowsGames,
+    };
+});
+
 ipcMain.handle('proton-set-default', (_, protonPath) => {
     if (!ensureInstallerEngine(true)) return { ok: false, error: 'Installer data not available.' };
     try {

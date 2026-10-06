@@ -4856,6 +4856,77 @@ async function _loadRecipes() {
         </div>`).join('');
 }
 
+/*
+ * Say at startup when no installed runtime can decode video.
+ *
+ * This lived only in the per-game compatibility dialog, and that is not a place
+ * anyone goes looking after a cutscene plays as colour bars: the game runs, nothing
+ * reports an error, and the one screen that explains it is three clicks down a menu
+ * nobody has a reason to open. So it is raised on the way in instead, and only when
+ * it applies, which means a Windows game is installed and nothing can play its video.
+ *
+ * Dismissible for good, because being told twice about a decision you have made is
+ * worse than not being told. It stops firing on its own once something capable is
+ * installed, so the setting only matters to someone who meant to live with it.
+ */
+let _videoProtonChecked = false;
+async function _checkVideoProtonOnce() {
+    if (_videoProtonChecked) return;
+    _videoProtonChecked = true;
+    try {
+        if (await window.api.getSetting('video_proton_notice') === 'dismissed') return;
+        const info = await window.api.videoProtonCheck();
+        if (!info || !info.needed) return;
+        openVideoProtonNotice(info);
+    } catch {}
+}
+
+function openVideoProtonNotice(info) {
+    const $ = id => document.getElementById(id);
+    const modal = $('modal-proton');
+    if (!modal) return;
+
+    $('pr-heading').textContent = 'Cutscenes will not play';
+    $('pr-title').textContent = 'Nothing installed here can decode video';
+    $('pr-message').textContent =
+        'Windows games run through Proton, and Proton decodes video with FFmpeg. The runtime you have '
+        + 'carries the decoder plugin but not the libraries it needs, so intros and cutscenes come out as '
+        + 'colour bars or static. The game itself is fine.';
+
+    const explain = $('pr-explain');
+    if (explain) {
+        explain.innerHTML = 'A recent <b style="color:var(--text_sec);">GE-Proton</b> is the one build that carries its own copy, '
+            + 'and Clarity can fetch it: a one-time download of about 400&nbsp;MB that every Windows game then shares. '
+            + 'Your existing runtimes are left alone, and anything you have chosen by hand for a particular game still wins.';
+        explain.style.display = '';
+    }
+    // No point offering a choice between runtimes that all have the same fault.
+    $('pr-found').style.display = 'none';
+    $('pr-progress').style.display = 'none';
+    $('pr-details').style.display = 'none';
+
+    $('pr-install').style.display = '';
+    $('pr-install').disabled = false;
+    $('pr-install').textContent = 'Install GE-Proton';
+    $('pr-install').onclick = () => installProtonFromModal();
+
+    const dismiss = $('pr-fix');
+    if (dismiss) {
+        dismiss.style.display = '';
+        dismiss.textContent = 'Do not show again';
+        dismiss.classList.remove('primary');
+        dismiss.onclick = async () => {
+            try { await window.api.setSetting('video_proton_notice', 'dismissed'); } catch {}
+            modal.classList.remove('active');
+        };
+    }
+
+    $('pr-close').textContent = 'Not now';
+    $('pr-close').onclick = () => { if (!_protonBusy) modal.classList.remove('active'); };
+    modal.onclick = e => { if (e.target === modal && !_protonBusy) modal.classList.remove('active'); };
+    modal.classList.add('active');
+}
+
 let _nativeScanStarted = false;
 function _scanCoverMarksOnce() {
     if (_nativeScanStarted) return;
@@ -4891,6 +4962,7 @@ function loadGames() {
                 try { _paintBatchScope(); } catch {}   // the counts move whenever the library does
                 _scanCoverMarksOnce();
                 _loadRecipes();
+                _checkVideoProtonOnce();
             } catch (e) { console.error('[loadGames]', e); }
             finally { resolvers.forEach(r => { try { r(); } catch {} }); }
         }, 80);
