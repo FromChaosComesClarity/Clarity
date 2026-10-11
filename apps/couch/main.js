@@ -7,6 +7,7 @@ const Database = require('better-sqlite3');
 const { registerSharedHandlers } = require('../../packages/core/shared-ipc.js');
 const _smart = require('../../packages/core/smart-playlists.js');
 const host = require('../../packages/core/platform/index.js');
+const { installQuitHook, requestQuit } = require('../../packages/core/quit.js');
 const launch = require('../../packages/core/launch.js');
 const { spawn, exec, execFile } = require('child_process');
 const https = require('https');
@@ -103,6 +104,13 @@ function createWindow () {
     win.on('focus', () => { if (!win.isFullScreen()) win.setFullScreen(true); });
     win.loadFile(path.join(__dirname, 'index.html')); win.webContents.on('did-finish-load', () => { win.webContents.insertCSS('* { cursor: none !important; }'); startSteamInstallWatcher(win); });
 }
+
+/*
+ * Ctrl+Q, and the guarantee that every exit path reaps Clarity's own helper processes
+ * on the way out. Registered here, at load, so the hook is in place before the first
+ * window exists and before anything can be spawned.
+ */
+installQuitHook();
 
 const gotLock = app.requestSingleInstanceLock();
 if (!gotLock) {
@@ -305,7 +313,9 @@ ipcMain.on('launch-game', (event, cmd) => {
     }
 });
 
-ipcMain.on('quit-app', () => app.quit());
+// Routed through requestQuit, not app.quit, so the on-screen Quit asks about a running
+// game exactly like Ctrl+Q does. A gamepad user cannot reach meta+w anyway.
+ipcMain.on('quit-app', () => requestQuit());
 const SAVE_DB_ALLOWED_FIELDS = new Set(['FAV', 'WANT_TO_PLAY', 'LaunchCommand', 'Game', 'CoverArt', 'Screenshot', 'DEV', 'PUB', 'RELEASED', 'GENRE', 'METACRITIC', 'Description', 'Description_i18n', 'ProtonTier', 'SteamAppID', 'HLTB_Main', 'Installed', 'kb_played', 'Hidden']);
 
 // Kept as a local name so the call sites below read unchanged.

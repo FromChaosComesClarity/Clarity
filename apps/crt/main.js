@@ -33,6 +33,7 @@ const Database = require('better-sqlite3');
 const { spawn } = require('child_process');
 
 const host = require('../../packages/core/platform/index.js');
+const { installQuitHook, requestQuit } = require('../../packages/core/quit.js');
 const { registerSharedHandlers } = require('../../packages/core/shared-ipc.js');
 const desktopDescriptor = require('../../packages/core/desktop-descriptor.js');
 const launch = require('../../packages/core/launch.js');
@@ -115,6 +116,13 @@ function createWindow() {
 
     win.loadFile(path.join(__dirname, 'index.html'));
 }
+
+/*
+ * Ctrl+Q, and the guarantee that every exit path reaps Clarity's own helper processes
+ * on the way out. Registered here, at load, so the hook is in place before the first
+ * window exists and before anything can be spawned.
+ */
+installQuitHook();
 
 app.whenReady().then(() => {
     try {
@@ -771,4 +779,7 @@ function openFace(faceArgs) {
     app.quit();
 }
 
-ipcMain.on('crt-quit', () => app.quit());
+// Same as Couch: the menu's Quit asks before closing anything the user is still using.
+// openFace above deliberately keeps its bare app.quit(), being a handover rather than a
+// shutdown, and still reaps helpers through the before-quit hook.
+ipcMain.on('crt-quit', () => requestQuit());

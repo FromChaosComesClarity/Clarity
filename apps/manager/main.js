@@ -5,6 +5,8 @@ const os = require('os');
 const Database = require('better-sqlite3');
 const { registerSharedHandlers } = require('../../packages/core/shared-ipc.js');
 const host = require('../../packages/core/platform/index.js');
+const shutdown = require('../../packages/core/shutdown.js');
+const { installQuitHook } = require('../../packages/core/quit.js');
 const scrapeCore = require('../../packages/core/scrape.js');
 const desktopDescriptor = require('../../packages/core/desktop-descriptor.js');
 const nativePlatform = require('../../packages/core/native-platform.js');
@@ -249,6 +251,13 @@ function sendRequestToWindow(req) {
     w.focus();
     w.webContents.send(req.channel, req.value);
 }
+
+/*
+ * Ctrl+Q, and the guarantee that every exit path reaps Clarity's own helper processes
+ * on the way out. Registered here, at load, so the hook is in place before the first
+ * window exists and before anything can be spawned.
+ */
+installQuitHook();
 
 const gotLock = app.requestSingleInstanceLock();
 if (!gotLock) {
@@ -4601,12 +4610,13 @@ ipcMain.on('launch-game', (event, cmd, launchArgs, executable) => {
             if (get('pico8_mute')          === '1') args.push('-volume', '0');
             if (get('pico8_pixel_perfect') === '1') args.push('-pixel_perfect', '1');
             if (get('pico8_joystick')      === '1') args.push('-joystick', '1');
-            spawnDetached(bin, args);
+            shutdown.track(spawnDetached(bin, args), { kind: 'game', label: 'PICO-8' });
         }
         return;
     }
 
     const child = spawn(cmd, [], { shell: true, detached: true, stdio: 'ignore' });
+    shutdown.track(child, { kind: 'game' });
     child.unref();
 });
 

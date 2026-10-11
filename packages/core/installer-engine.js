@@ -29,6 +29,8 @@ const Database = require('better-sqlite3');
 const host = require('./platform/index.js');
 // The per-game fix catalogue ("recipes"). Used at launch, below.
 const gameFixes = require('./game-fixes.js');
+// Which of the children spawned below are allowed to outlive the app, and which are not.
+const shutdown = require('./shutdown.js');
 
 // ── Injected context (set by init) ────────────────────────────────────────────
 let configDir, prefixesDir, logDir, binDir, appImageDir, HOME, db, _onProgress, _onLaunchIssue, _onLaunchProgress, _onGameSession;
@@ -437,6 +439,10 @@ async function headlessInstall(store, appId, platform, installDir, opts = {}) {
                     ...dlcArgs,
                 ], { stdio: ['ignore', 'pipe', 'pipe'], env: { ...process.env, GOGDL_CONFIG_PATH: configDir }, detached: true });
                 _activeInstallProc = proc;
+                // Detached, so quitting Clarity used to leave it downloading with no UI left
+                // to show progress or report the result. Ctrl+Q now offers to stop it; GOG
+                // resumes, so the offer costs a chunk rather than the download.
+                shutdown.track(proc, { kind: 'download', label: title });
                 let buf = '';
                 const onData = d => {
                     buf += String(d);
@@ -534,6 +540,7 @@ async function headlessInstall(store, appId, platform, installDir, opts = {}) {
         const dlOk = await new Promise(resolve => {
             const proc = spawn(leg, ['install', appId, '--base-path', dir, '-y'], { stdio: ['ignore', 'pipe', 'pipe'], detached: true });
             _activeInstallProc = proc;
+            shutdown.track(proc, { kind: 'download', label: title });
             let buf = '';
             const onData = d => {
                 buf += String(d);
@@ -911,7 +918,14 @@ async function launchGame(gameId, opts = {}) {
                         }
                     } catch {}
                 }
-                try { cometProc = spawn(cometBin, cometArgs, { stdio: 'ignore' }); } catch {}
+                /*
+                 * Tracked as a helper, which is what finally makes this safe. The kill
+                 * below is wired to the game's exit, and that handler lives in this
+                 * process: quit Clarity while a GOG game is up and comet was orphaned
+                 * for good, still proxying the Galaxy SDK to nothing.
+                 */
+                try { cometProc = shutdown.track(spawn(cometBin, cometArgs, { stdio: 'ignore' }),
+                                                 { kind: 'helper', label: 'comet' }); } catch {}
             }
         }
     }
@@ -960,6 +974,15 @@ async function launchGame(gameId, opts = {}) {
             : (logFd !== null ? { ...o, stdio: ['ignore', logFd, logFd] } : o);
         const proc = spawn(cmd, args, spawnOpts);
         if (logFd !== null) { try { fs.closeSync(logFd); } catch {} }   // the child holds its own copy
+
+        /*
+         * Registered so Ctrl+Q can offer to close it, never so that quitting closes it
+         * on its own: the detach above is deliberate and stays that way. Tracking is
+         * also what makes the offer honest, because it signals the process group and so
+         * takes down the whole umu → pressure-vessel → Proton → wine tree rather than
+         * just the wrapper.
+         */
+        shutdown.track(proc, { kind: 'game', label: game.title || '' });
 
         // ⚠️ Every launch funnels through here, which is why the session signal lives here and
         // not at the call sites. There are several of those and they drift. Both edges are

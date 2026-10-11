@@ -35,6 +35,7 @@ const Database = require('better-sqlite3');
 
 const host = require('./platform/index.js');
 const installerEngine = require('./installer-engine.js');
+const shutdown = require('./shutdown.js');
 
 // How long a shell-launched game has to stay alive before we stop treating an
 // exit as a failure. Long enough to cover a slow start, short enough that the
@@ -354,7 +355,11 @@ function create(deps = {}) {
         if (cmd.startsWith('pico8-cart:')) {
             const bin = pico8Bin();
             if (!bin) return { ok: false, error: 'PICO-8 is not set up on this machine.' };
-            spawn(bin, ['-run', cmd.slice('pico8-cart:'.length)], { detached: true, stdio: 'ignore' }).unref();
+            // Tracked, like every other game, so Ctrl+Q can offer to close it. No title
+            // reaches this far (run() only ever gets the command), so the prompt counts it
+            // rather than naming it.
+            shutdown.track(spawn(bin, ['-run', cmd.slice('pico8-cart:'.length)], { detached: true, stdio: 'ignore' }),
+                           { kind: 'game' }).unref();
             return { ok: true };
         }
 
@@ -410,6 +415,7 @@ function create(deps = {}) {
         try {
             const sink = logFd === null ? 'ignore' : logFd;
             const child = spawn(cmd, [], { shell: true, detached: true, stdio: ['ignore', sink, sink] });
+            shutdown.track(child, { kind: 'game' });
             const startedAt = Date.now();
 
             const settled = setTimeout(() => {
