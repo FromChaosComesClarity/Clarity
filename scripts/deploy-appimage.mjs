@@ -16,6 +16,12 @@
  *
  * ⚠️ Machine-specific paths. CLARITY_DEPLOY_DIR overrides everything, which is the
  * escape hatch for a machine that keeps its library somewhere else entirely.
+ *
+ * ⚠️ The "first that exists" fallback is a trap when an old install directory is left behind.
+ * The suite moved to ~/Applications and ~/Clarity stayed on disk as an empty shell; with no
+ * candidate holding a config, the fallback picked that husk and a build was deployed where
+ * nothing would ever run it, reporting success. So ~/Applications leads the list, and a
+ * directory that exists but holds no config is announced loudly rather than in passing.
  */
 import fs from 'node:fs';
 import path from 'node:path';
@@ -27,7 +33,8 @@ const BUILT = path.resolve('dist', FILE);
 
 const CANDIDATES = [
     process.env.CLARITY_DEPLOY_DIR,
-    path.join(HOME, 'Clarity'),
+    path.join(HOME, 'Applications'),       // where the whole suite lives now, library included
+    path.join(HOME, 'Clarity'),            // the previous home, often still present but empty
     path.join(HOME, 'Games', 'Clarity'),   // where the suite is installed on the Omarchy/CRT machine
 ].filter(Boolean);
 
@@ -57,7 +64,19 @@ try {
     fs.copyFileSync(BUILT, dest);
     fs.chmodSync(dest, 0o755);
     const mb = (fs.statSync(dest).size / 1048576).toFixed(1);
-    console.log(`• deployed ${FILE} (${mb} MB) → ${target}${hasConfig(target) ? ' (library found beside it)' : ' (⚠ no GameManagerConfig here yet)'}`);
+    console.log(`• deployed ${FILE} (${mb} MB) → ${target}`);
+    if (hasConfig(target)) {
+        console.log('  library found beside it');
+    } else {
+        // Not a footnote. Landing here means the build will open on an empty library, or will
+        // never be opened at all, and the only clue used to be a parenthesis at the end of a
+        // success line that reads like every other successful deploy.
+        const withConfig = CANDIDATES.filter(hasConfig);
+        console.log('  ⚠ NO GameManagerConfig HERE. This build will open on an empty library.');
+        console.log(withConfig.length
+            ? `  ⚠ A library does exist at: ${withConfig.join(', ')} — set CLARITY_DEPLOY_DIR if that is the one you want.`
+            : `  ⚠ No candidate directory holds a library (looked in: ${CANDIDATES.join(', ')}).`);
+    }
 } catch (e) {
     console.log(`• could not deploy to ${target}: ${e.message}`);
 }
