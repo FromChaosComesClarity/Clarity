@@ -273,6 +273,10 @@
     .short #gallery-category-text { font-size: 24px !important; }
     .short #gallery-category-icon { width: 32px !important; height: 32px !important; }
     .short #hero-game-name { font-size: 18px !important; }
+    /* A 190px hero still has room for the Play/Playlist pair, but not at full size: the title
+       above them is already shrunk, and the two together would crowd the category heading. */
+    .short #hero-now { gap: 6px !important; }
+    .short #hero-game-btns .btn-hero { padding: 7px 12px; font-size: 10px; }
     /* The empty-hero placeholder is 48px and centred, which collides with the category title
        once the hero is short. It is a placeholder. It should recede, not compete. */
     .short #hero-icon { font-size: 22px !important; letter-spacing: 3px !important; opacity: 0.5; }
@@ -981,6 +985,11 @@
     .btn-toggle.active { background: var(--accent); color: var(--bg); border-color: var(--accent); }
     .btn-hero { background: var(--bg_menu); border: 1px solid var(--border_solid); color: var(--text_sec); padding: 12px 20px; border-radius: 8px; font-weight: 900; font-family: var(--ui-font, 'Raleway'), sans-serif; font-size: 12px; letter-spacing: 1px; text-transform: uppercase; cursor: pointer; transition: background 0.2s, color 0.2s, border-color 0.2s; white-space: nowrap; }
     .btn-hero:hover { background: var(--accent); color: var(--bg); border-color: var(--accent); box-shadow: 0 0 14px var(--accent); }
+    /* The hero's Play button when the game is not installed. Orange, the same signal the rest
+       of the app uses for Install, so the hero reads at a glance rather than inviting a click
+       that would only open an installer. */
+    .btn-hero.btn-hero-install { background: #e65100; border-color: #e65100; color: #fff; }
+    .btn-hero.btn-hero-install:hover { background: #ff6d00; border-color: #ff6d00; color: #fff; box-shadow: 0 0 14px rgba(230,81,0,0.6); }
     .btn-hero-sq { width: 38px; height: 38px; padding: 0; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
     .btn-hero-sq img { width: 18px; height: 18px; filter: invert(1); opacity: 0.75; transition: opacity 0.2s; pointer-events: none; }
     .btn-hero-sq:hover img { opacity: 1; }
@@ -1622,7 +1631,7 @@
         </div>
 
         <div id="view-gallery" class="view active">
-          <div class="hero-display" style="position:relative; height: 350px; overflow:hidden; border-radius:12px; margin-bottom:20px; border: 1px solid var(--border); display: flex; justify-content: center; align-items: center; flex-shrink: 0;">
+          <div id="hero-display" class="hero-display" style="position:relative; height: 350px; overflow:hidden; border-radius:12px; margin-bottom:20px; border: 1px solid var(--border); display: flex; justify-content: center; align-items: center; flex-shrink: 0;">
             <img id="hero-kb-img" class="hero-kb-img" src="">
             <div style="position:absolute; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(to top, rgba(0,0,0,0.95) 0%, transparent 40%, rgba(0,0,0,0.5) 100%); z-index: 1;"></div>
 
@@ -1634,7 +1643,19 @@
               </div>
             </div>
 
-            <div id="hero-game-name" style="position: absolute; bottom: 20px; right: 25px; z-index: 10; font-size: 28px; font-weight: 900; color: #ffffff; text-shadow: 0 5px 15px rgba(0,0,0,0.9); text-align: right; max-width: 70%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"></div>
+            <!-- The title and the buttons stack, so the buttons sit under the name instead of
+                 fighting it for the corner. PICO-8's own hero buttons live bottom-LEFT, so
+                 nothing collides. -->
+            <div id="hero-now" style="position: absolute; bottom: 20px; right: 25px; z-index: 10; display: flex; flex-direction: column; align-items: flex-end; gap: 10px; max-width: 70%;">
+              <div id="hero-game-name" style="font-size: 28px; font-weight: 900; color: #ffffff; text-shadow: 0 5px 15px rgba(0,0,0,0.9); text-align: right; max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"></div>
+              <!-- Acts on whichever game the hero is showing at that moment, so it is useful
+                   rather than decorative. Play becomes Install when the game is not installed,
+                   the same way the gamepage's own button does. -->
+              <div id="hero-game-btns" style="display: none; gap: 8px;">
+                <button id="btn-hero-play" class="btn-hero"></button>
+                <button id="btn-hero-add-playlist" class="btn-hero" data-i18n="html.btn_hero_playlist">+ PLAYLIST</button>
+              </div>
+            </div>
             <div class="hero-icon" id="hero-icon" style="position:relative; z-index: 2; font-size: 48px; font-weight: 900; color: rgba(255,255,255,0.3); letter-spacing: 5px;" data-i18n="html.no_artwork">NO ARTWORK FOUND</div>
 
             <!-- PICO-8 category hero buttons, shown only when PICO-8 filter is active -->

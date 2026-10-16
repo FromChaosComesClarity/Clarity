@@ -1987,6 +1987,12 @@ let recentGamesCount = 0;
 let recentlyImportedCount = 100;
 let detailScreenshotInterval = null;
 let heroKbInterval = null;
+// The gallery hero carries Play and +Playlist, which act on whatever it happens to be showing,
+// so two things have to be reachable from outside updateHeroMosaic: the game on screen, for the
+// buttons to act on, and the advance function, so hovering can hold the cycle.
+let _heroGame = null;
+let _heroShow = null;
+const HERO_DWELL = 5000;
 let ssBannerKbInterval = null; // FIX: New Ken Burns interval for the Screenshots Banner
 
 // Language selector logic
@@ -8353,17 +8359,22 @@ function updateHeroMosaic(filtered) {
     const iconPath = getSafePath(`assets/logos/${displayIcon}.png`);
     document.getElementById('gallery-category-icon').style.webkitMaskImage = `url('${iconPath}')`;
 
+    // ⚠️ Each entry carries the game's id, not just its picture and title. The hero's buttons
+    // act on the game being shown, and a pool of paths and names cannot say which row that is:
+    // titles are not unique (two stores, the same game) and a game with several screenshots
+    // contributes several entries. The id is the only thing that identifies it.
     let mediaPool = [];
     filtered.forEach(g => {
         if (g.Screenshot && String(g.Screenshot).trim() !== "") {
-            String(g.Screenshot).split('|').filter(s => s.trim() !== "").forEach(s => mediaPool.push({ path: s, name: g.Game }));
+            String(g.Screenshot).split('|').filter(s => s.trim() !== "").forEach(s => mediaPool.push({ path: s, name: g.Game, id: g.id }));
         } else if (g.HeroArt && String(g.HeroArt).trim() !== "") {
-            mediaPool.push({ path: g.HeroArt, name: g.Game });
+            mediaPool.push({ path: g.HeroArt, name: g.Game, id: g.id });
         } else if (g.CoverArt && String(g.CoverArt).trim() !== "") {
-            mediaPool.push({ path: g.CoverArt, name: g.Game });
+            mediaPool.push({ path: g.CoverArt, name: g.Game, id: g.id });
         }
     });
 
+    const heroBtns = document.getElementById('hero-game-btns');
     if (mediaPool.length > 0) {
         iconContainer.style.display = 'none'; kbImg.style.display = 'block';
         mediaPool.sort(() => Math.random() - 0.5);
@@ -8373,12 +8384,73 @@ function updateHeroMosaic(filtered) {
             setTimeout(() => {
                 let item = mediaPool[idx]; kbImg.src = getSafePath(item.path); nameEl.innerText = item.name;
                 kbImg.style.opacity = '0.5'; idx = (idx + 1) % mediaPool.length;
+                // Re-read the row each time rather than closing over it: install state changes
+                // while the gallery is open (an install finishes, a drive is unplugged) and the
+                // button has to offer Play or Install based on what is true now.
+                //
+                // ⚠️ Both sources, the same way the gamepage's playlist button looks a row up.
+                // A playlist view filters currentPlaylistGames rather than allGames, so
+                // searching only allGames would find nothing and silently hide the buttons on
+                // every playlist.
+                _heroGame = allGames.find(g => g.id == item.id)
+                         || (currentPlaylistGames || []).find(g => g.id == item.id)
+                         || null;
+                refreshHeroButtons(_heroGame);
             }, 500);
         }
-        showNextImage(); heroKbInterval = setInterval(showNextImage, 5000);
+        _heroShow = showNextImage;
+        showNextImage(); heroKbInterval = setInterval(showNextImage, HERO_DWELL);
     } else {
         kbImg.style.display = 'none'; nameEl.innerText = ''; iconContainer.style.display = 'block';
+        _heroGame = null; _heroShow = null;
+        if (heroBtns) heroBtns.style.display = 'none';
     }
+}
+
+// Play, or Install when it is not installed, mirroring refreshGamepagePlayBtn so the hero never
+// offers to launch something that is not there. A row we cannot find at all hides the pair
+// outright rather than leaving a button that would do nothing.
+function refreshHeroButtons(game) {
+    const btns = document.getElementById('hero-game-btns');
+    const play = document.getElementById('btn-hero-play');
+    if (!btns || !play) return;
+    if (!game) { btns.style.display = 'none'; return; }
+    const installed = isGameInstalled(game);
+    play.innerText = installed ? t('status.play') : t('status.install');
+    play.classList.toggle('btn-hero-install', !installed);
+    play.title = installed ? `Play ${game.Game}` : `Install ${game.Game}`;
+    btns.style.display = 'flex';
+}
+
+// Reaching for Play on a panel that changes under the cursor every five seconds is how you
+// launch the wrong game, so the cycle holds while the pointer is on the hero.
+function pauseHeroCycle() { clearInterval(heroKbInterval); }
+function resumeHeroCycle() {
+    clearInterval(heroKbInterval);
+    // Only if the gallery is still the visible view: leaving it stops the cycle on purpose
+    // (see switchView), and a mouseleave firing on the way out must not restart it.
+    const gallery = document.getElementById('view-gallery');
+    if (_heroShow && gallery && gallery.classList.contains('active')) {
+        heroKbInterval = setInterval(_heroShow, HERO_DWELL);
+    }
+}
+
+{
+    const heroEl = document.getElementById('hero-display');
+    if (heroEl) {
+        heroEl.addEventListener('mouseenter', pauseHeroCycle);
+        heroEl.addEventListener('mouseleave', resumeHeroCycle);
+    }
+    document.getElementById('btn-hero-play')?.addEventListener('click', e => {
+        e.stopPropagation();
+        if (!_heroGame) return;
+        if (isGameInstalled(_heroGame)) verifyAndLaunch(_heroGame.id, _heroGame.LaunchCommand || '');
+        else handleInstall(_heroGame);
+    });
+    document.getElementById('btn-hero-add-playlist')?.addEventListener('click', e => {
+        e.stopPropagation();
+        if (_heroGame) openPlaylistPickerForGame(_heroGame);
+    });
 }
 
 const THEMES = {
