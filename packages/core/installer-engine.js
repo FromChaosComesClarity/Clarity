@@ -641,7 +641,19 @@ function prefixPathForGame(game, opts = {}) {
 // patched. OutRun2006Tweaks is the case in hand, and its own documentation tells Linux
 // players to set exactly this override by hand, which is a thing a library ought to do
 // for them.
-const SHIPPED_WRAPPERS = ['opengl32.dll', 'ddraw.dll', 'dsound.dll', 'dinput.dll', 'dinput8.dll'];
+/*
+ * ⚠️ d3d8 earns its place here for a reason worth keeping. GOG ships old titles with its own
+ * "dxcfg" wrapper set, which is ddraw.dll, d3d8.dll and dinput8.dll sharing one dxcfg.ini:
+ * the DirectDraw half creates a desktop-sized window (display=desktop) and the Direct3D half
+ * renders into it and scales (scaling=fit). With d3d8 missing from this list the game was
+ * handed two thirds of that set, which is worse than being handed none of it. RC Cars drew a
+ * 640x480 image, unscaled, in the top-left corner of a 3440x1440 window, the rest black,
+ * because ddraw had sized the window and Wine's builtin d3d8 knew nothing about the scaling
+ * it was supposed to do. Measured on this machine, same prefix, same Proton: with d3d8
+ * shadowed, a small picture in the corner; with the shipped one loaded, full screen and
+ * correctly pillarboxed.
+ */
+const SHIPPED_WRAPPERS = ['opengl32.dll', 'ddraw.dll', 'd3d8.dll', 'dsound.dll', 'dinput.dll', 'dinput8.dll'];
 
 function findShippedWrappers(resolvedExe, installPath) {
     const dirs = [resolvedExe && path.dirname(resolvedExe), installPath].filter(Boolean);

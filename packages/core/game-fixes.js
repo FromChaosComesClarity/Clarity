@@ -115,6 +115,46 @@ const FIXES = [
         handledBy: 'AWEMAN32.DLL, a CD-ROM drive, the install registry value, and a 640x480 desktop',
     },
     {
+        id: 'rccars',
+        title: 'RC Cars (2002, GOG)',
+        exe: 'rccars.exe',
+        symptom: 'A small black square in the top-left corner, then the intro plays and it hangs for good.',
+        why:
+            "Two faults stacked, and the first one hides how ordinary the second is.\n\n" +
+            "GOG ships this with its own wrapper set, dxcfg: ddraw.dll, d3d8.dll and " +
+            "dinput8.dll reading one dxcfg.ini, where display=desktop makes the window the " +
+            "size of the screen and scaling=fit scales the game up into it. The engine's " +
+            "shipped-wrapper detection knew about ddraw and dinput8 but not d3d8, so the game " +
+            "got two thirds of a set that only works whole: DirectDraw opened a 3440x1440 " +
+            "window and Wine's own d3d8 drew 640x480 into the corner of it with no idea it " +
+            "was meant to scale. That is the black square. It is fixed in the engine rather " +
+            "than here, because nothing about it is particular to this game.\n\n" +
+            "What is particular to this game is the intro. AutoRunIntro runs an in-engine " +
+            "sequence before the menu, and under Proton it never ends: the picture goes black " +
+            "and the game sits there, no crash, no error, nothing further written to its own " +
+            "game_dbg.log. Measured on this machine, same prefix, same Proton build: with the " +
+            "intro on it was still black and still stuck after five minutes, the log frozen on " +
+            "the same line; with it off the main menu came up in about seventy seconds and the " +
+            "game ran, cycling its track carousel and rendering a car. So the intro is turned " +
+            "off and the game starts. Config.gm is the game's own file and only this one key " +
+            "is touched, so anyone who wants the intro back has one number to change.",
+        env: {},
+        /*
+         * ⚠️ Config.gm is not an ini. Its lines read `Set "Key"   value`, so this carries its
+         * own match; the default key=value shape would quietly find nothing.
+         */
+        settings: [
+            {
+                file: 'Config.gm',
+                key: 'AutoRunIntro',
+                value: '0',
+                was: '1',
+                match: /^(\s*Set\s+"AutoRunIntro"\s+)1\s*$/mi,
+            },
+        ],
+        handledBy: "the engine's shipped-wrapper detection, for the d3d8 half of GOG's dxcfg set",
+    },
+    {
         id: 'witcher1ee',
         title: 'The Witcher: Enhanced Edition (GOG)',
         exe: null,                       // handled at launch by app id, not by exe name
@@ -214,7 +254,20 @@ function applySettings(resolvedExe, installPath) {
         let text;
         try { text = fs.readFileSync(file, 'utf8'); } catch { continue; }
 
-        const wrong = new RegExp(`^(\\s*${s.key}\\s*=\\s*)${s.was}\\s*$`, 'mi');
+        /*
+         * The default shape is an ini line, `key = value`, which covers everything here so
+         * far. A game whose configuration is not an ini supplies its own `match` instead: RC
+         * Cars' Config.gm reads `Set "AutoRunIntro"   1`, which the default would never find.
+         * Silently failing to match is the worst outcome for a writer whose whole contract is
+         * to be a no-op when the value is already right, because it looks identical.
+         *
+         * ⚠️ A custom match needs exactly one capture group, holding everything up to but not
+         * including the value: the replacement below keeps $1 and writes the new value after
+         * it, which is what stops this rewriting the key or the spacing around it.
+         */
+        const wrong = s.match instanceof RegExp
+            ? s.match
+            : new RegExp(`^(\\s*${s.key}\\s*=\\s*)${s.was}\\s*$`, 'mi');
         if (!wrong.test(text)) continue;                     // already right, or deliberately different
         try {
             /*
