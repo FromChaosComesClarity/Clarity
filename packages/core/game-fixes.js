@@ -217,7 +217,17 @@ function applySettings(resolvedExe, installPath) {
         const wrong = new RegExp(`^(\\s*${s.key}\\s*=\\s*)${s.was}\\s*$`, 'mi');
         if (!wrong.test(text)) continue;                     // already right, or deliberately different
         try {
-            fs.writeFileSync(file, text.replace(wrong, `$1${s.value}`), 'utf8');
+            /*
+             * ⚠️ Put the carriage return back. These are Windows files and nearly all of them
+             * are CRLF, but the `\s*$` that lets the match tolerate trailing spaces eats the
+             * \r along with them, so a plain `$1value` replacement rewrites that one line as
+             * LF and leaves every other line CRLF. A game that parses its own config by hand,
+             * which is every game old enough to need a fix in here, is exactly the kind to
+             * mind. Verified against RC Cars' Config.gm, which is CRLF throughout.
+             */
+            const fixed = text.replace(wrong, (m, pre) =>
+                `${pre}${s.value}${m.endsWith('\r') ? '\r' : ''}`);
+            fs.writeFileSync(file, fixed, 'utf8');
             applied.push(`${s.file}: ${s.key} = ${s.value}`);
         } catch {}
     }
