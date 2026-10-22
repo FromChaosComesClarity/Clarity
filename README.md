@@ -77,7 +77,7 @@ anyone poking at the code are in [`docs/`](docs/), and
 
 ## Support it
 
-**Ko-fi:** <https://ko-fi.com/clarity> · **PIX (Brazil):** `b734a9e2-e479-42f9-abd6-c88d1b8b880e`
+**Ko-fi:** <https://ko-fi.com/fromchaoscomesclarity> · **PIX (Brazil):** `b734a9e2-e479-42f9-abd6-c88d1b8b880e`
 
 Starring the repo and reporting what breaks counts too.
 

@@ -44,7 +44,7 @@ Upgrading from any 1.x? Just replace the AppImage. Your `GameManagerConfig` fold
 
 If Clarity got your gaming life together, consider sending a little support my way. It keeps the good vibes flowing. *"From Chaos Comes Clarity."*
 
-- **Ko-fi (Intl):** https://ko-fi.com/clarity
+- **Ko-fi (Intl):** https://ko-fi.com/fromchaoscomesclarity
 - **PIX (Brazil):** `b734a9e2-e479-42f9-abd6-c88d1b8b880e`
 
 Built by J.R.A. · GPL-3.0-or-later
