@@ -435,7 +435,7 @@ async function headlessInstall(store, appId, platform, installDir, opts = {}) {
             const ok = await new Promise(resolve => {
                 const proc = spawn(gogdl, [
                     '--auth-config-path', authPath, 'download', appId,
-                    '--platform', plat, '--path', dir, '--lang', 'en-US',
+                    '--platform', plat, '--path', dir, '--lang', GOG_INSTALL_LANG,
                     ...dlcArgs,
                 ], { stdio: ['ignore', 'pipe', 'pipe'], env: { ...process.env, GOGDL_CONFIG_PATH: configDir }, detached: true });
                 _activeInstallProc = proc;
@@ -2406,15 +2406,62 @@ async function getDiskSpace(dirPath) {
     catch { return null; }
 }
 
+/*
+ * ── How big a GOG install actually is ─────────────────────────────────────────
+ *
+ * Every GOG install is fetched in one language, and this is it. One constant so the download
+ * and the size estimate in front of it can never disagree about which language that is.
+ */
+const GOG_INSTALL_LANG = 'en-US';
+
+/*
+ * gogdl's size map is keyed by language: '*' holds the depots every language shares, and each
+ * language key holds only that language's own. An install is '*' plus ONE language.
+ *
+ * ⚠️ Summing every key was the bug. It multiplied the estimate by the number of languages a
+ * game is sold in: Mad Max ships one 31.6 GB depot tagged with all nine of its languages, so
+ * the install dialog read 284.6 GB and declared a disk with 269 GB free too small for it.
+ * The opposite mistake is just as easy, and the DLC list made it: taking the language key
+ * alone drops the shared part. Dungeon Siege III is the game that settles which is right,
+ * being the one where both halves are large: '*' 3.76 GB plus en-US 0.43 GB is 4.19 GB,
+ * and 4.19 GB is what sits on disk. Checked against 31 installed GOG games here, the sum of
+ * the two matched the folder on disk to the hundredth of a GB every time.
+ */
+function gogSizeForLanguage(sizeMap, lang = GOG_INSTALL_LANG) {
+    const common = (sizeMap && sizeMap['*']) || {};
+    let own = sizeMap && sizeMap[lang];
+    if (!own) {
+        // Not sold in the language we install: gogdl falls back to one it does have. Take the
+        // largest, so the free-space warning can only ever err towards warning.
+        own = Object.entries(sizeMap || {})
+            .filter(([k]) => k !== '*')
+            .map(([, v]) => v || {})
+            .sort((a, b) => (b.disk_size || 0) - (a.disk_size || 0))[0] || {};
+    }
+    return {
+        download_size: (common.download_size || 0) + (own.download_size || 0),
+        disk_size:     (common.disk_size     || 0) + (own.disk_size     || 0),
+    };
+}
+
 // GOG download/disk size. Linux uses the GOG API (installer files); Windows uses gogdl info.
 async function gogInstallInfo(appId, platform) {
     if (platform === 'linux') {
         try {
             const token = await getGogToken(); if (!token) return null;
             const data = await gogFetch(`https://api.gog.com/products/${appId}?expand=downloads`, token);
-            const installers = (data.downloads?.installers || []).filter(i => i.os === 'linux');
-            let download_size = 0;
-            for (const inst of installers) for (const f of inst.files || []) download_size += f.size || 0;
+            const linux = (data.downloads?.installers || []).filter(i => i.os === 'linux');
+            /*
+             * One installer per language here too, and the same bug: Enclave's six Linux
+             * installers summed to 11.1 GB, where the English one gogdl actually downloads is
+             * 1.9 GB. The API speaks two-letter codes ('en', 'de'), gogdl speaks 'en-US'.
+             */
+            const want = GOG_INSTALL_LANG.split('-')[0].toLowerCase();
+            const bytesOf = inst => (inst.files || []).reduce((n, f) => n + (f.size || 0), 0);
+            let chosen = linux.filter(i => String(i.language || '').toLowerCase() === want);
+            // Not offered in that language: the largest single one, for the same reason as above.
+            if (!chosen.length && linux.length) chosen = [linux.reduce((a, b) => (bytesOf(b) > bytesOf(a) ? b : a))];
+            const download_size = chosen.reduce((n, i) => n + bytesOf(i), 0);
             return download_size > 0 ? { download_size, disk_size: download_size } : null;
         } catch { return null; }
     }
@@ -2431,8 +2478,7 @@ async function gogInstallInfo(appId, platform) {
             try { fs.unlinkSync(authPath); } catch {}
             try {
                 const data = JSON.parse(out.split('\n').find(l => l.trim().startsWith('{')));
-                let download_size = 0, disk_size = 0;
-                for (const s of Object.values(data.size || {})) { download_size += s.download_size || 0; disk_size += s.disk_size || 0; }
+                const { download_size, disk_size } = gogSizeForLanguage(data.size);
                 resolve({ download_size, disk_size, version: data.versionName });
             } catch { resolve(null); }
         });
@@ -2458,8 +2504,8 @@ async function gogListDlcs(baseAppId, platform) {
             try {
                 const data = JSON.parse(out.split('\n').find(l => l.trim().startsWith('{')));
                 const dlcs = (data.dlcs || []).map(x => {
-                    const sz = (x.size && (x.size['en-US'] || x.size['*'])) || {};
-                    return { id: String(x.id), title: x.title || 'DLC', download_size: sz.download_size || 0, disk_size: sz.disk_size || 0 };
+                    const sz = gogSizeForLanguage(x.size);
+                    return { id: String(x.id), title: x.title || 'DLC', download_size: sz.download_size, disk_size: sz.disk_size };
                 });
                 resolve({ ok: true, dlcs });
             } catch { resolve({ ok: false, error: 'Could not read the DLC list. Make sure you are signed into GOG in Installer.', dlcs: [] }); }
