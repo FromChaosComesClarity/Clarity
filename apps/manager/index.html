@@ -66,6 +66,10 @@
     .dlm-row-sub { font-size: 10px; margin-top: 2px; letter-spacing: 0.5px; font-weight: 700; }
     .dlm-remove { flex-shrink: 0; padding: 4px 10px; background: transparent; border: 1px solid var(--border_solid); color: var(--text_dim); border-radius: 4px; font-weight: 900; font-size: 10px; letter-spacing: 1px; cursor: pointer; text-transform: uppercase; }
     .dlm-remove:hover { border-color: #ef5350; color: #ef5350; }
+    .dlm-resume { flex-shrink: 0; padding: 4px 12px; background: var(--accent); border: 1px solid var(--accent); color: var(--bg); border-radius: 4px; font-weight: 900; font-size: 10px; letter-spacing: 1px; cursor: pointer; text-transform: uppercase; }
+    .dlm-resume:hover { filter: brightness(1.12); }
+    #dlm-btn-pause-active:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
+    #dlm-btn-pause-active:disabled, #dlm-btn-cancel-active:disabled { opacity: 0.45; cursor: default; }
     .dlm-clickable { cursor: pointer; }
     .dlm-clickable:hover { color: var(--accent); text-decoration: underline; }
 
@@ -3776,7 +3780,12 @@
                 <div id="dlm-active-store" style="font-size:9px; font-weight:900; letter-spacing:2px; text-transform:uppercase; margin-bottom:6px;"></div>
                 <div id="dlm-active-title" style="font-size:18px; font-weight:900; color:var(--text_main); line-height:1.2; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;"></div>
               </div>
+              <!-- Pause keeps every file it has; resuming is the same install run again, and the
+                   download tools carry on from what is already there. Hidden for DLC jobs. -->
+              <div style="display:flex; gap:8px; flex-shrink:0;">
+              <button id="dlm-btn-pause-active" title="Stop for now and keep what has downloaded. Resume carries on from here." style="flex-shrink:0; padding:6px 14px; background:transparent; border:1px solid var(--border_solid); color:var(--text_sec); border-radius:5px; font-weight:900; font-size:10px; letter-spacing:1.5px; text-transform:uppercase; cursor:pointer; white-space:nowrap;">Pause</button>
               <button id="dlm-btn-cancel-active" style="flex-shrink:0; padding:6px 14px; background:rgba(239,83,80,0.1); border:1px solid #ef5350; color:#ef5350; border-radius:5px; font-weight:900; font-size:10px; letter-spacing:1.5px; text-transform:uppercase; cursor:pointer; white-space:nowrap;">Cancel</button>
+              </div>
             </div>
             <div style="width:100%; background:rgba(0,0,0,0.5); border-radius:5px; height:10px; overflow:hidden; border:1px solid rgba(255,255,255,0.06); margin-bottom:12px;">
               <div id="dlm-bar" style="height:100%; width:0%; background:var(--accent); transition:width 0.35s ease; border-radius:5px;"></div>
@@ -3796,6 +3805,14 @@
               </div>
             </div>
           </div>
+        </div>
+
+        <div id="dlm-paused-section" style="display:none; flex-direction:column; gap:8px;">
+          <div style="display:flex; align-items:center; justify-content:space-between;">
+            <div style="font-size:9px; font-weight:900; letter-spacing:3px; color:var(--text_dim); text-transform:uppercase;">Paused</div>
+            <span id="dlm-paused-label" style="font-size:11px; color:var(--text_dim);"></span>
+          </div>
+          <div id="dlm-paused-list" style="display:flex; flex-direction:column; gap:4px;"></div>
         </div>
 
         <div id="dlm-queue-section" style="display:none; flex-direction:column; gap:8px;">

@@ -197,13 +197,81 @@ function cancelActiveInstall() {
     const proc = _activeInstallProc;
     if (!proc || !proc.pid) return false;
     _installCancelled = true;
-    const killGroup = (sig) => {
-        try { process.kill(-proc.pid, sig); }        // negative pid = the whole process group
-        catch { try { proc.kill(sig); } catch {} }   // fallback: at least the main child
+    _stopDownloadGroup(proc, ['SIGTERM', 3000, 'SIGKILL']);
+    return true;
+}
+
+/*
+ * Stop a download's whole process group, escalating through `steps`: a signal, a wait, the next
+ * signal, and so on.
+ *
+ * ⚠️ The timers are its own, and each later signal only goes out if something in the group is
+ * still alive. They used to live in _activeKillTimer, which the download's close handler clears
+ * the moment the MAIN process exits; any worker still running was then never killed, and kept
+ * downloading with nothing watching it. gogdl runs twenty of them. Measured on a download that
+ * had been going for ten minutes: neither SIGINT nor SIGTERM stopped its group within four
+ * seconds each, and only SIGKILL did, so the last step is not a formality.
+ */
+let _stoppingGroup = 0;          // pgid of a download being stopped, until it is entirely gone
+const _groupAlive = (pg) => { try { process.kill(-pg, 0); return true; } catch { return false; } };
+function _stopDownloadGroup(proc, steps) {
+    const pg = proc.pid;
+    _stoppingGroup = pg;
+    const send = (sig) => { try { process.kill(-pg, sig); } catch { try { proc.kill(sig); } catch {} } };
+    if (_activeKillTimer) { clearTimeout(_activeKillTimer); _activeKillTimer = null; }
+    const run = (i) => {
+        if (i >= steps.length) return;
+        if (i > 0 && !_groupAlive(pg)) return;            // already gone, nothing more to send
+        send(steps[i]);
+        if (i + 1 < steps.length) setTimeout(() => run(i + 2), steps[i + 1]);
     };
-    killGroup('SIGTERM');
-    if (_activeKillTimer) clearTimeout(_activeKillTimer);
-    _activeKillTimer = setTimeout(() => killGroup('SIGKILL'), 3000);  // uncatchable, guarantees exit
+    run(0);
+}
+
+/*
+ * Before a download starts, the previous one has to be entirely gone. Pause marks the job paused
+ * when gogdl's main process exits, and its workers can take several seconds longer; pressing
+ * Resume in that window would otherwise put two copies of gogdl to work on one game folder.
+ * The escalation above ends in SIGKILL eleven seconds after a pause, so this waits at most a
+ * little longer than that and never kills anything itself.
+ */
+async function _waitForStoppedDownload(onWait) {
+    const pg = _stoppingGroup;
+    if (!pg || !_groupAlive(pg)) { _stoppingGroup = 0; return; }
+    if (onWait) onWait();
+    const until = Date.now() + 20000;
+    while (_groupAlive(pg) && Date.now() < until) await new Promise(r => setTimeout(r, 250));
+    _stoppingGroup = 0;
+}
+
+/*
+ * ── Pausing a download ────────────────────────────────────────────────────────
+ *
+ * A pause is a stop that keeps everything, and resuming is the same install run again. That
+ * is not a shortcut: both download tools resume on their own. gogdl records every finished file
+ * with its checksum in .gogdl-resume inside the game folder, legendary keeps a resume file of
+ * its own, and each skips what it already has. Verified against a real interrupted download,
+ * Mad Max cancelled at 13%: all 67 files gogdl had marked finished matched their recorded
+ * checksums, and the one file still being written was absent from the list, so it is fetched
+ * again rather than trusted half-written.
+ *
+ * ⚠️ Not a SIGSTOP freeze. A frozen process loses its connections to the CDN within minutes,
+ * trips the stall watchdog, and holds the install lock for as long as it is frozen. A stop
+ * survives a reboot, and it is the shape the tools are built to recover from.
+ *
+ * SIGINT first, the signal Ctrl+C sends, because both tools catch it as KeyboardInterrupt and
+ * have a clean shutdown for it. It is not always quick: a gogdl that had been downloading for
+ * ten minutes ignored SIGINT and SIGTERM for four seconds each. So SIGTERM and then SIGKILL
+ * follow, and a pause cannot hang. The hard end is as safe as the gentle one, which has been
+ * checked twice: Mad Max cancelled (SIGTERM, SIGKILL) left 67 finished files, all matching
+ * their checksums, and the same game stopped by SIGKILL after ten minutes left 75, all matching.
+ */
+let _installPaused = false;      // set by pause → the run reports 'paused', not an error
+function pauseActiveInstall() {
+    const proc = _activeInstallProc;
+    if (!proc || !proc.pid) return false;
+    _installPaused = true;
+    _stopDownloadGroup(proc, ['SIGINT', 6000, 'SIGTERM', 5000, 'SIGKILL']);
     return true;
 }
 function findLegendary() {
@@ -355,6 +423,92 @@ function ensureGameRow(store, appId, title, platform) {
     return sel();
 }
 
+/*
+ * ── What a stopped download actually kept ─────────────────────────────────────
+ *
+ * ⚠️ Both tools resume a FILE at a time, not a byte at a time. Whatever was finished is kept;
+ * whatever was still arriving starts again from nothing. Measured on both: Mad Max dropped a
+ * half-written 640 MB archive, and Cassette Beasts, which is three files with nearly all of it
+ * in one 1 GB .pck, kept 32 MB of the 310 MB it had when paused, the .pck going back to zero.
+ * So the progress bar at the moment of a pause overstates what survives it, and the honest
+ * number is read from the tool's own resume file afterwards.
+ */
+const _sizeOf = (folder, rels) => rels.reduce((n, r) => { try { return n + fs.statSync(path.join(folder, r)).size; } catch { return n; } }, 0);
+
+// The newest modification time anywhere in a folder, bounded so a huge tree cannot stall a pause.
+function _newestMtime(folder, budget = 20000) {
+    let newest = 0, seen = 0;
+    const walk = (d) => {
+        let ents; try { ents = fs.readdirSync(d, { withFileTypes: true }); } catch { return; }
+        for (const e of ents) {
+            if (++seen > budget) return;
+            const f = path.join(d, e.name);
+            try { newest = Math.max(newest, fs.statSync(f).mtimeMs); } catch {}
+            if (e.isDirectory()) walk(f);
+        }
+    };
+    walk(folder);
+    return newest;
+}
+
+// gogdl: the folder is the one holding an unfinished download (.gogdl-resume) that was written
+// to last, since one download runs at a time. Kept = the files its resume file lists as done.
+function _gogKeptBytes(dir) {
+    let cands = [];
+    try {
+        cands = fs.readdirSync(dir, { withFileTypes: true })
+            .filter(e => e.isDirectory()).map(e => path.join(dir, e.name))
+            .filter(f => fs.existsSync(path.join(f, '.gogdl-resume')));
+    } catch {}
+    if (!cands.length) return 0;
+    const folder = cands.length === 1 ? cands[0]
+        : cands.map(f => [f, _newestMtime(f)]).sort((a, b) => b[1] - a[1])[0][0];
+    let rels = [];
+    try {
+        rels = fs.readFileSync(path.join(folder, '.gogdl-resume'), 'utf8').split('\n')
+            .map(l => l.split('::')[1]).filter(Boolean).map(r => r.trim().replace(/\\/g, '/'));
+    } catch {}
+    return _sizeOf(folder, rels);
+}
+
+// legendary: <config>/tmp/<app>.resume lists `hash:path` for every finished file, and those
+// paths name the folder they are in.
+function _epicResumeFiles(appId) {
+    try {
+        const rf = path.join(host.legendaryConfigDir(), 'tmp', `${appId}.resume`);
+        return fs.readFileSync(rf, 'utf8').split('\n').map(l => l.slice(l.indexOf(':') + 1).trim()).filter(Boolean);
+    } catch { return []; }
+}
+function _epicKeptBytes(appId, dir) {
+    const rels = _epicResumeFiles(appId);
+    if (!rels.length) return 0;
+    let folder = null;
+    try {
+        const cands = fs.readdirSync(dir, { withFileTypes: true })
+            .filter(e => e.isDirectory()).map(e => path.join(dir, e.name))
+            .filter(f => fs.existsSync(path.join(f, rels[0])));
+        folder = cands.length <= 1 ? cands[0] : cands.map(f => [f, _newestMtime(f)]).sort((a, b) => b[1] - a[1])[0][0];
+    } catch {}
+    return folder ? _sizeOf(folder, rels) : 0;
+}
+
+const _gb = b => (b / 1024 ** 3).toFixed(1) + ' GB';
+
+// What a download that stopped early reports. A pause is not a failure and must not be shown or
+// recorded as one: the files are kept on purpose so the same install can carry on from them.
+// `kept` is { bytes, total } when they could be measured.
+function _stoppedEarly(base, lastLines, kept) {
+    if (_installPaused) {
+        const known = kept && kept.total > 0;
+        return { ...base, step: 'paused', done: true,
+                 percent: known ? Math.min(100, (kept.bytes / kept.total) * 100) : undefined,
+                 keptBytes: known ? kept.bytes : undefined, totalBytes: known ? kept.total : undefined,
+                 message: known ? `Paused. ${_gb(kept.bytes)} of ${_gb(kept.total)} kept.` : 'Paused. Everything finished so far is kept.' };
+    }
+    return { ...base, step: 'error', done: true,
+             message: _installCancelled ? 'Installation cancelled.' : ((lastLines || []).slice(-2).join(' | ') || 'Download failed.') };
+}
+
 async function headlessInstall(store, appId, platform, installDir, opts = {}) {
     // The shared library knows the name even when library.db has never been synced, and it is
     // what every progress message shows, without this the user watched "1207666353" download.
@@ -371,7 +525,11 @@ async function headlessInstall(store, appId, platform, installDir, opts = {}) {
     const title = (() => { try { return db?.prepare("SELECT title FROM games WHERE app_id=? AND store=?").get(appId, store)?.title; } catch { return null; } })()
         || sharedTitle() || appId;
     const base = { title, store, appId, done: false };
+    // Never two downloads at once on one folder, see _waitForStoppedDownload.
+    await _waitForStoppedDownload(() =>
+        writeProgress({ ...base, step: 'downloading', percent: 0, message: 'Waiting for the previous download to finish stopping…' }));
     _installCancelled = false;   // fresh run, cleared so a prior cancel doesn't mislabel this one
+    _installPaused    = false;   // and the same for a prior pause
     // DLC directives (opts): withDlcs/dlcIds = add DLCs; skipDlcs = base only ("Reset DLCs").
     // `dlcOp` = any DLC-scoped operation.
     //
@@ -408,6 +566,23 @@ async function headlessInstall(store, appId, platform, installDir, opts = {}) {
         // Refresh GOG token before writing auth config, avoids stale-token failures in headless mode
         writeProgress({ ...base, step: 'auth', percent: 0, message: 'Refreshing authentication...' });
         await getGogToken().catch(() => {});
+
+        /*
+         * The whole install's size, so progress can be shown against the whole game.
+         *
+         * ⚠️ gogdl's percentage is of what THIS run has left to do, not of the game. Resuming Mad
+         * Max at 11% it reported `Progress: 0.59% (170.00/29005.76 MiB)`, 29,005 MiB being what
+         * was left of a 31.8 GB install, and the bar sat near zero as though everything had been
+         * thrown away. Knowing the total turns the two numbers it does print into the real one.
+         *
+         * Before writeGogAuthConfig, deliberately: gogInstallInfo writes and then deletes that
+         * same file, and doing it after would pull the credentials out from under the download.
+         * DLC jobs are left alone, their size is not the base game's.
+         */
+        let totalDiskBytes = 0;
+        if (!dlcOp) {
+            try { totalDiskBytes = (await gogInstallInfo(appId, platform || 'windows'))?.disk_size || 0; } catch {}
+        }
         const authPath = writeGogAuthConfig();
 
         // ── Stall watchdog ───────────────────────────────────────────────────
@@ -450,12 +625,35 @@ async function headlessInstall(store, appId, platform, installDir, opts = {}) {
                     for (const line of lines) {
                         const trimmed = line.trim();
                         if (trimmed) { lastLines.push(trimmed); if (lastLines.length > 5) lastLines.shift(); }
+                        // gogdl says so when it picks up an interrupted download, and then goes quiet
+                        // while it checks what is already there, half a minute on Mad Max.
+                        if (/Attempting to continue the download/i.test(line)) {
+                            writeProgress({ ...base, step: 'downloading', percent: lastPercent >= 0 ? lastPercent : 0,
+                                            message: `[${plat}] Carrying on from where it stopped, checking what is already here…` });
+                            continue;
+                        }
                         const pct = line.match(/(\d+(?:\.\d+)?)\s*%/)?.[1];
                         const sz  = line.match(/([\d.]+\s*(?:GiB|MiB|GB|MB))\s*\/\s*([\d.]+\s*(?:GiB|MiB|GB|MB))/i);
                         if (pct || sz) {
-                            const pctNum = pct ? parseFloat(pct) : 0;
+                            let pctNum = pct ? parseFloat(pct) : 0;
+                            let msg = sz ? `${sz[1]} / ${sz[2]}` : `${pct || 0}%`;
+                            // `(done/left MiB)`: what this run has written, out of what it had left.
+                            // Whatever the whole install needs beyond `left` was already on disk.
+                            const of = line.match(/\(([\d.]+)\s*\/\s*([\d.]+)\s*MiB\)/);
+                            if (of && totalDiskBytes) {
+                                const MiB = 1024 * 1024;
+                                const doneNow = parseFloat(of[1]) * MiB, left = parseFloat(of[2]) * MiB;
+                                // A total that does not fit means the two are not measuring the same
+                                // thing (a Linux installer is sized packed); keep gogdl's own figure then.
+                                if (left > 0 && left <= totalDiskBytes * 1.02) {
+                                    const have = Math.max(0, totalDiskBytes - left) + doneNow;
+                                    pctNum = Math.min(100, (have / totalDiskBytes) * 100);
+                                    const gb = b => (b / 1024 ** 3).toFixed(1) + ' GB';
+                                    msg = `${gb(have)} of ${gb(totalDiskBytes)}`;
+                                }
+                            }
                             noteProgress(pctNum);
-                            writeProgress({ ...base, step: 'downloading', percent: pctNum, message: `[${plat}] ${sz ? `${sz[1]} / ${sz[2]}` : `${pct || 0}%`}` });
+                            writeProgress({ ...base, step: 'downloading', percent: pctNum, message: `[${plat}] ${msg}` });
                         }
                     }
                 };
@@ -482,11 +680,18 @@ async function headlessInstall(store, appId, platform, installDir, opts = {}) {
         };
 
         // Snapshot subdirectories before gogdl runs (same guard as gogdl-install IPC).
+        //
+        // ⚠️ A folder holding an unfinished download is not "already there": it is the folder this
+        // run is about to finish, after a pause or a cancel. Counting it as pre-existing would have
+        // the fallback in findNativeInstallResult reject the very install it just completed.
+        // gogdl leaves .gogdl-resume in a game folder until the download is done.
         let preExistingDirsH;
         try {
             preExistingDirsH = new Set(
                 fs.readdirSync(dir, { withFileTypes: true })
-                  .filter(e => e.isDirectory()).map(e => e.name)
+                  .filter(e => e.isDirectory())
+                  .filter(e => !fs.existsSync(path.join(dir, e.name, '.gogdl-resume')))
+                  .map(e => e.name)
             );
         } catch { preExistingDirsH = new Set(); }
 
@@ -494,8 +699,14 @@ async function headlessInstall(store, appId, platform, installDir, opts = {}) {
         writeProgress({ ...base, step: 'downloading', percent: 0, message: `Starting download (${activePlat})...` });
         const { ok: dlOk, lastLines } = await runGogdlDownload(activePlat);
 
-        try { fs.unlinkSync(authPath); } catch {}
-        if (!dlOk) { writeProgress({ ...base, step: 'error', message: _installCancelled ? 'Installation cancelled.' : (lastLines.slice(-2).join(' | ') || 'Download failed.'), done: true }); return; }
+        releaseGogAuthConfig(authPath);
+        // ⚠️ A run we stopped is never a finished one, whatever its exit code says. legendary exits
+        // 0 on Ctrl+C, so a paused Epic download used to be reported as installed.
+        if (!dlOk || _installPaused || _installCancelled) {
+            const kept = _installPaused ? { bytes: _gogKeptBytes(dir), total: totalDiskBytes } : null;
+            writeProgress(_stoppedEarly(base, lastLines, kept));
+            return;
+        }
 
         // DLC operations reconcile the already-installed base folder (no NEW game dir is created, and the
         // base's install state / executable are unchanged) → skip new-install detection and finish.
@@ -535,6 +746,12 @@ async function headlessInstall(store, appId, platform, installDir, opts = {}) {
         const dir = expandTilde(installDir) || path.join(HOME, 'Games', 'Clarity');
         try { fs.mkdirSync(dir, { recursive: true }); } catch {}
         writeProgress({ ...base, step: 'downloading', percent: 0, message: 'Starting download...' });
+        // The whole game's size, and how much of it an earlier, stopped run already finished.
+        // legendary's percentage is of what THIS run has left, same as gogdl's: resuming
+        // Cassette Beasts it counted up from 0 again. These two put it back against the game.
+        let totalDiskBytes = 0;
+        try { totalDiskBytes = (await epicInstallInfo(appId))?.disk_size || 0; } catch {}
+        const keptAtStart = _epicKeptBytes(appId, dir);
         await new Promise(res => { const p = spawn(leg, ['uninstall', appId, '-y'], { stdio: 'ignore' }); p.on('close', res); p.on('error', res); });
 
         const dlOk = await new Promise(resolve => {
@@ -546,6 +763,20 @@ async function headlessInstall(store, appId, platform, installDir, opts = {}) {
                 buf += String(d);
                 const lines = buf.split('\n'); buf = lines.pop();
                 for (const line of lines) {
+                    if (/previously interrupted download/i.test(line)) {
+                        writeProgress({ ...base, step: 'downloading', percent: totalDiskBytes ? (keptAtStart / totalDiskBytes) * 100 : 0,
+                                        message: 'Carrying on from where it stopped…' });
+                        continue;
+                    }
+                    // Only legendary's own progress line is mapped; it prints other percentages too
+                    // (verification, compression savings) and those are left exactly as before.
+                    const prog = line.match(/Progress:\s*([\d.]+)\s*%/i);
+                    if (prog && totalDiskBytes > keptAtStart) {
+                        const have = keptAtStart + (totalDiskBytes - keptAtStart) * (parseFloat(prog[1]) / 100);
+                        writeProgress({ ...base, step: 'downloading', percent: Math.min(100, (have / totalDiskBytes) * 100),
+                                        message: `${_gb(have)} of ${_gb(totalDiskBytes)}` });
+                        continue;
+                    }
                     const pct = line.match(/(\d+(?:\.\d+)?)\s*%/)?.[1];
                     const sz  = line.match(/([\d.]+\s*(?:GiB|MiB|GB|MB))\s*\/\s*([\d.]+\s*(?:GiB|MiB|GB|MB))/i);
                     if (pct || sz) writeProgress({ ...base, step: 'downloading', percent: pct ? parseFloat(pct) : 0, message: sz ? `${sz[1]} / ${sz[2]}` : `${pct || 0}%` });
@@ -556,7 +787,13 @@ async function headlessInstall(store, appId, platform, installDir, opts = {}) {
             proc.on('close', code => done(code === 0));
             proc.on('error', () => done(false));
         });
-        if (!dlOk) { writeProgress({ ...base, step: 'error', message: _installCancelled ? 'Installation cancelled.' : 'Download failed.', done: true }); return; }
+        // legendary exits 0 on Ctrl+C: measured, a paused download came back as a success and was
+        // recorded as installed. Our own flags decide whether this run was stopped.
+        if (!dlOk || _installPaused || _installCancelled) {
+            const kept = _installPaused ? { bytes: _epicKeptBytes(appId, dir), total: totalDiskBytes } : null;
+            writeProgress(_stoppedEarly(base, null, kept));
+            return;
+        }
         writeProgress({ ...base, step: 'installing', percent: 100, message: 'Finalizing...' });
         try {
             // Same as the GOG branch above: create the row if the library sync never has.
@@ -1193,7 +1430,7 @@ async function runRedist(sender, channel, appId, platform, prefixPath, protonPat
     } catch {}
 
     if (!depIds) {
-        try { fs.unlinkSync(authPath); } catch {}
+        releaseGogAuthConfig(authPath);
         sendDone(true, 'No compatibility files required for this game.');
         return { ok: true, installed: 0 };
     }
@@ -1211,7 +1448,7 @@ async function runRedist(sender, channel, appId, platform, prefixPath, protonPat
         p.on('close', resolve);
         p.on('error', () => resolve(1));
     });
-    try { fs.unlinkSync(authPath); } catch {}
+    releaseGogAuthConfig(authPath);
     if (dlCode !== 0) { sendDone(false, `Download failed (exit ${dlCode})`); return { ok: false }; }
 
     const manifestPath = path.join(redistDir, '.gogdl-redist-manifest');
@@ -2153,9 +2390,27 @@ async function getGogToken() {
     } catch { return null; }
 }
 
+/*
+ * ── Handing gogdl the GOG login, and taking it back ───────────────────────────
+ *
+ * gogdl decides a token has expired when `time.time() >= loginTime + expires_in`, read out of
+ * its own bytecode rather than assumed. loginTime used to be written as an hour before expiry
+ * and expires_in as the time remaining, which adds up to (2 x expiry - 1 hour - now): with under
+ * thirty minutes left, gogdl took a perfectly good token for an expired one and renewed it.
+ *
+ * ⚠️ Renewing hands back a NEW refresh token, and gogdl writes it into this file
+ * (AuthorizationManager.__write_config). Every caller then deleted the file, so the new token
+ * went with it and Clarity kept the old one, already spent. The next renewal from that fails,
+ * and GOG is signed out for no visible reason. That is a sign-out Jose had already hit, and
+ * pause and resume start a fresh gogdl run each time, so it would have come round more often.
+ *
+ * Fixed at both ends: the expiry handed over is the real one, and releaseGogAuthConfig reads
+ * the file back before deleting it and keeps anything gogdl renewed.
+ */
 function writeGogAuthConfig() {
     const get    = k => db.prepare("SELECT value FROM settings WHERE key=?").get(k)?.value || '';
     const expiry = parseInt(get('gog_token_expiry') || '0');
+    const now    = Date.now();
     // gogdl expects the Heroic auth format: keyed by client_id
     const authPath = path.join(configDir, 'gogdl_auth.json');
     fs.writeFileSync(authPath, JSON.stringify({
@@ -2164,11 +2419,32 @@ function writeGogAuthConfig() {
             refresh_token: get('gog_refresh_token'),
             user_id:       get('gog_user_id'),
             token_type:    'Bearer',
-            expires_in:    Math.max(0, Math.floor((expiry - Date.now()) / 1000)),
-            loginTime:     Math.floor((expiry - 3600000) / 1000),
+            // loginTime + expires_in == the real expiry, which is what gogdl compares against.
+            expires_in:    Math.max(0, Math.floor((expiry - now) / 1000)),
+            loginTime:     Math.floor(now / 1000),
         }
-    }));
+    }), { mode: 0o600 });                       // a login, so not readable by anyone else
+    try { fs.chmodSync(authPath, 0o600); } catch {}   // and tightened if it already existed
     return authPath;
+}
+
+// Read back what gogdl left in the auth file, keep a renewed login, then delete the file.
+function releaseGogAuthConfig(authPath) {
+    try {
+        const entry = JSON.parse(fs.readFileSync(authPath, 'utf8'))[GOG_CLIENT_ID] || {};
+        const get = k => db.prepare("SELECT value FROM settings WHERE key=?").get(k)?.value || '';
+        const renewed = entry.refresh_token && entry.access_token &&
+            (entry.refresh_token !== get('gog_refresh_token') || entry.access_token !== get('gog_access_token'));
+        if (renewed) {
+            const set = (k, v) => db.prepare("INSERT OR REPLACE INTO settings VALUES (?,?)").run(k, v);
+            set('gog_access_token', entry.access_token);
+            set('gog_refresh_token', entry.refresh_token);
+            const exp = (Number(entry.loginTime) || Math.floor(Date.now() / 1000)) + (Number(entry.expires_in) || 3600);
+            set('gog_token_expiry', String(exp * 1000));
+            console.log('[gog] kept the login gogdl renewed during this run');
+        }
+    } catch {}
+    try { fs.unlinkSync(authPath); } catch {}
 }
 
 // ── Headless sign-in ────────────────────────────────────────────────────────────
@@ -2475,14 +2751,14 @@ async function gogInstallInfo(appId, platform) {
         proc.stdout.on('data', d => out += d);
         proc.stderr.on('data', d => out += d);
         proc.on('close', () => {
-            try { fs.unlinkSync(authPath); } catch {}
+            releaseGogAuthConfig(authPath);
             try {
                 const data = JSON.parse(out.split('\n').find(l => l.trim().startsWith('{')));
                 const { download_size, disk_size } = gogSizeForLanguage(data.size);
                 resolve({ download_size, disk_size, version: data.versionName });
             } catch { resolve(null); }
         });
-        proc.on('error', () => { try { fs.unlinkSync(authPath); } catch {} resolve(null); });
+        proc.on('error', () => { releaseGogAuthConfig(authPath); resolve(null); });
     });
 }
 
@@ -2500,7 +2776,7 @@ async function gogListDlcs(baseAppId, platform) {
         proc.stdout.on('data', d => out += d);
         proc.stderr.on('data', d => out += d);
         proc.on('close', () => {
-            try { fs.unlinkSync(authPath); } catch {}
+            releaseGogAuthConfig(authPath);
             try {
                 const data = JSON.parse(out.split('\n').find(l => l.trim().startsWith('{')));
                 const dlcs = (data.dlcs || []).map(x => {
@@ -2510,7 +2786,7 @@ async function gogListDlcs(baseAppId, platform) {
                 resolve({ ok: true, dlcs });
             } catch { resolve({ ok: false, error: 'Could not read the DLC list. Make sure you are signed into GOG in Installer.', dlcs: [] }); }
         });
-        proc.on('error', () => { try { fs.unlinkSync(authPath); } catch {} resolve({ ok: false, error: 'gogdl failed to run.', dlcs: [] }); });
+        proc.on('error', () => { releaseGogAuthConfig(authPath); resolve({ ok: false, error: 'gogdl failed to run.', dlcs: [] }); });
     });
 }
 
@@ -2598,8 +2874,8 @@ module.exports = {
     GOG_CLIENT_ID, GOG_CLIENT_SECRET, GOG_REDIRECT_URI,
     syncSharedDb, headlessInstall, headlessUninstall, launchGame, runLegendary, prefixPathForGame,
     getGameInstallInfo, runRedist, injectGogRegistry, gogFetch, getGogToken,
-    writeGogAuthConfig, findGogInstallResult, findLinuxGameExe,
-    getDiskSpace, gogInstallInfo, epicInstallInfo, epicListUpdates, syncOwnedLibrary, cancelActiveInstall,
+    writeGogAuthConfig, releaseGogAuthConfig, findGogInstallResult, findLinuxGameExe,
+    getDiskSpace, gogInstallInfo, epicInstallInfo, epicListUpdates, syncOwnedLibrary, cancelActiveInstall, pauseActiveInstall,
     gogListDlcs, gogInstalledDlcs,
     gogExchangeCode, gogStatus, gogLogout, epicAuthCode, epicStatus,
     isFalloutLondon, applyFalloutLondonFix,

@@ -1151,6 +1151,31 @@ let _dlActive = null;        // { gameId, gid, name, store, dir, pct, message, s
 const _dlQueue = [];         // pending: { gameId, gid, name, store, dir }
 const _dlHistory = [];       // completed: { name, store, success, error, at }
 let _dlmOpen = false;
+
+/*
+ * Paused downloads. Stopped on purpose with every file kept, so installing the same game into
+ * the same folder again carries on from them: gogdl and legendary both resume by themselves.
+ *
+ * ⚠️ Remembered across restarts, unlike the queue. The files are on disk either way, and a
+ * 30 GB half-download that nothing on screen mentions any more is worse than one in a list.
+ */
+const _dlPaused = [];        // { gameId, gid, name, store, dir, platform, pct, pausedAt }
+// A pause holds the queue: the point of pausing is usually to free the connection, so the next
+// queued game must not start in its place. Cleared the moment the user starts or resumes anything.
+let _dlHeld = false;
+const DL_PAUSED_KEY = 'dl_paused';
+const _dlKey = q => String(q.dlcKey || q.gameId);
+function _savePausedDownloads() {
+    try { window.api.setSetting(DL_PAUSED_KEY, JSON.stringify(_dlPaused)); } catch {}
+}
+(async () => {
+    try {
+        const saved = JSON.parse((await window.api.getSetting(DL_PAUSED_KEY)) || '[]');
+        if (Array.isArray(saved)) _dlPaused.push(...saved.filter(x => x && x.gid && x.gameId != null));
+        renderDownloadManager();
+    } catch {}
+})();
+
 function _dlStoreOf(gid) { return /^gog_/i.test(gid) ? 'gog' : /^epic_/i.test(gid) ? 'epic' : 'other'; }
 function _dlStoreMeta(s) {
     if (s === 'gog')  return { label: 'GOG',  color: '#9b59d9' };
@@ -1162,9 +1187,19 @@ function _dlEsc(s) { const d = document.createElement('div'); d.textContent = s 
 // Queue a download (dir/platform already chosen). Starts immediately if nothing is active.
 function enqueueDownload(item) {
     // DLC jobs carry a distinct dlcKey so they don't collide with the base game's install (or each other).
-    const key = q => String(q.dlcKey || q.gameId);
+    const key = _dlKey;
     const dup = (_dlActive && key(_dlActive) === key(item)) || _dlQueue.some(q => key(q) === key(item));
     if (dup) { opToast('Already downloading / queued: ' + item.name, _dlActive ? _dlActive.pct : 0); return; }
+    // Installing a game that is paused is resuming it, when it is going to the same folder. To a
+    // different folder it is a fresh install the user asked for, so the paused entry is dropped
+    // and the old partial files are left where they were rather than deleted on a guess.
+    const p = _dlPaused.findIndex(x => key(x) === key(item));
+    if (p >= 0) {
+        const was = _dlPaused.splice(p, 1)[0];
+        _savePausedDownloads();
+        if (!item.dir || !was.dir || item.dir === was.dir) item = { ...was, ...item, dir: was.dir || item.dir };
+    }
+    _dlHeld = false;   // the user asked for a download, so a pause no longer holds the queue
     _dlQueue.push(item);
     if (_dlActive && !_dlmOpen) opToast(`Queued: ${item.name}  (+${_dlQueue.length} in queue)`, _dlActive.pct || 0);
     renderDownloadManager();
@@ -1172,7 +1207,7 @@ function enqueueDownload(item) {
 }
 
 async function _pumpDownloadQueue() {
-    if (_dlActive || _dlQueue.length === 0) return;
+    if (_dlActive || _dlQueue.length === 0 || _dlHeld) return;
     const item = _dlQueue.shift();
     _dlActive = { ...item, pct: 0, message: 'Starting…', step: 'START' };
     if (!_dlmOpen) opToast('Installing ' + item.name + '…', 0);
@@ -1180,6 +1215,22 @@ async function _pumpDownloadQueue() {
     let res;
     try { res = await window.api.installerInstall({ gameId: item.gameId, installerGameId: item.gid, installDir: item.dir, dlc: item.dlc, platform: item.platform }); }
     catch (e) { res = { ok: false, error: e.message }; }
+    // Paused: not a failure, nothing to notify, not history. It goes to the Paused list and the
+    // queue stays held until the user resumes or starts something.
+    if (res && res.paused) {
+        // What the engine measured as actually kept, not the bar's last value: both tools resume
+        // a file at a time, so anything still arriving at the moment of the pause starts over.
+        _dlPaused.unshift({ gameId: item.gameId, gid: item.gid, name: item.name, store: item.store,
+                            dir: item.dir || null, platform: item.platform || null,
+                            pct: typeof res.pct === 'number' ? res.pct : ((_dlActive && _dlActive.pct) || 0),
+                            keptBytes: res.keptBytes, totalBytes: res.totalBytes, pausedAt: Date.now() });
+        _savePausedDownloads();
+        _dlActive = null;
+        _dlHeld = true;
+        if (!_dlmOpen) { opToast('Paused: ' + item.name); setTimeout(opToastHide, 3000); }
+        renderDownloadManager();
+        return;
+    }
     const success = !!(res && res.ok);
     const cancelled = !success && /cancel/i.test((res && res.error) || '');
     // Desktop/phone ping (KDE Connect mirrors it), cover art as the notification icon.
@@ -1227,8 +1278,39 @@ function cancelQueuedDownload(gameId) {
     const i = _dlQueue.findIndex(q => String(q.gameId) === String(gameId));
     if (i >= 0) { _dlQueue.splice(i, 1); renderDownloadManager(); }
 }
+async function pauseActiveDownload() {
+    // DLC jobs reconcile files inside an installed game rather than download a new one, and
+    // stopping one halfway is not something to offer until it has been proven safe. Base games only.
+    if (!_dlActive || _dlActive.dlc || _dlActive.pausing) return;
+    _dlActive.pausing = true;
+    _dlActive.message = 'Pausing, saving progress…';
+    renderDownloadManager();
+    try { await window.api.installerPauseInstall(); } catch {}
+}
+function resumePausedDownload(k) {
+    const i = _dlPaused.findIndex(x => _dlKey(x) === String(k));
+    if (i < 0) return;
+    const item = _dlPaused.splice(i, 1)[0];
+    _savePausedDownloads();
+    _dlHeld = false;
+    // To the front: resuming is an explicit "this one, now", ahead of anything merely queued.
+    _dlQueue.unshift({ gameId: item.gameId, gid: item.gid, name: item.name, store: item.store,
+                       dir: item.dir, platform: item.platform || undefined });
+    if (_dlActive && !_dlmOpen) opToast(`Resuming next: ${item.name}`, _dlActive.pct || 0);
+    renderDownloadManager();
+    _pumpDownloadQueue();
+}
+// Off the list only. The files stay where they are, and installing the game into the same
+// folder later still carries on from them, the same as a cancelled download always has.
+function removePausedDownload(k) {
+    const i = _dlPaused.findIndex(x => _dlKey(x) === String(k));
+    if (i < 0) return;
+    _dlPaused.splice(i, 1);
+    _savePausedDownloads();
+    renderDownloadManager();
+}
 async function cancelActiveDownload() {
-    if (!_dlActive) return;
+    if (!_dlActive || _dlActive.pausing) return;
     _dlActive.message = 'Cancelling…';
     renderDownloadManager();
     await window.api.installerCancelInstall();   // engine kills the child → install resolves failed → queue advances
@@ -1277,6 +1359,14 @@ function renderDownloadManager() {
         $('dlm-bar').style.width = (_dlActive.pct || 0) + '%';
         $('dlm-pct').textContent = (_dlActive.pct || 0).toFixed(1) + '%';
         $('dlm-msg').textContent = _dlActive.message || '';
+        const pauseBtn = $('dlm-btn-pause-active');
+        if (pauseBtn) {
+            pauseBtn.style.display = _dlActive.dlc ? 'none' : '';
+            pauseBtn.disabled = !!_dlActive.pausing;
+            pauseBtn.textContent = _dlActive.pausing ? 'Pausing…' : 'Pause';
+        }
+        const cancelBtn = $('dlm-btn-cancel-active');
+        if (cancelBtn) cancelBtn.disabled = !!_dlActive.pausing;
         // Stalled: colour the bar and the figure so a frozen percentage cannot be mistaken
         // for a working one, and put the explanation where the eye already is.
         // Both of these carry their normal colour in the inline style attribute, so the
@@ -1294,10 +1384,29 @@ function renderDownloadManager() {
                 `cancel and start the download again, which normally picks a different server and continues from where it stopped.`;
         }
     }
+    // Paused
+    const pausedSec = $('dlm-paused-section');
+    if (pausedSec) {
+        pausedSec.style.display = _dlPaused.length ? 'flex' : 'none';
+        $('dlm-paused-label').textContent = _dlPaused.length
+            ? `${_dlPaused.length} paused${_dlHeld && _dlQueue.length ? ', queue on hold' : ''}` : '';
+        $('dlm-paused-list').innerHTML = _dlPaused.map(item => {
+            const m = _dlStoreMeta(item.store);
+            const k = _dlEsc(_dlKey(item));
+            const gb = b => (b / 1024 ** 3).toFixed(1) + ' GB';
+            const at = item.totalBytes ? `, ${gb(item.keptBytes || 0)} of ${gb(item.totalBytes)} kept`
+                     : item.pct ? ` at ${Number(item.pct).toFixed(0)}%` : '';
+            return `<div class="dlm-row"><div class="dlm-dot" style="background:var(--accent)"></div><div class="dlm-row-meta">` +
+                   `<div class="dlm-row-title dlm-clickable" data-dlgame="${_dlEsc(item.gameId)}">${_dlEsc(item.name)}</div>` +
+                   `<div class="dlm-row-sub" style="color:${m.color}">${m.label} · Paused${at}</div></div>` +
+                   `<button class="dlm-resume" data-dlresume="${k}">▶ Resume</button>` +
+                   `<button class="dlm-remove" data-dlpremove="${k}" title="Take it off this list. The files already downloaded stay on disk.">✕ Remove</button></div>`;
+        }).join('');
+    }
     // Queue
     $('dlm-queue-section').style.display = _dlQueue.length ? 'flex' : 'none';
     if (_dlQueue.length) {
-        $('dlm-queue-label').textContent = `${_dlQueue.length} waiting`;
+        $('dlm-queue-label').textContent = `${_dlQueue.length} waiting${_dlHeld ? ', held by a pause' : ''}`;
         $('dlm-queue-list').innerHTML = _dlQueue.map(item => {
             const m = _dlStoreMeta(item.store);
             return `<div class="dlm-row"><div class="dlm-dot"></div><div class="dlm-row-meta">` +
@@ -1317,7 +1426,7 @@ function renderDownloadManager() {
         }).join('');
     }
     // Empty state
-    $('dlm-empty').style.display = (!_dlActive && !_dlQueue.length && !_dlHistory.length) ? 'flex' : 'none';
+    $('dlm-empty').style.display = (!_dlActive && !_dlQueue.length && !_dlHistory.length && !_dlPaused.length) ? 'flex' : 'none';
 }
 
 // NOTE: renderer.js is included (line ~6273 of index.html) BEFORE #op-toast / #modal-dlm
@@ -1333,6 +1442,11 @@ function _wireDownloadManager() {
         if (e.target.id === 'modal-dlm') closeDownloadManager();
     });
     document.getElementById('dlm-btn-cancel-active')?.addEventListener('click', cancelActiveDownload);
+    document.getElementById('dlm-btn-pause-active')?.addEventListener('click', pauseActiveDownload);
+    document.getElementById('dlm-paused-list')?.addEventListener('click', (e) => {
+        const r = e.target.closest('[data-dlresume]');  if (r) { resumePausedDownload(r.dataset.dlresume); return; }
+        const x = e.target.closest('[data-dlpremove]'); if (x) removePausedDownload(x.dataset.dlpremove);
+    });
     document.getElementById('dlm-queue-list')?.addEventListener('click', (e) => {
         const b = e.target.closest('[data-dlq]'); if (b) cancelQueuedDownload(b.dataset.dlq);
     });

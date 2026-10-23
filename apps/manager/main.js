@@ -965,12 +965,18 @@ ipcMain.handle('installer-install', async (event, { gameId, installerGameId, ins
     _installerBusy = true;
     // Watch for an error/cancel event so we don't mark a failed or cancelled download as installed.
     let installErr = null;
+    let installPaused = null;
     _installerProgressCb = (data) => {
         if (data && data.step === 'error') installErr = data.message || 'Install failed.';
+        if (data && data.step === 'paused') installPaused = data;
         try { event.sender.send('installer-install-progress', data); } catch {}
     };
     try {
         await installerEngine.headlessInstall(parsed.store, parsed.appId, platform, dir, opts);
+        // Neither installed nor failed. The renderer keeps it as a paused download it can resume,
+        // which is the same call again with the same folder.
+        if (installPaused) return { ok: false, paused: true, pct: installPaused.percent,
+                                    keptBytes: installPaused.keptBytes, totalBytes: installPaused.totalBytes };
         if (installErr) return { ok: false, error: installErr };
         // Before the games.db write, so nothing that reads install state in between can
         // answer from a Set that predates this install and undo it.
@@ -1570,6 +1576,13 @@ ipcMain.handle('custom-set-run-options', async (event, { installerGameId, iwad, 
 ipcMain.handle('installer-install-cancel', () => {
     if (!_installerEngineDb) return { ok: false };
     return { ok: installerEngine.cancelActiveInstall() };
+});
+
+// Pause the in-flight download: it stops, its files stay, and the install promise resolves as
+// { paused: true } rather than failed. See pauseActiveInstall in the engine.
+ipcMain.handle('installer-install-pause', () => {
+    if (!_installerEngineDb) return { ok: false };
+    return { ok: installerEngine.pauseActiveInstall() };
 });
 
 /*

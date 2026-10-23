@@ -238,6 +238,7 @@ contextBridge.exposeInMainWorld('api', {
                                 onSoundtrackBuildProgress: (cb) => ipcRenderer.on('soundtrack-build-progress', (e, d) => cb(d)),
                                 setLaunchTarget:  (installerGameId, relPath, taskIndex) => ipcRenderer.invoke('set-launch-target', installerGameId, relPath, taskIndex),
                                 installerCancelInstall: () => ipcRenderer.invoke('installer-install-cancel'),
+                                installerPauseInstall:  () => ipcRenderer.invoke('installer-install-pause'),
                                 installerUninstall: (payload) => ipcRenderer.invoke('installer-uninstall', payload),
                                 installerDefaultDir: () => ipcRenderer.invoke('installer-default-dir'),
                                 installerSetDefaultDir: (dir) => ipcRenderer.invoke('installer-set-default-dir', dir),

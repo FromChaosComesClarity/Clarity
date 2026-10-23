@@ -17,7 +17,7 @@ const {
     GOG_CLIENT_ID, GOG_CLIENT_SECRET, GOG_REDIRECT_URI,
     syncSharedDb, headlessInstall, headlessUninstall, launchGame, runLegendary,
     getGameInstallInfo, runRedist, injectGogRegistry, gogFetch, getGogToken,
-    writeGogAuthConfig, findGogInstallResult, findLinuxGameExe,
+    writeGogAuthConfig, releaseGogAuthConfig, findGogInstallResult, findLinuxGameExe,
 } = installerEngine;
 
 // Installer face keeps its own identity even inside the unified suite:
@@ -440,7 +440,7 @@ ipcMain.handle('gog-install-info', async (_, appId, platform) => {
         proc.stdout.on('data', d => out += d);
         proc.stderr.on('data', d => out += d);
         proc.on('close', () => {
-            try { fs.unlinkSync(authPath); } catch {}
+            releaseGogAuthConfig(authPath);
             try {
                 const jsonLine = out.split('\n').find(l => l.trim().startsWith('{'));
                 const data = JSON.parse(jsonLine);
@@ -452,7 +452,7 @@ ipcMain.handle('gog-install-info', async (_, appId, platform) => {
                 resolve({ download_size, disk_size, version: data.versionName });
             } catch { resolve(null); }
         });
-        proc.on('error', () => { try { fs.unlinkSync(authPath); } catch {} resolve(null); });
+        proc.on('error', () => { releaseGogAuthConfig(authPath); resolve(null); });
     });
 });
 
@@ -1253,7 +1253,7 @@ ipcMain.handle('gogdl-install', (event, appId, platform, installDir, isDlc = fal
         activeGogInstallProc.stderr.on('data', send);
         activeGogInstallProc.on('close', async code => {
             activeGogInstallProc = null;
-            try { fs.unlinkSync(authPath); } catch {}
+            releaseGogAuthConfig(authPath);
 
             if (isDlc) {
                 // DLCs merge into the existing base game folder, no new subfolder to scan.
@@ -1332,12 +1332,12 @@ ipcMain.handle('gogdl-repair', (event, gameId) => {
         activeGogInstallProc.stderr.on('data', send);
         activeGogInstallProc.on('close', code => {
             activeGogInstallProc = null;
-            try { fs.unlinkSync(authPath); } catch {}
+            releaseGogAuthConfig(authPath);
             resolve({ ok: code === 0, exitCode: code });
         });
         activeGogInstallProc.on('error', e => {
             activeGogInstallProc = null;
-            try { fs.unlinkSync(authPath); } catch {}
+            releaseGogAuthConfig(authPath);
             send(`\nSpawn error: ${e.message}\n`);
             resolve({ ok: false, error: e.message });
         });
